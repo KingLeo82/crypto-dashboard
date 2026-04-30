@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CryptoTerminal — NATR Scanner | Часы Трейдера | CryptoAI</title>
+    <title>CryptoTerminal — NATR Scanner | Часы Трейдера | Календарь | CryptoAI</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Space+Grotesk:wght@400;600;700&display=swap" rel="stylesheet">
@@ -524,6 +524,194 @@
             .links-container { flex-direction: column; align-items: stretch; }
             .link-btn { justify-content: center; width: 100%; }
         }
+
+        /* ======================================================
+           SECTION 4: КАЛЕНДАРЬ ТРЕЙДЕРА
+           ====================================================== */
+        .cal-wrap { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        .cal-header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 24px 0; border-bottom: 1px solid var(--border);
+            margin-bottom: 20px; flex-wrap: wrap; gap: 16px;
+        }
+        .cal-header h1 { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.02em; }
+        .cal-header h1 em { color: var(--accent); font-style: normal; }
+        .cal-controls { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+
+        .cal-week-nav {
+            display: flex; align-items: center; gap: 8px;
+            background: var(--bg-card); border-radius: 10px;
+            padding: 4px; border: 1px solid var(--border);
+        }
+        .cal-week-btn {
+            width: 36px; height: 36px; border-radius: 8px;
+            background: transparent; border: none; color: var(--muted);
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            transition: all 0.2s; font-size: 16px;
+        }
+        .cal-week-btn:hover { background: rgba(255,255,255,0.06); color: var(--fg); }
+        .cal-week-label {
+            padding: 0 12px; font-size: 13px; font-weight: 600;
+            color: var(--fg); white-space: nowrap; min-width: 140px; text-align: center;
+        }
+        .cal-today-btn {
+            padding: 8px 16px; border-radius: 8px; font-size: 12px; font-weight: 600;
+            cursor: pointer; background: var(--accent-dim); border: 1px solid rgba(240,185,11,0.2);
+            color: var(--accent); transition: all 0.2s; font-family: 'Space Grotesk', sans-serif;
+        }
+        .cal-today-btn:hover { background: rgba(240,185,11,0.2); }
+
+        .cal-filters {
+            display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; align-items: center;
+        }
+        .cal-filter-label { font-size: 12px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; margin-right: 4px; }
+        .cal-filter-btn {
+            padding: 8px 16px; border-radius: 8px; font-size: 12px; font-weight: 600;
+            cursor: pointer; background: transparent; border: 1px solid var(--border);
+            color: var(--muted); transition: all 0.2s; display: flex; align-items: center; gap: 6px;
+            font-family: 'Space Grotesk', sans-serif;
+        }
+        .cal-filter-btn:hover { color: var(--fg); background: rgba(255,255,255,0.03); }
+        .cal-filter-btn.active { color: var(--accent); border-color: rgba(240,185,11,0.3); background: var(--accent-dim); }
+        .cal-filter-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+        .cal-impact-high { background: var(--red); box-shadow: 0 0 6px var(--red); }
+        .cal-impact-medium { background: var(--accent); box-shadow: 0 0 6px var(--accent); }
+        .cal-impact-low { background: var(--muted); }
+        .cal-filter-sep { width: 1px; height: 24px; background: var(--border); margin: 0 4px; }
+
+        .cal-country-filter { display: flex; gap: 6px; flex-wrap: wrap; }
+        .cal-country-btn {
+            padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 600;
+            cursor: pointer; background: transparent; border: 1px solid var(--border);
+            color: var(--muted); transition: all 0.2s; font-family: 'Space Grotesk', sans-serif;
+        }
+        .cal-country-btn:hover { color: var(--fg); background: rgba(255,255,255,0.03); }
+        .cal-country-btn.active { color: var(--fg); border-color: rgba(255,255,255,0.15); background: rgba(255,255,255,0.06); }
+
+        .cal-next-event {
+            background: linear-gradient(135deg, rgba(246,70,93,0.12), rgba(240,185,11,0.08));
+            border: 1px solid rgba(246,70,93,0.25); border-radius: 14px;
+            padding: 18px 24px; margin-bottom: 20px; display: flex;
+            align-items: center; gap: 18px; flex-wrap: wrap;
+        }
+        .cal-next-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--red); }
+        .cal-next-name { font-size: 16px; font-weight: 700; color: var(--fg); }
+        .cal-next-countdown { font-family: 'JetBrains Mono', monospace; font-size: 20px; font-weight: 700; color: var(--accent); letter-spacing: 1px; }
+        .cal-next-info { font-size: 12px; color: var(--muted); }
+
+        .cal-grid {
+            display: grid; grid-template-columns: repeat(7, 1fr);
+            gap: 8px; margin-bottom: 20px;
+        }
+        .cal-day-col { min-height: 120px; }
+        .cal-day-header {
+            text-align: center; padding: 10px 6px; border-radius: 10px;
+            background: var(--bg-card); border: 1px solid var(--border);
+            margin-bottom: 8px; position: sticky; top: 60px; z-index: 10;
+        }
+        .cal-day-name { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+        .cal-day-date { font-size: 18px; font-weight: 700; margin-top: 2px; }
+        .cal-day-col.today .cal-day-header {
+            border-color: rgba(246,70,93,0.4);
+            background: linear-gradient(135deg, rgba(246,70,93,0.1), rgba(255,75,43,0.06));
+        }
+        .cal-day-col.today .cal-day-date { color: var(--red); }
+        .cal-day-col.past .cal-day-header { opacity: 0.5; }
+
+        .cal-event-card {
+            background: var(--bg-card); border-radius: 10px;
+            padding: 10px 12px; margin-bottom: 6px;
+            border: 1px solid var(--border); cursor: pointer;
+            transition: all 0.2s; position: relative; overflow: hidden;
+        }
+        .cal-event-card:hover { transform: translateY(-1px); border-color: rgba(255,255,255,0.12); box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+        .cal-event-card.impact-high { border-left: 3px solid var(--red); }
+        .cal-event-card.impact-medium { border-left: 3px solid var(--accent); }
+        .cal-event-card.impact-low { border-left: 3px solid var(--muted); }
+        .cal-event-card.impact-high:hover { border-color: rgba(246,70,93,0.3); border-left-color: var(--red); }
+        .cal-event-card.impact-medium:hover { border-color: rgba(240,185,11,0.3); border-left-color: var(--accent); }
+
+        .cal-event-time { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted); font-weight: 600; margin-bottom: 4px; }
+        .cal-event-country { font-size: 13px; margin-right: 4px; }
+        .cal-event-title { font-size: 12px; font-weight: 600; color: var(--fg); line-height: 1.3; margin-bottom: 6px; }
+        .cal-event-values { display: flex; gap: 10px; font-size: 11px; flex-wrap: wrap; }
+        .cal-event-val { display: flex; flex-direction: column; }
+        .cal-event-val-label { color: var(--muted); font-size: 9px; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 1px; }
+        .cal-event-val-num { font-family: 'JetBrains Mono', monospace; font-weight: 600; font-size: 12px; }
+        .cal-event-val-num.better { color: var(--green); }
+        .cal-event-val-num.worse { color: var(--red); }
+
+        .cal-event-impact-badge {
+            position: absolute; top: 8px; right: 8px;
+            display: flex; gap: 2px;
+        }
+        .cal-impact-dot { width: 5px; height: 5px; border-radius: 50%; }
+        .cal-impact-dot.on-high { background: var(--red); }
+        .cal-impact-dot.on-med { background: var(--accent); }
+        .cal-impact-dot.on-low { background: var(--muted); }
+        .cal-impact-dot.off { background: rgba(255,255,255,0.08); }
+
+        .cal-event-expanded {
+            display: none; margin-top: 8px; padding-top: 8px;
+            border-top: 1px solid var(--border);
+        }
+        .cal-event-card.expanded .cal-event-expanded { display: block; }
+        .cal-event-detail { font-size: 11px; color: var(--muted); line-height: 1.5; }
+
+        .cal-stats-bar {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 14px 18px; background: var(--bg-card);
+            border-radius: 12px; margin-bottom: 16px; font-size: 13px;
+            flex-wrap: wrap; gap: 12px;
+        }
+        .cal-stats-bar span { color: var(--muted); }
+        .cal-stats-bar strong { color: var(--fg); }
+        .cal-stats-bar .mono { color: var(--accent); }
+
+        .cal-empty-day { text-align: center; padding: 20px 8px; color: var(--muted); font-size: 11px; opacity: 0.5; }
+
+        .cal-loading { text-align: center; padding: 60px 20px; color: var(--muted); }
+        .cal-loading .cal-spinner { width: 40px; height: 40px; border: 3px solid rgba(255,255,255,0.1); border-top-color: var(--accent); border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 16px; }
+        .cal-loading p { font-size: 14px; }
+        .cal-error-state { text-align: center; padding: 40px 20px; color: var(--muted); }
+        .cal-error-state p { font-size: 14px; margin-bottom: 12px; }
+        .cal-error-state .cal-retry-btn { padding: 8px 20px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; background: var(--accent-dim); border: 1px solid rgba(240,185,11,0.2); color: var(--accent); transition: all 0.2s; font-family: 'Space Grotesk', sans-serif; }
+        .cal-error-state .cal-retry-btn:hover { background: rgba(240,185,11,0.2); }
+        .cal-source-badge { display: flex; align-items: center; gap: 6px; padding: 6px 12px; background: rgba(16,203,129,0.08); border: 1px solid rgba(16,203,129,0.2); border-radius: 8px; font-size: 11px; color: var(--green); font-weight: 600; }
+        .cal-source-badge .source-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); box-shadow: 0 0 6px var(--green); }
+        .cal-source-badge.offline { background: rgba(246,70,93,0.08); border-color: rgba(246,70,93,0.2); color: var(--red); }
+        .cal-source-badge.offline .source-dot { background: var(--red); box-shadow: 0 0 6px var(--red); }
+        .cal-source-badge.cached { background: rgba(240,185,11,0.08); border-color: rgba(240,185,11,0.2); color: var(--accent); }
+        .cal-source-badge.cached .source-dot { background: var(--accent); box-shadow: 0 0 6px var(--accent); }
+
+        .cal-legend {
+            display: flex; gap: 16px; justify-content: center; padding: 16px 0;
+            border-top: 1px solid var(--border); margin-top: 10px;
+            flex-wrap: wrap;
+        }
+        .cal-legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
+        .cal-legend-dot { width: 10px; height: 10px; border-radius: 3px; }
+        .cal-legend-dot.lg-high { background: var(--red); }
+        .cal-legend-dot.lg-med { background: var(--accent); }
+        .cal-legend-dot.lg-low { background: var(--muted); }
+
+        @media (max-width:1024px) {
+            .cal-grid { grid-template-columns: repeat(4, 1fr); }
+        }
+        @media (max-width:768px) {
+            .cal-wrap { padding: 12px; }
+            .cal-header h1 { font-size: 1.2rem; }
+            .cal-grid { grid-template-columns: repeat(2, 1fr); }
+            .cal-controls { flex-wrap: wrap; justify-content: center; }
+            .cal-day-col { min-height: 80px; }
+            .cal-event-card { padding: 8px 10px; }
+            .cal-event-title { font-size: 11px; }
+        }
+        @media (max-width:480px) {
+            .cal-grid { grid-template-columns: 1fr; }
+            .cal-filters { gap: 6px; }
+            .cal-next-event { flex-direction: column; align-items: flex-start; gap: 10px; }
+        }
     </style>
 </head>
 <body>
@@ -537,6 +725,7 @@
     <div class="nav-tabs">
         <button class="nav-tab active" data-section="natr" onclick="switchSection('natr')">NATR Scanner</button>
         <button class="nav-tab" data-section="tw" onclick="switchSection('tw')">Часы Трейдера</button>
+        <button class="nav-tab" data-section="cal" onclick="switchSection('cal')">Календарь</button>
         <button class="nav-tab" data-section="cai" onclick="switchSection('cai')">CryptoAI</button>
     </div>
 </nav>
@@ -645,6 +834,85 @@
 </div>
 </div>
 
+<!-- ========== SECTION 4: КАЛЕНДАРЬ ТРЕЙДЕРА ========== -->
+<div class="section-panel" id="section-cal">
+<div class="cal-wrap">
+    <div class="cal-header">
+        <h1><em>Календарь</em> Трейдера</h1>
+        <div class="cal-controls">
+            <div class="cal-week-nav">
+                <button class="cal-week-btn" onclick="calPrevWeek()" title="Предыдущая неделя">&#9664;</button>
+                <span class="cal-week-label" id="calWeekLabel">--</span>
+                <button class="cal-week-btn" onclick="calNextWeek()" title="Следующая неделя">&#9654;</button>
+            </div>
+            <button class="cal-today-btn" onclick="calGoToday()">Сегодня</button>
+            <div class="tw-tz-selector" style="position:static;transform:none;">
+                <select id="calTZSelect">
+                    <option value="local">Моё время</option>
+                    <option value="Europe/Moscow">Москва (UTC+3)</option>
+                    <option value="Asia/Irkutsk" selected>Иркутск (UTC+8)</option>
+                    <option value="Europe/London">Лондон (UTC+0/+1)</option>
+                    <option value="Europe/Berlin">Берлин (UTC+1/+2)</option>
+                    <option value="America/New_York">Нью-Йорк (UTC-5/-4)</option>
+                    <option value="America/Los_Angeles">Лос-Анджелес (UTC-8/-7)</option>
+                    <option value="Asia/Tokyo">Токио (UTC+9)</option>
+                    <option value="Asia/Shanghai">Шанхай (UTC+8)</option>
+                    <option value="Asia/Kolkata">Мумбаи (UTC+5:30)</option>
+                    <option value="Australia/Sydney">Сидней (UTC+10/+11)</option>
+                    <option value="Asia/Dubai">Дубай (UTC+4)</option>
+                </select>
+            </div>
+        </div>
+    </div>
+    <div class="cal-filters">
+        <span class="cal-filter-label">Важность:</span>
+        <button class="cal-filter-btn active" data-impact="all" onclick="calFilterImpact('all')"><span class="cal-filter-dot" style="background:var(--fg)"></span> Все</button>
+        <button class="cal-filter-btn" data-impact="high" onclick="calFilterImpact('high')"><span class="cal-filter-dot cal-impact-high"></span> Высокая</button>
+        <button class="cal-filter-btn" data-impact="medium" onclick="calFilterImpact('medium')"><span class="cal-filter-dot cal-impact-medium"></span> Средняя</button>
+        <button class="cal-filter-btn" data-impact="low" onclick="calFilterImpact('low')"><span class="cal-filter-dot cal-impact-low"></span> Низкая</button>
+        <div class="cal-filter-sep"></div>
+        <span class="cal-filter-label">Страна:</span>
+        <div class="cal-country-filter">
+            <button class="cal-country-btn active" data-country="all" onclick="calFilterCountry('all')">Все</button>
+            <button class="cal-country-btn" data-country="US" onclick="calFilterCountry('US')">🇺🇸 US</button>
+            <button class="cal-country-btn" data-country="EU" onclick="calFilterCountry('EU')">🇪🇺 EU</button>
+            <button class="cal-country-btn" data-country="UK" onclick="calFilterCountry('UK')">🇬🇧 UK</button>
+            <button class="cal-country-btn" data-country="DE" onclick="calFilterCountry('DE')">🇩🇪 DE</button>
+            <button class="cal-country-btn" data-country="JP" onclick="calFilterCountry('JP')">🇯🇵 JP</button>
+            <button class="cal-country-btn" data-country="CN" onclick="calFilterCountry('CN')">🇨🇳 CN</button>
+            <button class="cal-country-btn" data-country="AU" onclick="calFilterCountry('AU')">🇦🇺 AU</button>
+            <button class="cal-country-btn" data-country="CA" onclick="calFilterCountry('CA')">🇨🇦 CA</button>
+            <button class="cal-country-btn" data-country="CH" onclick="calFilterCountry('CH')">🇨🇭 CH</button>
+            <button class="cal-country-btn" data-country="NZ" onclick="calFilterCountry('NZ')">🇳🇿 NZ</button>
+            <button class="cal-country-btn" data-country="RU" onclick="calFilterCountry('RU')">🇷🇺 RU</button>
+        </div>
+    </div>
+    <div class="cal-next-event" id="calNextEvent" style="display:none;">
+        <div>
+            <div class="cal-next-label">Ближайшее событие</div>
+            <div class="cal-next-name" id="calNextName">--</div>
+            <div class="cal-next-info" id="calNextInfo">--</div>
+        </div>
+        <div class="cal-next-countdown" id="calNextCountdown">--:--:--</div>
+    </div>
+    <div class="cal-stats-bar" id="calStatsBar">
+        <div>Событий на неделе: <strong id="calStatTotal" class="mono">--</strong></div>
+        <div>Высокая важность: <strong id="calStatHigh" class="mono" style="color:var(--red)">--</strong></div>
+        <div>Средняя важность: <strong id="calStatMed" class="mono" style="color:var(--accent)">--</strong></div>
+        <div>Сегодня событий: <strong id="calStatToday" class="mono">--</strong></div>
+        <div class="cal-source-badge" id="calSourceBadge" style="display:none;"><span class="source-dot"></span> <span id="calSourceText">ForexFactory Live</span></div>
+    </div>
+    <div id="calLoadingState" class="cal-loading" style="display:none;"><div class="cal-spinner"></div><p>Загрузка данных календаря...</p></div>
+    <div id="calErrorState" class="cal-error-state" style="display:none;"><p id="calErrorText">Не удалось загрузить данные</p><button class="cal-retry-btn" onclick="calRetryFetch()">Повторить</button></div>
+    <div class="cal-grid" id="calGrid"></div>
+    <div class="cal-legend">
+        <div class="cal-legend-item"><span class="cal-legend-dot lg-high"></span> Высокая важность</div>
+        <div class="cal-legend-item"><span class="cal-legend-dot lg-med"></span> Средняя важность</div>
+        <div class="cal-legend-item"><span class="cal-legend-dot lg-low"></span> Низкая важность</div>
+    </div>
+</div>
+</div>
+
 <!-- ========== SECTION 3: CRYPTOAI ========== -->
 <div class="section-panel" id="section-cai">
 <div class="cai-wrap">
@@ -701,6 +969,7 @@
 // ============================================================
 let twInitialized = false;
 let caiInitialized = false;
+let calInitialized = false;
 
 function switchSection(name) {
     document.querySelectorAll('.section-panel').forEach(p => p.classList.remove('active'));
@@ -709,6 +978,7 @@ function switchSection(name) {
     document.querySelector('.nav-tab[data-section="' + name + '"]').classList.add('active');
     if (name === 'tw' && !twInitialized) { twInit(); twInitialized = true; }
     if (name === 'cai' && !caiInitialized) { caiInitialized = true; }
+    if (name === 'cal' && !calInitialized) { calInit(); calInitialized = true; }
 }
 
 // ============================================================
@@ -1085,6 +1355,459 @@ function twInit() {
     sb.addEventListener('mouseleave', function() { ml.style.display = 'none'; });
     twUpdate();
     setInterval(twUpdate, 1000);
+}
+
+// ============================================================
+//  SECTION 4: КАЛЕНДАРЬ ТРЕЙДЕРА (ForexFactory Live Data)
+// ============================================================
+let calCurrentWeekStart = null;
+let calImpactFilter = 'all';
+let calCountryFilter = 'all';
+let calAllEvents = [];
+let calCountdownTimerId = null;
+let calAutoRefreshId = null;
+let calIsLoading = false;
+let calApiWeekStart = null;
+let calRawApiData = null;
+
+const CAL_COUNTRY_FLAGS = {
+    US: '\u{1F1FA}\u{1F1F8}', EU: '\u{1F1EA}\u{1F1FA}', UK: '\u{1F1EC}\u{1F1E7}',
+    DE: '\u{1F1E9}\u{1F1EA}', JP: '\u{1F1EF}\u{1F1F5}', CN: '\u{1F1E8}\u{1F1F3}',
+    AU: '\u{1F1E6}\u{1F1FA}', CA: '\u{1F1E8}\u{1F1E6}', RU: '\u{1F1F7}\u{1F1FA}',
+    NZ: '\u{1F1F3}\u{1F1FF}', CH: '\u{1F1E8}\u{1F1ED}', KR: '\u{1F1F0}\u{1F1F7}'
+};
+
+const CAL_DAY_NAMES = ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
+const CAL_MONTH_NAMES = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
+
+const CAL_CURRENCY_TO_COUNTRY = {
+    USD: 'US', EUR: 'EU', GBP: 'UK', JPY: 'JP', CNY: 'CN',
+    AUD: 'AU', CAD: 'CA', CHF: 'CH', NZD: 'NZ', KRW: 'KR', RUB: 'RU'
+};
+
+const CAL_CURRENCY_FLAGS = {
+    USD: '\u{1F1FA}\u{1F1F8}', EUR: '\u{1F1EA}\u{1F1FA}', GBP: '\u{1F1EC}\u{1F1E7}',
+    JPY: '\u{1F1EF}\u{1F1F5}', CNY: '\u{1F1E8}\u{1F1F3}', AUD: '\u{1F1E6}\u{1F1FA}',
+    CAD: '\u{1F1E8}\u{1F1E6}', CHF: '\u{1F1E8}\u{1F1ED}', NZD: '\u{1F1F3}\u{1F1FF}',
+    KRW: '\u{1F1F0}\u{1F1F7}', RUB: '\u{1F1F7}\u{1F1FA}'
+};
+
+let calSelectedTZ = 'Asia/Irkutsk';
+
+function calGetWeekStart(date) {
+    const d = new Date(date);
+    const day = d.getDay();
+    const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+    d.setDate(diff); d.setHours(0,0,0,0);
+    return d;
+}
+
+function calFormatWeekLabel(start) {
+    const end = new Date(start); end.setDate(end.getDate() + 6);
+    const sm = CAL_MONTH_NAMES[start.getMonth()];
+    const em = CAL_MONTH_NAMES[end.getMonth()];
+    if (sm === em) return start.getDate() + ' \u2014 ' + end.getDate() + ' ' + sm;
+    return start.getDate() + ' ' + sm + ' \u2014 ' + end.getDate() + ' ' + em;
+}
+
+function calUTCToLocal(utcDate, targetTZ) {
+    const f = new Intl.DateTimeFormat('ru-RU', {
+        timeZone: targetTZ, day: '2-digit', month: '2-digit', year: 'numeric',
+        hour: '2-digit', minute: '2-digit', hour12: false
+    });
+    const parts = f.formatToParts(utcDate);
+    const p = Object.fromEntries(parts.map(x => [x.type, x.value]));
+    return {
+        day: +p.day, month: +p.month - 1, year: +p.year,
+        hour: +p.hour, minute: +p.minute,
+        hourStr: p.hour, minuteStr: p.minute
+    };
+}
+
+function calDetectCategory(title) {
+    const t = (title || '').toLowerCase();
+    if (/rate|fomc|boe|boc|boj|rba|rbnz|ecb|monetary|fed|interest rate|policy rate|overnight/i.test(t)) return '\u0426\u0435\u043d\u0442\u0440\u043e\u0431\u0430\u043d\u043a\u0438';
+    if (/cpi|inflation|hicp|pce|ppi|deflat/i.test(t)) return '\u0418\u043d\u0444\u043b\u044f\u0446\u0438\u044f';
+    if (/gdp|gross domestic/i.test(t)) return '\u0412\u0412\u041f';
+    if (/pmi|ism|manufacturing|industry|industrial/i.test(t)) return '\u041f\u0440\u043e\u0438\u0437\u0432\u043e\u0434\u0441\u0442\u0432\u043e';
+    if (/employment|nfp|payroll|unemploy|jobless|claims|jolts|wage/i.test(t)) return '\u0420\u044b\u043d\u043e\u043a \u0442\u0440\u0443\u0434\u0430';
+    if (/retail|consumer|spending|personal/i.test(t)) return '\u041f\u043e\u0442\u0440\u0435\u0431\u043b\u0435\u043d\u0438\u0435';
+    if (/housing|home|building|construction|permits|starts/i.test(t)) return '\u041d\u0435\u0434\u0432\u0438\u0436\u0438\u043c\u043e\u0441\u0442\u044c';
+    if (/trade|export|import|balance/i.test(t)) return '\u0422\u043e\u0440\u0433\u043e\u0432\u043b\u044f';
+    if (/confidence|sentiment|ifo|zew/i.test(t)) return '\u041d\u0430\u0441\u0442\u0440\u043e\u0435\u043d\u0438\u044f';
+    if (/oil|crude|gas|energy|eia|api/i.test(t)) return '\u042d\u043d\u0435\u0440\u0433\u0438\u044f';
+    if (/speak|speech|press conference|statement/i.test(t)) return '\u0426\u0435\u043d\u0442\u0440\u043e\u0431\u0430\u043d\u043a\u0438';
+    if (/holiday/i.test(t)) return '\u041f\u0440\u0430\u0437\u0434\u043d\u0438\u043a';
+    return '';
+}
+
+function calMapImpact(apiImpact) {
+    const v = (apiImpact || '').toLowerCase();
+    if (v === 'high') return 'high';
+    if (v === 'medium' || v === 'med') return 'medium';
+    if (v === 'low') return 'low';
+    if (v === 'holiday') return 'low';
+    return 'low';
+}
+
+function calSetLoading(loading) {
+    calIsLoading = loading;
+    document.getElementById('calLoadingState').style.display = loading ? 'block' : 'none';
+    document.getElementById('calErrorState').style.display = 'none';
+    document.getElementById('calGrid').style.display = loading ? 'none' : '';
+}
+
+function calSetError(msg) {
+    calIsLoading = false;
+    document.getElementById('calLoadingState').style.display = 'none';
+    document.getElementById('calErrorState').style.display = 'block';
+    document.getElementById('calErrorText').textContent = msg || '\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044c \u0434\u0430\u043d\u043d\u044b\u0435';
+    document.getElementById('calGrid').style.display = 'none';
+}
+
+function calClearStates() {
+    document.getElementById('calLoadingState').style.display = 'none';
+    document.getElementById('calErrorState').style.display = 'none';
+    document.getElementById('calGrid').style.display = '';
+}
+
+function calUpdateSourceBadge(isLive, sourceName) {
+    const badge = document.getElementById('calSourceBadge');
+    badge.style.display = 'flex';
+    const src = sourceName || '';
+    if (!isLive) {
+        badge.className = 'cal-source-badge offline';
+        document.getElementById('calSourceText').textContent = 'Нет подключения';
+    } else if (src.indexOf('офлайн') !== -1 || src.indexOf('кэш') !== -1) {
+        badge.className = 'cal-source-badge cached';
+        document.getElementById('calSourceText').textContent = src;
+    } else {
+        badge.className = 'cal-source-badge';
+        document.getElementById('calSourceText').textContent = src || 'ForexFactory Live';
+    }
+}
+
+function calParseApiData(data) {
+    let apiWeekStart = null;
+    const now = new Date();
+    const events = data
+        .filter(e => e.impact !== 'Holiday' && e.i !== 'Holiday')
+        .map(e => {
+            const dateStr = e.date || e.d;
+            const title = e.title || e.t || '';
+            const country = e.country || e.c || '';
+            const impact = e.impact || e.i || '';
+            const forecast = e.forecast || e.f || '';
+            const previous = e.previous || e.p || '';
+            const utcDate = new Date(dateStr);
+            if (isNaN(utcDate.getTime())) return null;
+            if (!apiWeekStart) apiWeekStart = calGetWeekStart(utcDate);
+            const cntry = CAL_CURRENCY_TO_COUNTRY[country] || country;
+            const imp = calMapImpact(impact);
+            const category = calDetectCategory(title);
+            const isPast = utcDate < now;
+            return {
+                utcDate, country: cntry, currency: country, impact: imp,
+                title: title,
+                previous: previous, forecast: forecast,
+                actual: '', category, detail: '', isPast
+            };
+        })
+        .filter(e => e !== null)
+        .sort((a, b) => a.utcDate - b.utcDate);
+    return { events, apiWeekStart };
+}
+
+async function calFetchWithTimeout(url, options, timeoutMs) {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+    try {
+        const resp = await fetch(url, { ...options, signal: ctrl.signal });
+        clearTimeout(timer);
+        return resp;
+    } catch(e) {
+        clearTimeout(timer);
+        throw e;
+    }
+}
+
+// Embedded fallback data (real ForexFactory events for current week, updated 2026-04-30)
+const CAL_FALLBACK_DATA = [{"t":"Bank Holiday","c":"NZD","d":"2026-04-26T16:00:00-04:00","i":"Holiday","f":"","p":""},{"t":"Bank Holiday","c":"AUD","d":"2026-04-26T17:00:00-04:00","i":"Holiday","f":"","p":""},{"t":"President Trump Speaks","c":"USD","d":"2026-04-26T19:00:00-04:00","i":"Medium","f":"","p":""},{"t":"German GfK Consumer Climate","c":"EUR","d":"2026-04-27T02:00:00-04:00","i":"Low","f":"-30.2","p":"-28.0"},{"t":"CBI Realized Sales","c":"GBP","d":"2026-04-27T06:00:00-04:00","i":"Low","f":"-42","p":"-52"},{"t":"CB Leading Index m/m","c":"CNY","d":"2026-04-27T09:00:00-04:00","i":"Low","f":"","p":"-0.2%"},{"t":"BRC Shop Price Index y/y","c":"GBP","d":"2026-04-27T19:01:00-04:00","i":"Low","f":"1.4%","p":"1.2%"},{"t":"Unemployment Rate","c":"JPY","d":"2026-04-27T19:30:00-04:00","i":"Low","f":"2.6%","p":"2.6%"},{"t":"BOJ Outlook Report","c":"JPY","d":"2026-04-27T23:04:00-04:00","i":"High","f":"","p":""},{"t":"BOJ Policy Rate","c":"JPY","d":"2026-04-27T23:04:00-04:00","i":"High","f":"<0.75%","p":"<0.75%"},{"t":"Monetary Policy Statement","c":"JPY","d":"2026-04-27T23:04:00-04:00","i":"High","f":"","p":""},{"t":"BOJ Core CPI y/y","c":"JPY","d":"2026-04-28T01:00:00-04:00","i":"Low","f":"1.9%","p":"1.7%"},{"t":"BOJ Press Conference","c":"JPY","d":"2026-04-28T02:30:00-04:00","i":"High","f":"","p":""},{"t":"Spanish Unemployment Rate","c":"EUR","d":"2026-04-28T03:00:00-04:00","i":"Low","f":"9.8%","p":"9.9%"},{"t":"ADP Weekly Employment Change","c":"USD","d":"2026-04-28T08:15:00-04:00","i":"Low","f":"","p":"54.8K"},{"t":"HPI m/m","c":"USD","d":"2026-04-28T09:00:00-04:00","i":"Low","f":"0.1%","p":"0.1%"},{"t":"S&P/CS Composite-20 HPI y/y","c":"USD","d":"2026-04-28T09:00:00-04:00","i":"Low","f":"1.1%","p":"1.2%"},{"t":"CB Consumer Confidence","c":"USD","d":"2026-04-28T10:00:00-04:00","i":"Medium","f":"89.0","p":"91.8"},{"t":"Richmond Manufacturing Index","c":"USD","d":"2026-04-28T10:00:00-04:00","i":"Low","f":"2","p":"0"},{"t":"API Weekly Statistical Bulletin","c":"USD","d":"2026-04-28T16:30:00-04:00","i":"Low","f":"","p":""},{"t":"RBNZ Gov Breman Speaks","c":"NZD","d":"2026-04-28T20:30:00-04:00","i":"Medium","f":"","p":""},{"t":"CPI m/m","c":"AUD","d":"2026-04-28T21:30:00-04:00","i":"High","f":"1.3%","p":"0.0%"},{"t":"CPI y/y","c":"AUD","d":"2026-04-28T21:30:00-04:00","i":"High","f":"4.8%","p":"3.7%"},{"t":"Trimmed Mean CPI m/m","c":"AUD","d":"2026-04-28T21:30:00-04:00","i":"High","f":"0.3%","p":"0.2%"},{"t":"German Prelim CPI m/m","c":"EUR","d":"2026-04-29T02:29:00-04:00","i":"Medium","f":"0.7%","p":"1.1%"},{"t":"Spanish Flash CPI y/y","c":"EUR","d":"2026-04-29T03:00:00-04:00","i":"Low","f":"3.5%","p":"3.3%"},{"t":"UBS Economic Expectations","c":"CHF","d":"2026-04-29T04:00:00-04:00","i":"Low","f":"","p":"-35.0"},{"t":"M3 Money Supply y/y","c":"EUR","d":"2026-04-29T04:00:00-04:00","i":"Low","f":"3.1%","p":"3.0%"},{"t":"Private Loans y/y","c":"EUR","d":"2026-04-29T04:00:00-04:00","i":"Low","f":"3.1%","p":"3.0%"},{"t":"Italian 10-y Bond Auction","c":"EUR","d":"2026-04-29T05:17:00-04:00","i":"Low","f":"","p":"4.09|1.7"},{"t":"German 10-y Bond Auction","c":"EUR","d":"2026-04-29T05:32:00-04:00","i":"Low","f":"","p":"2.92|1.2"},{"t":"Building Permits","c":"USD","d":"2026-04-29T08:28:00-04:00","i":"Low","f":"","p":"1.38M"},{"t":"Housing Starts","c":"USD","d":"2026-04-29T08:28:00-04:00","i":"Low","f":"","p":"1.49M"},{"t":"Building Permits","c":"USD","d":"2026-04-29T08:30:00-04:00","i":"Low","f":"1.39M","p":"1.54M"},{"t":"Core Durable Goods Orders m/m","c":"USD","d":"2026-04-29T08:30:00-04:00","i":"Low","f":"0.4%","p":"0.8%"},{"t":"Durable Goods Orders m/m","c":"USD","d":"2026-04-29T08:30:00-04:00","i":"Low","f":"0.4%","p":"-1.4%"},{"t":"Goods Trade Balance","c":"USD","d":"2026-04-29T08:30:00-04:00","i":"Low","f":"-87.5B","p":"-83.5B"},{"t":"Housing Starts","c":"USD","d":"2026-04-29T08:30:00-04:00","i":"Low","f":"1.38M","p":"1.36M"},{"t":"Prelim Wholesale Inventories m/m","c":"USD","d":"2026-04-29T08:30:00-04:00","i":"Low","f":"0.4%","p":"0.8%"},{"t":"BOC Monetary Policy Report","c":"CAD","d":"2026-04-29T09:45:00-04:00","i":"High","f":"","p":""},{"t":"BOC Rate Statement","c":"CAD","d":"2026-04-29T09:45:00-04:00","i":"High","f":"","p":""},{"t":"Overnight Rate","c":"CAD","d":"2026-04-29T09:45:00-04:00","i":"High","f":"2.25%","p":"2.25%"},{"t":"BOC Press Conference","c":"CAD","d":"2026-04-29T10:30:00-04:00","i":"High","f":"","p":""},{"t":"Crude Oil Inventories","c":"USD","d":"2026-04-29T10:30:00-04:00","i":"Low","f":"0.3M","p":"1.9M"},{"t":"Federal Funds Rate","c":"USD","d":"2026-04-29T14:00:00-04:00","i":"High","f":"3.75%","p":"3.75%"},{"t":"FOMC Statement","c":"USD","d":"2026-04-29T14:00:00-04:00","i":"High","f":"","p":""},{"t":"FOMC Press Conference","c":"USD","d":"2026-04-29T14:30:00-04:00","i":"High","f":"","p":""},{"t":"Prelim Industrial Production m/m","c":"JPY","d":"2026-04-29T19:50:00-04:00","i":"Low","f":"1.0%","p":"-2.1%"},{"t":"Retail Sales y/y","c":"JPY","d":"2026-04-29T19:50:00-04:00","i":"Low","f":"0.9%","p":"-0.2%"},{"t":"ANZ Business Confidence","c":"NZD","d":"2026-04-29T21:00:00-04:00","i":"Low","f":"","p":"32.5"},{"t":"Import Prices q/q","c":"AUD","d":"2026-04-29T21:30:00-04:00","i":"Low","f":"0.4%","p":"0.9%"},{"t":"Private Sector Credit m/m","c":"AUD","d":"2026-04-29T21:30:00-04:00","i":"Low","f":"0.6%","p":"0.6%"},{"t":"Manufacturing PMI","c":"CNY","d":"2026-04-29T21:30:00-04:00","i":"Low","f":"50.1","p":"50.4"},{"t":"Non-Manufacturing PMI","c":"CNY","d":"2026-04-29T21:30:00-04:00","i":"Low","f":"49.9","p":"50.1"},{"t":"RatingDog Manufacturing PMI","c":"CNY","d":"2026-04-29T21:45:00-04:00","i":"Low","f":"50.9","p":"50.8"},{"t":"Consumer Confidence","c":"JPY","d":"2026-04-30T01:00:00-04:00","i":"Low","f":"32.8","p":"33.3"},{"t":"Housing Starts y/y","c":"JPY","d":"2026-04-30T01:00:00-04:00","i":"Low","f":"-28.7%","p":"-4.9%"},{"t":"French Consumer Spending m/m","c":"EUR","d":"2026-04-30T01:30:00-04:00","i":"Low","f":"0.7%","p":"-1.4%"},{"t":"French Flash GDP q/q","c":"EUR","d":"2026-04-30T01:30:00-04:00","i":"Low","f":"0.2%","p":"0.2%"},{"t":"German Import Prices m/m","c":"EUR","d":"2026-04-30T02:00:00-04:00","i":"Low","f":"3.6%","p":"0.3%"},{"t":"German Retail Sales m/m","c":"EUR","d":"2026-04-30T02:00:00-04:00","i":"Low","f":"-0.3%","p":"-0.6%"},{"t":"French Prelim CPI m/m","c":"EUR","d":"2026-04-30T02:45:00-04:00","i":"Low","f":"0.9%","p":"0.9%"},{"t":"French Prelim Private Payrolls q/q","c":"EUR","d":"2026-04-30T02:45:00-04:00","i":"Low","f":"-0.1%","p":"-0.1%"},{"t":"KOF Economic Barometer","c":"CHF","d":"2026-04-30T03:00:00-04:00","i":"Low","f":"95.8","p":"96.1"},{"t":"Spanish Flash GDP q/q","c":"EUR","d":"2026-04-30T03:00:00-04:00","i":"Low","f":"0.5%","p":"0.8%"},{"t":"German Unemployment Change","c":"EUR","d":"2026-04-30T03:55:00-04:00","i":"Low","f":"4K","p":"0K"},{"t":"German Prelim GDP q/q","c":"EUR","d":"2026-04-30T04:00:00-04:00","i":"Medium","f":"0.1%","p":"0.3%"},{"t":"Italian Prelim GDP q/q","c":"EUR","d":"2026-04-30T04:00:00-04:00","i":"Low","f":"0.1%","p":"0.3%"},{"t":"Italian Monthly Unemployment Rate","c":"EUR","d":"2026-04-30T04:30:00-04:00","i":"Low","f":"5.3%","p":"5.3%"},{"t":"Core CPI Flash Estimate y/y","c":"EUR","d":"2026-04-30T05:00:00-04:00","i":"Medium","f":"2.2%","p":"2.3%"},{"t":"CPI Flash Estimate y/y","c":"EUR","d":"2026-04-30T05:00:00-04:00","i":"Medium","f":"3.0%","p":"2.5%"},{"t":"Italian Prelim CPI m/m","c":"EUR","d":"2026-04-30T05:00:00-04:00","i":"Low","f":"0.9%","p":"0.5%"},{"t":"Prelim Flash GDP q/q","c":"EUR","d":"2026-04-30T05:00:00-04:00","i":"Low","f":"0.2%","p":"0.3%"},{"t":"Unemployment Rate","c":"EUR","d":"2026-04-30T05:00:00-04:00","i":"Low","f":"6.2%","p":"6.2%"},{"t":"BOE Monetary Policy Report","c":"GBP","d":"2026-04-30T07:00:00-04:00","i":"High","f":"","p":""},{"t":"Monetary Policy Summary","c":"GBP","d":"2026-04-30T07:00:00-04:00","i":"High","f":"","p":""},{"t":"MPC Official Bank Rate Votes","c":"GBP","d":"2026-04-30T07:00:00-04:00","i":"High","f":"1-0-8","p":"0-0-9"},{"t":"Official Bank Rate","c":"GBP","d":"2026-04-30T07:00:00-04:00","i":"High","f":"3.75%","p":"3.75%"},{"t":"BOE Inflation Letter","c":"GBP","d":"2026-04-30T07:00:00-04:00","i":"Low","f":"","p":""},{"t":"BOE Gov Bailey Speaks","c":"GBP","d":"2026-04-30T07:30:00-04:00","i":"High","f":"","p":""},{"t":"Main Refinancing Rate","c":"EUR","d":"2026-04-30T08:15:00-04:00","i":"High","f":"2.15%","p":"2.15%"},{"t":"Monetary Policy Statement","c":"EUR","d":"2026-04-30T08:15:00-04:00","i":"High","f":"","p":""},{"t":"GDP m/m","c":"CAD","d":"2026-04-30T08:30:00-04:00","i":"High","f":"0.2%","p":"0.1%"},{"t":"Advance GDP q/q","c":"USD","d":"2026-04-30T08:30:00-04:00","i":"High","f":"2.2%","p":"1.4%"},{"t":"Core PCE Price Index m/m","c":"USD","d":"2026-04-30T08:30:00-04:00","i":"High","f":"0.3%","p":"0.4%"},{"t":"Employment Cost Index q/q","c":"USD","d":"2026-04-30T08:30:00-04:00","i":"High","f":"0.8%","p":"0.7%"},{"t":"Advance GDP Price Index q/q","c":"USD","d":"2026-04-30T08:30:00-04:00","i":"Medium","f":"3.8%","p":"3.6%"},{"t":"Unemployment Claims","c":"USD","d":"2026-04-30T08:30:00-04:00","i":"Medium","f":"213K","p":"214K"},{"t":"Personal Income m/m","c":"USD","d":"2026-04-30T08:30:00-04:00","i":"Low","f":"0.3%","p":"-0.1%"},{"t":"Personal Spending m/m","c":"USD","d":"2026-04-30T08:30:00-04:00","i":"Low","f":"0.9%","p":"0.5%"},{"t":"ECB Press Conference","c":"EUR","d":"2026-04-30T08:45:00-04:00","i":"High","f":"","p":""},{"t":"Chicago PMI","c":"USD","d":"2026-04-30T09:45:00-04:00","i":"Low","f":"54.8","p":"52.8"},{"t":"CB Leading Index m/m","c":"USD","d":"2026-04-30T10:00:00-04:00","i":"Low","f":"-0.2%","p":"-0.1%"},{"t":"Natural Gas Storage","c":"USD","d":"2026-04-30T10:30:00-04:00","i":"Low","f":"83B","p":"103B"},{"t":"Building Consents m/m","c":"NZD","d":"2026-04-30T18:45:00-04:00","i":"Low","f":"","p":"2.7%"},{"t":"Tokyo Core CPI y/y","c":"JPY","d":"2026-04-30T19:30:00-04:00","i":"Medium","f":"1.8%","p":"1.7%"},{"t":"Final Manufacturing PMI","c":"JPY","d":"2026-04-30T20:30:00-04:00","i":"Low","f":"54.9","p":"54.9"},{"t":"PPI q/q","c":"AUD","d":"2026-04-30T21:30:00-04:00","i":"Low","f":"0.9%","p":"0.8%"},{"t":"Bank Holiday","c":"CHF","d":"2026-05-01T01:00:00-04:00","i":"Holiday","f":"","p":""},{"t":"Nationwide HPI m/m","c":"GBP","d":"2026-05-01T02:00:00-04:00","i":"Low","f":"-0.3%","p":"0.9%"},{"t":"French Bank Holiday","c":"EUR","d":"2026-05-01T02:01:00-04:00","i":"Holiday","f":"","p":""},{"t":"German Bank Holiday","c":"EUR","d":"2026-05-01T02:02:00-04:00","i":"Holiday","f":"","p":""},{"t":"Italian Bank Holiday","c":"EUR","d":"2026-05-01T02:03:00-04:00","i":"Holiday","f":"","p":""},{"t":"Commodity Prices y/y","c":"AUD","d":"2026-05-01T02:30:00-04:00","i":"Low","f":"","p":"12.8%"},{"t":"Retail Sales y/y","c":"CHF","d":"2026-05-01T02:30:00-04:00","i":"Low","f":"0.6%","p":"0.9%"},{"t":"Final Manufacturing PMI","c":"GBP","d":"2026-05-01T04:30:00-04:00","i":"Low","f":"53.3","p":"53.6"},{"t":"M4 Money Supply m/m","c":"GBP","d":"2026-05-01T04:30:00-04:00","i":"Low","f":"0.5%","p":"0.6%"},{"t":"Mortgage Approvals","c":"GBP","d":"2026-05-01T04:30:00-04:00","i":"Low","f":"60K","p":"63K"},{"t":"Net Lending to Individuals m/m","c":"GBP","d":"2026-05-01T04:30:00-04:00","i":"Low","f":"5.9B","p":"6.8B"},{"t":"MPC Member Pill Speaks","c":"GBP","d":"2026-05-01T07:15:00-04:00","i":"Low","f":"","p":""},{"t":"Manufacturing PMI","c":"CAD","d":"2026-05-01T09:30:00-04:00","i":"Low","f":"","p":"50.0"},{"t":"Final Manufacturing PMI","c":"USD","d":"2026-05-01T09:45:00-04:00","i":"Low","f":"54.0","p":"54.0"},{"t":"ISM Manufacturing PMI","c":"USD","d":"2026-05-01T10:00:00-04:00","i":"Medium","f":"53.1","p":"52.7"},{"t":"ISM Manufacturing Prices","c":"USD","d":"2026-05-01T10:00:00-04:00","i":"Medium","f":"80.0","p":"78.3"},{"t":"Wards Total Vehicle Sales","c":"USD","d":"2026-05-01T10:15:00-04:00","i":"Low","f":"16.0M","p":"16.3M"}];
+
+async function calFetchEvents() {
+    calSetLoading(true);
+    const FF_URL = 'https://nfs.faireconomy.media/ff_calendar_thisweek.json';
+    let data = null;
+    let source = '';
+
+    // Strategy 1: allorigins.win CORS proxy
+    try {
+        const resp = await calFetchWithTimeout(
+            'https://api.allorigins.win/get?url=' + encodeURIComponent(FF_URL), {}, 8000
+        );
+        if (!resp.ok) throw new Error('HTTP ' + resp.status);
+        const wrapper = await resp.json();
+        if (!wrapper.contents) throw new Error('Empty response');
+        data = JSON.parse(wrapper.contents);
+        source = 'ForexFactory Live';
+    } catch(e) {
+        console.warn('Strategy 1 (allorigins) failed:', e.message);
+        // Strategy 2: direct fetch
+        try {
+            const resp = await calFetchWithTimeout(FF_URL, {}, 6000);
+            if (!resp.ok) throw new Error('HTTP ' + resp.status);
+            data = await resp.json();
+            source = 'ForexFactory Direct';
+        } catch(e2) {
+            console.warn('Strategy 2 (direct) failed:', e2.message);
+            // Strategy 3: codetabs proxy
+            try {
+                const resp = await calFetchWithTimeout(
+                    'https://api.codetabs.com/v1/proxy/?quest=' + encodeURIComponent(FF_URL), {}, 8000
+                );
+                if (!resp.ok) throw new Error('HTTP ' + resp.status);
+                data = await resp.json();
+                source = 'ForexFactory (proxy)';
+            } catch(e3) {
+                console.warn('Strategy 3 (codetabs) failed:', e3.message);
+            }
+        }
+    }
+
+    // Strategy 4: try localStorage cache from a previous successful fetch
+    if (!data) {
+        try {
+            const cached = localStorage.getItem('cal_ff_cache');
+            if (cached) {
+                const parsed = JSON.parse(cached);
+                const cacheAge = Date.now() - (parsed.ts || 0);
+                if (cacheAge < 3600000) { // cache valid for 1 hour
+                    data = parsed.data;
+                    source = 'ForexFactory (кэш)';
+                }
+            }
+        } catch(e) { /* ignore cache errors */ }
+    }
+
+    // Strategy 5: use embedded fallback data
+    if (!data) {
+        data = CAL_FALLBACK_DATA;
+        source = 'ForexFactory (офлайн)';
+    }
+
+    try {
+        calRawApiData = data;
+        const result = calParseApiData(data);
+        calApiWeekStart = result.apiWeekStart || calGetWeekStart(new Date());
+        calAllEvents = result.events;
+
+        // Cache successful data to localStorage
+        if (source.indexOf('офлайн') === -1 && source.indexOf('кэш') === -1) {
+            try {
+                localStorage.setItem('cal_ff_cache', JSON.stringify({ ts: Date.now(), data: data }));
+            } catch(e) { /* ignore quota errors */ }
+        }
+
+        calClearStates();
+        calUpdateSourceBadge(true, source);
+        calRender();
+        return result.events;
+    } catch (err) {
+        console.error('Calendar parse error:', err);
+        calSetError('Ошибка обработки данных: ' + (err.message || ''));
+        calUpdateSourceBadge(false);
+        return [];
+    }
+}
+
+function calRetryFetch() { calFetchEvents(); }
+
+function calRender() {
+    const grid = document.getElementById('calGrid');
+    grid.innerHTML = '';
+    const now = new Date();
+    const targetTZ = calSelectedTZ === 'local' ? Intl.DateTimeFormat().resolvedOptions().timeZone : calSelectedTZ;
+    const nowLocal = calUTCToLocal(now, targetTZ);
+    const today = new Date(nowLocal.year, nowLocal.month, nowLocal.day);
+
+    let filtered = calAllEvents.filter(e => {
+        if (calImpactFilter !== 'all' && e.impact !== calImpactFilter) return false;
+        if (calCountryFilter !== 'all' && e.country !== calCountryFilter && e.currency !== calCountryFilter) return false;
+        return true;
+    });
+
+    const totalEvents = calAllEvents.length;
+    const highEvents = calAllEvents.filter(e => e.impact === 'high').length;
+    const medEvents = calAllEvents.filter(e => e.impact === 'medium').length;
+    const todayEvents = calAllEvents.filter(e => {
+        const ld = calUTCToLocal(e.utcDate, targetTZ);
+        return ld.year === nowLocal.year && ld.month === nowLocal.month && ld.day === nowLocal.day;
+    }).length;
+
+    document.getElementById('calStatTotal').textContent = totalEvents;
+    document.getElementById('calStatHigh').textContent = highEvents;
+    document.getElementById('calStatMed').textContent = medEvents;
+    document.getElementById('calStatToday').textContent = todayEvents;
+
+    const isCurrentApiWeek = calApiWeekStart && calCurrentWeekStart &&
+        calApiWeekStart.getTime() === calCurrentWeekStart.getTime();
+
+    for (let d = 0; d < 7; d++) {
+        const dayDate = new Date(calCurrentWeekStart);
+        dayDate.setDate(dayDate.getDate() + d);
+        const isToday = dayDate.getTime() === today.getTime();
+        const isPast = dayDate < today && !isToday;
+        const col = document.createElement('div');
+        col.className = 'cal-day-col' + (isToday ? ' today' : '') + (isPast ? ' past' : '');
+        const header = document.createElement('div');
+        header.className = 'cal-day-header';
+        header.innerHTML = '<div class="cal-day-name">' + CAL_DAY_NAMES[d] + '</div>' +
+            '<div class="cal-day-date">' + dayDate.getDate() + '</div>';
+        col.appendChild(header);
+
+        if (!isCurrentApiWeek && calRawApiData) {
+            const empty = document.createElement('div');
+            empty.className = 'cal-empty-day';
+            empty.textContent = '\u0414\u0430\u043d\u043d\u044b\u0435 \u0434\u043e\u0441\u0442\u0443\u043f\u043d\u044b \u0442\u043e\u043b\u044c\u043a\u043e \u043d\u0430 \u0442\u0435\u043a\u0443\u0449\u0443\u044e \u043d\u0435\u0434\u0435\u043b\u044e';
+            empty.style.opacity = '0.7';
+            col.appendChild(empty);
+        } else {
+            const dayEvents = filtered.filter(e => {
+                const ld = calUTCToLocal(e.utcDate, targetTZ);
+                return ld.year === dayDate.getFullYear() && ld.month === dayDate.getMonth() && ld.day === dayDate.getDate();
+            });
+
+            if (dayEvents.length === 0) {
+                const empty = document.createElement('div');
+                empty.className = 'cal-empty-day';
+                empty.textContent = '\u041d\u0435\u0442 \u0441\u043e\u0431\u044b\u0442\u0438\u0439';
+                col.appendChild(empty);
+            } else {
+                dayEvents.forEach(evt => {
+                    const card = document.createElement('div');
+                    card.className = 'cal-event-card impact-' + evt.impact;
+                    card.onclick = function() { this.classList.toggle('expanded'); };
+                    const localTime = calUTCToLocal(evt.utcDate, targetTZ);
+                    const timeStr = localTime.hourStr + ':' + localTime.minuteStr;
+                    const flag = CAL_COUNTRY_FLAGS[evt.country] || CAL_CURRENCY_FLAGS[evt.currency] || evt.currency;
+                    const impactDots = evt.impact === 'high' ?
+                        '<span class="cal-impact-dot on-high"></span><span class="cal-impact-dot on-high"></span><span class="cal-impact-dot on-high"></span>' :
+                        evt.impact === 'medium' ?
+                        '<span class="cal-impact-dot on-med"></span><span class="cal-impact-dot on-med"></span><span class="cal-impact-dot off"></span>' :
+                        '<span class="cal-impact-dot on-low"></span><span class="cal-impact-dot off"></span><span class="cal-impact-dot off"></span>';
+                    let valuesHTML = '';
+                    if (evt.previous || evt.forecast || evt.actual) {
+                        valuesHTML = '<div class="cal-event-values">';
+                        if (evt.previous) valuesHTML += '<div class="cal-event-val"><span class="cal-event-val-label">\u041f\u0440\u0435\u0434.</span><span class="cal-event-val-num">' + evt.previous + '</span></div>';
+                        if (evt.forecast) valuesHTML += '<div class="cal-event-val"><span class="cal-event-val-label">\u041f\u0440\u043e\u0433\u043d\u043e\u0437</span><span class="cal-event-val-num">' + evt.forecast + '</span></div>';
+                        if (evt.actual) {
+                            let cls = '';
+                            if (evt.forecast && evt.actual) {
+                                const aNum = parseFloat(evt.actual.replace(/[^0-9.-]/g,''));
+                                const fNum = parseFloat(evt.forecast.replace(/[^0-9.-]/g,''));
+                                if (!isNaN(aNum) && !isNaN(fNum)) cls = aNum > fNum ? ' better' : aNum < fNum ? ' worse' : '';
+                            }
+                            valuesHTML += '<div class="cal-event-val"><span class="cal-event-val-label">\u0424\u0430\u043a\u0442</span><span class="cal-event-val-num' + cls + '">' + evt.actual + '</span></div>';
+                        }
+                        valuesHTML += '</div>';
+                    }
+                    let detailHTML = '';
+                    if (evt.detail || evt.category) {
+                        const detailParts = [];
+                        if (evt.category) detailParts.push('[' + evt.category + ']');
+                        if (evt.detail) detailParts.push(evt.detail);
+                        detailHTML = '<div class="cal-event-expanded"><div class="cal-event-detail">' + detailParts.join(' ') + '</div></div>';
+                    }
+                    card.innerHTML =
+                        '<div class="cal-event-impact-badge">' + impactDots + '</div>' +
+                        '<div class="cal-event-time">' + timeStr + '</div>' +
+                        '<div class="cal-event-title">' + flag + ' ' + evt.title + '</div>' +
+                        valuesHTML + detailHTML;
+                    col.appendChild(card);
+                });
+            }
+        }
+        grid.appendChild(col);
+    }
+    calUpdateNextEvent();
+}
+
+function calUpdateNextEvent() {
+    const now = new Date();
+    const targetTZ = calSelectedTZ === 'local' ? Intl.DateTimeFormat().resolvedOptions().timeZone : calSelectedTZ;
+    const upcoming = calAllEvents.filter(e => e.utcDate > now && e.impact === 'high');
+    const nextEvt = upcoming.length > 0 ? upcoming[0] : calAllEvents.find(e => e.utcDate > now);
+    const panel = document.getElementById('calNextEvent');
+    if (!nextEvt) { panel.style.display = 'none'; return; }
+    panel.style.display = 'flex';
+    const flag = CAL_COUNTRY_FLAGS[nextEvt.country] || CAL_CURRENCY_FLAGS[nextEvt.currency] || nextEvt.currency;
+    document.getElementById('calNextName').textContent = flag + ' ' + nextEvt.title;
+    const impactText = nextEvt.impact === 'high' ? '\u0412\u044b\u0441\u043e\u043a\u0430\u044f \u0432\u0430\u0436\u043d\u043e\u0441\u0442\u044c' : nextEvt.impact === 'medium' ? '\u0421\u0440\u0435\u0434\u043d\u044f\u044f \u0432\u0430\u0436\u043d\u043e\u0441\u0442\u044c' : '\u041d\u0438\u0437\u043a\u0430\u044f \u0432\u0430\u0436\u043d\u043e\u0441\u0442\u044c';
+    const lt = calUTCToLocal(nextEvt.utcDate, targetTZ);
+    const localTimeStr = lt.hourStr + ':' + lt.minuteStr;
+    document.getElementById('calNextInfo').textContent = impactText + ' \u2022 ' + lt.day + ' ' + CAL_MONTH_NAMES[lt.month] + ', ' + localTimeStr;
+    calUpdateCountdown(nextEvt);
+}
+
+function calUpdateCountdown(evt) {
+    if (calCountdownTimerId) clearInterval(calCountdownTimerId);
+    const update = () => {
+        const now = new Date();
+        const diff = evt.utcDate - now;
+        if (diff <= 0) {
+            document.getElementById('calNextCountdown').textContent = '00:00:00';
+            if (calCountdownTimerId) clearInterval(calCountdownTimerId);
+            return;
+        }
+        const h = Math.floor(diff / 3600000);
+        const m = Math.floor((diff % 3600000) / 60000);
+        const s = Math.floor((diff % 60000) / 1000);
+        document.getElementById('calNextCountdown').textContent =
+            String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+    };
+    update();
+    calCountdownTimerId = setInterval(update, 1000);
+}
+
+function calPrevWeek() {
+    calCurrentWeekStart.setDate(calCurrentWeekStart.getDate() - 7);
+    document.getElementById('calWeekLabel').textContent = calFormatWeekLabel(calCurrentWeekStart);
+    calRender();
+}
+function calNextWeek() {
+    calCurrentWeekStart.setDate(calCurrentWeekStart.getDate() + 7);
+    document.getElementById('calWeekLabel').textContent = calFormatWeekLabel(calCurrentWeekStart);
+    calRender();
+}
+function calGoToday() {
+    calCurrentWeekStart = calGetWeekStart(new Date());
+    document.getElementById('calWeekLabel').textContent = calFormatWeekLabel(calCurrentWeekStart);
+    calRender();
+}
+
+function calFilterImpact(impact) {
+    calImpactFilter = impact;
+    document.querySelectorAll('.cal-filter-btn').forEach(b => b.classList.toggle('active', b.dataset.impact === impact));
+    calRender();
+}
+function calFilterCountry(country) {
+    calCountryFilter = country;
+    document.querySelectorAll('.cal-country-btn').forEach(b => b.classList.toggle('active', b.dataset.country === country));
+    calRender();
+}
+
+function calInit() {
+    calCurrentWeekStart = calGetWeekStart(new Date());
+    document.getElementById('calWeekLabel').textContent = calFormatWeekLabel(calCurrentWeekStart);
+    document.getElementById('calTZSelect').addEventListener('change', function(e) {
+        calSelectedTZ = e.target.value;
+        calRender();
+    });
+    calFetchEvents();
+    if (calAutoRefreshId) clearInterval(calAutoRefreshId);
+    calAutoRefreshId = setInterval(() => {
+        if (!calIsLoading) calFetchEvents();
+    }, 300000);
 }
 
 // ============================================================

@@ -573,7 +573,6 @@
         }
         .cal-filter-btn:hover { color: var(--fg); background: rgba(255,255,255,0.03); }
         .cal-filter-btn.active { color: var(--accent); border-color: rgba(240,185,11,0.3); background: var(--accent-dim); }
-        .cal-filter-btn:not(.active) .cal-filter-dot { opacity: 0.25; }
         .cal-filter-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
         .cal-impact-high { background: var(--red); box-shadow: 0 0 6px var(--red); }
         .cal-impact-medium { background: var(--accent); box-shadow: 0 0 6px var(--accent); }
@@ -588,7 +587,6 @@
         }
         .cal-country-btn:hover { color: var(--fg); background: rgba(255,255,255,0.03); }
         .cal-country-btn.active { color: var(--fg); border-color: rgba(255,255,255,0.15); background: rgba(255,255,255,0.06); }
-        .cal-country-btn:not(.active) { opacity: 0.4; }
 
         .cal-next-event {
             background: linear-gradient(135deg, rgba(246,70,93,0.12), rgba(240,185,11,0.08));
@@ -868,22 +866,25 @@
     </div>
     <div class="cal-filters">
         <span class="cal-filter-label">Важность:</span>
-        <button class="cal-filter-btn active" data-impact="high" onclick="calToggleImpact('high')"><span class="cal-filter-dot cal-impact-high"></span> Высокая</button>
-        <button class="cal-filter-btn active" data-impact="medium" onclick="calToggleImpact('medium')"><span class="cal-filter-dot cal-impact-medium"></span> Средняя</button>
-        <button class="cal-filter-btn active" data-impact="low" onclick="calToggleImpact('low')"><span class="cal-filter-dot cal-impact-low"></span> Низкая</button>
+        <button class="cal-filter-btn active" data-impact="all" onclick="calFilterImpact('all')"><span class="cal-filter-dot" style="background:var(--fg)"></span> Все</button>
+        <button class="cal-filter-btn" data-impact="high" onclick="calFilterImpact('high')"><span class="cal-filter-dot cal-impact-high"></span> Высокая</button>
+        <button class="cal-filter-btn" data-impact="medium" onclick="calFilterImpact('medium')"><span class="cal-filter-dot cal-impact-medium"></span> Средняя</button>
+        <button class="cal-filter-btn" data-impact="low" onclick="calFilterImpact('low')"><span class="cal-filter-dot cal-impact-low"></span> Низкая</button>
         <div class="cal-filter-sep"></div>
         <span class="cal-filter-label">Страна:</span>
         <div class="cal-country-filter">
-            <button class="cal-country-btn active" data-country="US" onclick="calToggleCountry('US')">🇺🇸 US</button>
-            <button class="cal-country-btn active" data-country="EU" onclick="calToggleCountry('EU')">🇪🇺 EU</button>
-            <button class="cal-country-btn active" data-country="UK" onclick="calToggleCountry('UK')">🇬🇧 UK</button>
-            <button class="cal-country-btn active" data-country="JP" onclick="calToggleCountry('JP')">🇯🇵 JP</button>
-            <button class="cal-country-btn active" data-country="CN" onclick="calToggleCountry('CN')">🇨🇳 CN</button>
-            <button class="cal-country-btn active" data-country="AU" onclick="calToggleCountry('AU')">🇦🇺 AU</button>
-            <button class="cal-country-btn active" data-country="CA" onclick="calToggleCountry('CA')">🇨🇦 CA</button>
-            <button class="cal-country-btn active" data-country="CH" onclick="calToggleCountry('CH')">🇨🇭 CH</button>
-            <button class="cal-country-btn active" data-country="NZ" onclick="calToggleCountry('NZ')">🇳🇿 NZ</button>
-            <button class="cal-country-btn active" data-country="RU" onclick="calToggleCountry('RU')">🇷🇺 RU</button>
+            <button class="cal-country-btn active" data-country="all" onclick="calFilterCountry('all')">Все</button>
+            <button class="cal-country-btn" data-country="US" onclick="calFilterCountry('US')">🇺🇸 US</button>
+            <button class="cal-country-btn" data-country="EU" onclick="calFilterCountry('EU')">🇪🇺 EU</button>
+            <button class="cal-country-btn" data-country="UK" onclick="calFilterCountry('UK')">🇬🇧 UK</button>
+            <button class="cal-country-btn" data-country="DE" onclick="calFilterCountry('DE')">🇩🇪 DE</button>
+            <button class="cal-country-btn" data-country="JP" onclick="calFilterCountry('JP')">🇯🇵 JP</button>
+            <button class="cal-country-btn" data-country="CN" onclick="calFilterCountry('CN')">🇨🇳 CN</button>
+            <button class="cal-country-btn" data-country="AU" onclick="calFilterCountry('AU')">🇦🇺 AU</button>
+            <button class="cal-country-btn" data-country="CA" onclick="calFilterCountry('CA')">🇨🇦 CA</button>
+            <button class="cal-country-btn" data-country="CH" onclick="calFilterCountry('CH')">🇨🇭 CH</button>
+            <button class="cal-country-btn" data-country="NZ" onclick="calFilterCountry('NZ')">🇳🇿 NZ</button>
+            <button class="cal-country-btn" data-country="RU" onclick="calFilterCountry('RU')">🇷🇺 RU</button>
         </div>
     </div>
     <div class="cal-next-event" id="calNextEvent" style="display:none;">
@@ -1360,8 +1361,8 @@ function twInit() {
 //  SECTION 4: КАЛЕНДАРЬ ТРЕЙДЕРА (ForexFactory Live Data)
 // ============================================================
 let calCurrentWeekStart = null;
-let calImpactFilter = new Set(['high', 'medium', 'low']);
-let calCountryFilter = new Set(['US', 'EU', 'UK', 'JP', 'CN', 'AU', 'CA', 'CH', 'NZ', 'RU']);
+let calImpactFilter = 'all';
+let calCountryFilter = 'all';
 let calAllEvents = [];
 let calCountdownTimerId = null;
 let calAutoRefreshId = null;
@@ -1647,8 +1648,8 @@ function calRender() {
     const today = new Date(nowLocal.year, nowLocal.month, nowLocal.day);
 
     let filtered = calAllEvents.filter(e => {
-        if (calImpactFilter.size > 0 && !calImpactFilter.has(e.impact)) return false;
-        if (calCountryFilter.size > 0 && !calCountryFilter.has(e.country) && !calCountryFilter.has(e.currency)) return false;
+        if (calImpactFilter !== 'all' && e.impact !== calImpactFilter) return false;
+        if (calCountryFilter !== 'all' && e.country !== calCountryFilter && e.currency !== calCountryFilter) return false;
         return true;
     });
 
@@ -1660,7 +1661,7 @@ function calRender() {
         return ld.year === nowLocal.year && ld.month === nowLocal.month && ld.day === nowLocal.day;
     }).length;
 
-    document.getElementById('calStatTotal').textContent = filtered.length + ' / ' + totalEvents;
+    document.getElementById('calStatTotal').textContent = totalEvents;
     document.getElementById('calStatHigh').textContent = highEvents;
     document.getElementById('calStatMed').textContent = medEvents;
     document.getElementById('calStatToday').textContent = todayEvents;
@@ -1801,22 +1802,14 @@ function calGoToday() {
     calRender();
 }
 
-function calToggleImpact(impact) {
-    if (calImpactFilter.has(impact)) {
-        calImpactFilter.delete(impact);
-    } else {
-        calImpactFilter.add(impact);
-    }
-    document.querySelectorAll('.cal-filter-btn').forEach(b => b.classList.toggle('active', calImpactFilter.has(b.dataset.impact)));
+function calFilterImpact(impact) {
+    calImpactFilter = impact;
+    document.querySelectorAll('.cal-filter-btn').forEach(b => b.classList.toggle('active', b.dataset.impact === impact));
     calRender();
 }
-function calToggleCountry(country) {
-    if (calCountryFilter.has(country)) {
-        calCountryFilter.delete(country);
-    } else {
-        calCountryFilter.add(country);
-    }
-    document.querySelectorAll('.cal-country-btn').forEach(b => b.classList.toggle('active', calCountryFilter.has(b.dataset.country)));
+function calFilterCountry(country) {
+    calCountryFilter = country;
+    document.querySelectorAll('.cal-country-btn').forEach(b => b.classList.toggle('active', b.dataset.country === country));
     calRender();
 }
 

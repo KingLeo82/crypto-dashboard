@@ -573,6 +573,7 @@
         }
         .cal-filter-btn:hover { color: var(--fg); background: rgba(255,255,255,0.03); }
         .cal-filter-btn.active { color: var(--accent); border-color: rgba(240,185,11,0.3); background: var(--accent-dim); }
+        .cal-filter-btn:not(.active) .cal-filter-dot { opacity: 0.25; }
         .cal-filter-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
         .cal-impact-high { background: var(--red); box-shadow: 0 0 6px var(--red); }
         .cal-impact-medium { background: var(--accent); box-shadow: 0 0 6px var(--accent); }
@@ -587,6 +588,7 @@
         }
         .cal-country-btn:hover { color: var(--fg); background: rgba(255,255,255,0.03); }
         .cal-country-btn.active { color: var(--fg); border-color: rgba(255,255,255,0.15); background: rgba(255,255,255,0.06); }
+        .cal-country-btn:not(.active) { opacity: 0.4; }
 
         .cal-next-event {
             background: linear-gradient(135deg, rgba(246,70,93,0.12), rgba(240,185,11,0.08));
@@ -866,25 +868,22 @@
     </div>
     <div class="cal-filters">
         <span class="cal-filter-label">Важность:</span>
-        <button class="cal-filter-btn active" data-impact="all" onclick="calFilterImpact('all')"><span class="cal-filter-dot" style="background:var(--fg)"></span> Все</button>
-        <button class="cal-filter-btn" data-impact="high" onclick="calFilterImpact('high')"><span class="cal-filter-dot cal-impact-high"></span> Высокая</button>
-        <button class="cal-filter-btn" data-impact="medium" onclick="calFilterImpact('medium')"><span class="cal-filter-dot cal-impact-medium"></span> Средняя</button>
-        <button class="cal-filter-btn" data-impact="low" onclick="calFilterImpact('low')"><span class="cal-filter-dot cal-impact-low"></span> Низкая</button>
+        <button class="cal-filter-btn active" data-impact="high" onclick="calToggleImpact('high')"><span class="cal-filter-dot cal-impact-high"></span> Высокая</button>
+        <button class="cal-filter-btn active" data-impact="medium" onclick="calToggleImpact('medium')"><span class="cal-filter-dot cal-impact-medium"></span> Средняя</button>
+        <button class="cal-filter-btn active" data-impact="low" onclick="calToggleImpact('low')"><span class="cal-filter-dot cal-impact-low"></span> Низкая</button>
         <div class="cal-filter-sep"></div>
         <span class="cal-filter-label">Страна:</span>
         <div class="cal-country-filter">
-            <button class="cal-country-btn active" data-country="all" onclick="calFilterCountry('all')">Все</button>
-            <button class="cal-country-btn" data-country="US" onclick="calFilterCountry('US')">🇺🇸 US</button>
-            <button class="cal-country-btn" data-country="EU" onclick="calFilterCountry('EU')">🇪🇺 EU</button>
-            <button class="cal-country-btn" data-country="UK" onclick="calFilterCountry('UK')">🇬🇧 UK</button>
-            <button class="cal-country-btn" data-country="DE" onclick="calFilterCountry('DE')">🇩🇪 DE</button>
-            <button class="cal-country-btn" data-country="JP" onclick="calFilterCountry('JP')">🇯🇵 JP</button>
-            <button class="cal-country-btn" data-country="CN" onclick="calFilterCountry('CN')">🇨🇳 CN</button>
-            <button class="cal-country-btn" data-country="AU" onclick="calFilterCountry('AU')">🇦🇺 AU</button>
-            <button class="cal-country-btn" data-country="CA" onclick="calFilterCountry('CA')">🇨🇦 CA</button>
-            <button class="cal-country-btn" data-country="CH" onclick="calFilterCountry('CH')">🇨🇭 CH</button>
-            <button class="cal-country-btn" data-country="NZ" onclick="calFilterCountry('NZ')">🇳🇿 NZ</button>
-            <button class="cal-country-btn" data-country="RU" onclick="calFilterCountry('RU')">🇷🇺 RU</button>
+            <button class="cal-country-btn active" data-country="US" onclick="calToggleCountry('US')">🇺🇸 US</button>
+            <button class="cal-country-btn active" data-country="EU" onclick="calToggleCountry('EU')">🇪🇺 EU</button>
+            <button class="cal-country-btn active" data-country="UK" onclick="calToggleCountry('UK')">🇬🇧 UK</button>
+            <button class="cal-country-btn active" data-country="JP" onclick="calToggleCountry('JP')">🇯🇵 JP</button>
+            <button class="cal-country-btn active" data-country="CN" onclick="calToggleCountry('CN')">🇨🇳 CN</button>
+            <button class="cal-country-btn active" data-country="AU" onclick="calToggleCountry('AU')">🇦🇺 AU</button>
+            <button class="cal-country-btn active" data-country="CA" onclick="calToggleCountry('CA')">🇨🇦 CA</button>
+            <button class="cal-country-btn active" data-country="CH" onclick="calToggleCountry('CH')">🇨🇭 CH</button>
+            <button class="cal-country-btn active" data-country="NZ" onclick="calToggleCountry('NZ')">🇳🇿 NZ</button>
+            <button class="cal-country-btn active" data-country="RU" onclick="calToggleCountry('RU')">🇷🇺 RU</button>
         </div>
     </div>
     <div class="cal-next-event" id="calNextEvent" style="display:none;">
@@ -1361,8 +1360,8 @@ function twInit() {
 //  SECTION 4: КАЛЕНДАРЬ ТРЕЙДЕРА (ForexFactory Live Data)
 // ============================================================
 let calCurrentWeekStart = null;
-let calImpactFilter = 'all';
-let calCountryFilter = 'all';
+let calImpactFilter = new Set(['high', 'medium', 'low']);
+let calCountryFilter = new Set(['US', 'EU', 'UK', 'JP', 'CN', 'AU', 'CA', 'CH', 'NZ', 'RU']);
 let calAllEvents = [];
 let calCountdownTimerId = null;
 let calAutoRefreshId = null;
@@ -1531,8 +1530,8 @@ async function calFetchWithTimeout(url, options, timeoutMs) {
     }
 }
 
-// Embedded fallback data (real ForexFactory events for current week, updated 2026-04-30)
-const CAL_FALLBACK_DATA = [{"t":"Bank Holiday","c":"NZD","d":"2026-04-26T16:00:00-04:00","i":"Holiday","f":"","p":""},{"t":"Bank Holiday","c":"AUD","d":"2026-04-26T17:00:00-04:00","i":"Holiday","f":"","p":""},{"t":"President Trump Speaks","c":"USD","d":"2026-04-26T19:00:00-04:00","i":"Medium","f":"","p":""},{"t":"German GfK Consumer Climate","c":"EUR","d":"2026-04-27T02:00:00-04:00","i":"Low","f":"-30.2","p":"-28.0"},{"t":"CBI Realized Sales","c":"GBP","d":"2026-04-27T06:00:00-04:00","i":"Low","f":"-42","p":"-52"},{"t":"CB Leading Index m/m","c":"CNY","d":"2026-04-27T09:00:00-04:00","i":"Low","f":"","p":"-0.2%"},{"t":"BRC Shop Price Index y/y","c":"GBP","d":"2026-04-27T19:01:00-04:00","i":"Low","f":"1.4%","p":"1.2%"},{"t":"Unemployment Rate","c":"JPY","d":"2026-04-27T19:30:00-04:00","i":"Low","f":"2.6%","p":"2.6%"},{"t":"BOJ Outlook Report","c":"JPY","d":"2026-04-27T23:04:00-04:00","i":"High","f":"","p":""},{"t":"BOJ Policy Rate","c":"JPY","d":"2026-04-27T23:04:00-04:00","i":"High","f":"<0.75%","p":"<0.75%"},{"t":"Monetary Policy Statement","c":"JPY","d":"2026-04-27T23:04:00-04:00","i":"High","f":"","p":""},{"t":"BOJ Core CPI y/y","c":"JPY","d":"2026-04-28T01:00:00-04:00","i":"Low","f":"1.9%","p":"1.7%"},{"t":"BOJ Press Conference","c":"JPY","d":"2026-04-28T02:30:00-04:00","i":"High","f":"","p":""},{"t":"Spanish Unemployment Rate","c":"EUR","d":"2026-04-28T03:00:00-04:00","i":"Low","f":"9.8%","p":"9.9%"},{"t":"ADP Weekly Employment Change","c":"USD","d":"2026-04-28T08:15:00-04:00","i":"Low","f":"","p":"54.8K"},{"t":"HPI m/m","c":"USD","d":"2026-04-28T09:00:00-04:00","i":"Low","f":"0.1%","p":"0.1%"},{"t":"S&P/CS Composite-20 HPI y/y","c":"USD","d":"2026-04-28T09:00:00-04:00","i":"Low","f":"1.1%","p":"1.2%"},{"t":"CB Consumer Confidence","c":"USD","d":"2026-04-28T10:00:00-04:00","i":"Medium","f":"89.0","p":"91.8"},{"t":"Richmond Manufacturing Index","c":"USD","d":"2026-04-28T10:00:00-04:00","i":"Low","f":"2","p":"0"},{"t":"API Weekly Statistical Bulletin","c":"USD","d":"2026-04-28T16:30:00-04:00","i":"Low","f":"","p":""},{"t":"RBNZ Gov Breman Speaks","c":"NZD","d":"2026-04-28T20:30:00-04:00","i":"Medium","f":"","p":""},{"t":"CPI m/m","c":"AUD","d":"2026-04-28T21:30:00-04:00","i":"High","f":"1.3%","p":"0.0%"},{"t":"CPI y/y","c":"AUD","d":"2026-04-28T21:30:00-04:00","i":"High","f":"4.8%","p":"3.7%"},{"t":"Trimmed Mean CPI m/m","c":"AUD","d":"2026-04-28T21:30:00-04:00","i":"High","f":"0.3%","p":"0.2%"},{"t":"German Prelim CPI m/m","c":"EUR","d":"2026-04-29T02:29:00-04:00","i":"Medium","f":"0.7%","p":"1.1%"},{"t":"Spanish Flash CPI y/y","c":"EUR","d":"2026-04-29T03:00:00-04:00","i":"Low","f":"3.5%","p":"3.3%"},{"t":"UBS Economic Expectations","c":"CHF","d":"2026-04-29T04:00:00-04:00","i":"Low","f":"","p":"-35.0"},{"t":"M3 Money Supply y/y","c":"EUR","d":"2026-04-29T04:00:00-04:00","i":"Low","f":"3.1%","p":"3.0%"},{"t":"Private Loans y/y","c":"EUR","d":"2026-04-29T04:00:00-04:00","i":"Low","f":"3.1%","p":"3.0%"},{"t":"Italian 10-y Bond Auction","c":"EUR","d":"2026-04-29T05:17:00-04:00","i":"Low","f":"","p":"4.09|1.7"},{"t":"German 10-y Bond Auction","c":"EUR","d":"2026-04-29T05:32:00-04:00","i":"Low","f":"","p":"2.92|1.2"},{"t":"Building Permits","c":"USD","d":"2026-04-29T08:28:00-04:00","i":"Low","f":"","p":"1.38M"},{"t":"Housing Starts","c":"USD","d":"2026-04-29T08:28:00-04:00","i":"Low","f":"","p":"1.49M"},{"t":"Building Permits","c":"USD","d":"2026-04-29T08:30:00-04:00","i":"Low","f":"1.39M","p":"1.54M"},{"t":"Core Durable Goods Orders m/m","c":"USD","d":"2026-04-29T08:30:00-04:00","i":"Low","f":"0.4%","p":"0.8%"},{"t":"Durable Goods Orders m/m","c":"USD","d":"2026-04-29T08:30:00-04:00","i":"Low","f":"0.4%","p":"-1.4%"},{"t":"Goods Trade Balance","c":"USD","d":"2026-04-29T08:30:00-04:00","i":"Low","f":"-87.5B","p":"-83.5B"},{"t":"Housing Starts","c":"USD","d":"2026-04-29T08:30:00-04:00","i":"Low","f":"1.38M","p":"1.36M"},{"t":"Prelim Wholesale Inventories m/m","c":"USD","d":"2026-04-29T08:30:00-04:00","i":"Low","f":"0.4%","p":"0.8%"},{"t":"BOC Monetary Policy Report","c":"CAD","d":"2026-04-29T09:45:00-04:00","i":"High","f":"","p":""},{"t":"BOC Rate Statement","c":"CAD","d":"2026-04-29T09:45:00-04:00","i":"High","f":"","p":""},{"t":"Overnight Rate","c":"CAD","d":"2026-04-29T09:45:00-04:00","i":"High","f":"2.25%","p":"2.25%"},{"t":"BOC Press Conference","c":"CAD","d":"2026-04-29T10:30:00-04:00","i":"High","f":"","p":""},{"t":"Crude Oil Inventories","c":"USD","d":"2026-04-29T10:30:00-04:00","i":"Low","f":"0.3M","p":"1.9M"},{"t":"Federal Funds Rate","c":"USD","d":"2026-04-29T14:00:00-04:00","i":"High","f":"3.75%","p":"3.75%"},{"t":"FOMC Statement","c":"USD","d":"2026-04-29T14:00:00-04:00","i":"High","f":"","p":""},{"t":"FOMC Press Conference","c":"USD","d":"2026-04-29T14:30:00-04:00","i":"High","f":"","p":""},{"t":"Prelim Industrial Production m/m","c":"JPY","d":"2026-04-29T19:50:00-04:00","i":"Low","f":"1.0%","p":"-2.1%"},{"t":"Retail Sales y/y","c":"JPY","d":"2026-04-29T19:50:00-04:00","i":"Low","f":"0.9%","p":"-0.2%"},{"t":"ANZ Business Confidence","c":"NZD","d":"2026-04-29T21:00:00-04:00","i":"Low","f":"","p":"32.5"},{"t":"Import Prices q/q","c":"AUD","d":"2026-04-29T21:30:00-04:00","i":"Low","f":"0.4%","p":"0.9%"},{"t":"Private Sector Credit m/m","c":"AUD","d":"2026-04-29T21:30:00-04:00","i":"Low","f":"0.6%","p":"0.6%"},{"t":"Manufacturing PMI","c":"CNY","d":"2026-04-29T21:30:00-04:00","i":"Low","f":"50.1","p":"50.4"},{"t":"Non-Manufacturing PMI","c":"CNY","d":"2026-04-29T21:30:00-04:00","i":"Low","f":"49.9","p":"50.1"},{"t":"RatingDog Manufacturing PMI","c":"CNY","d":"2026-04-29T21:45:00-04:00","i":"Low","f":"50.9","p":"50.8"},{"t":"Consumer Confidence","c":"JPY","d":"2026-04-30T01:00:00-04:00","i":"Low","f":"32.8","p":"33.3"},{"t":"Housing Starts y/y","c":"JPY","d":"2026-04-30T01:00:00-04:00","i":"Low","f":"-28.7%","p":"-4.9%"},{"t":"French Consumer Spending m/m","c":"EUR","d":"2026-04-30T01:30:00-04:00","i":"Low","f":"0.7%","p":"-1.4%"},{"t":"French Flash GDP q/q","c":"EUR","d":"2026-04-30T01:30:00-04:00","i":"Low","f":"0.2%","p":"0.2%"},{"t":"German Import Prices m/m","c":"EUR","d":"2026-04-30T02:00:00-04:00","i":"Low","f":"3.6%","p":"0.3%"},{"t":"German Retail Sales m/m","c":"EUR","d":"2026-04-30T02:00:00-04:00","i":"Low","f":"-0.3%","p":"-0.6%"},{"t":"French Prelim CPI m/m","c":"EUR","d":"2026-04-30T02:45:00-04:00","i":"Low","f":"0.9%","p":"0.9%"},{"t":"French Prelim Private Payrolls q/q","c":"EUR","d":"2026-04-30T02:45:00-04:00","i":"Low","f":"-0.1%","p":"-0.1%"},{"t":"KOF Economic Barometer","c":"CHF","d":"2026-04-30T03:00:00-04:00","i":"Low","f":"95.8","p":"96.1"},{"t":"Spanish Flash GDP q/q","c":"EUR","d":"2026-04-30T03:00:00-04:00","i":"Low","f":"0.5%","p":"0.8%"},{"t":"German Unemployment Change","c":"EUR","d":"2026-04-30T03:55:00-04:00","i":"Low","f":"4K","p":"0K"},{"t":"German Prelim GDP q/q","c":"EUR","d":"2026-04-30T04:00:00-04:00","i":"Medium","f":"0.1%","p":"0.3%"},{"t":"Italian Prelim GDP q/q","c":"EUR","d":"2026-04-30T04:00:00-04:00","i":"Low","f":"0.1%","p":"0.3%"},{"t":"Italian Monthly Unemployment Rate","c":"EUR","d":"2026-04-30T04:30:00-04:00","i":"Low","f":"5.3%","p":"5.3%"},{"t":"Core CPI Flash Estimate y/y","c":"EUR","d":"2026-04-30T05:00:00-04:00","i":"Medium","f":"2.2%","p":"2.3%"},{"t":"CPI Flash Estimate y/y","c":"EUR","d":"2026-04-30T05:00:00-04:00","i":"Medium","f":"3.0%","p":"2.5%"},{"t":"Italian Prelim CPI m/m","c":"EUR","d":"2026-04-30T05:00:00-04:00","i":"Low","f":"0.9%","p":"0.5%"},{"t":"Prelim Flash GDP q/q","c":"EUR","d":"2026-04-30T05:00:00-04:00","i":"Low","f":"0.2%","p":"0.3%"},{"t":"Unemployment Rate","c":"EUR","d":"2026-04-30T05:00:00-04:00","i":"Low","f":"6.2%","p":"6.2%"},{"t":"BOE Monetary Policy Report","c":"GBP","d":"2026-04-30T07:00:00-04:00","i":"High","f":"","p":""},{"t":"Monetary Policy Summary","c":"GBP","d":"2026-04-30T07:00:00-04:00","i":"High","f":"","p":""},{"t":"MPC Official Bank Rate Votes","c":"GBP","d":"2026-04-30T07:00:00-04:00","i":"High","f":"1-0-8","p":"0-0-9"},{"t":"Official Bank Rate","c":"GBP","d":"2026-04-30T07:00:00-04:00","i":"High","f":"3.75%","p":"3.75%"},{"t":"BOE Inflation Letter","c":"GBP","d":"2026-04-30T07:00:00-04:00","i":"Low","f":"","p":""},{"t":"BOE Gov Bailey Speaks","c":"GBP","d":"2026-04-30T07:30:00-04:00","i":"High","f":"","p":""},{"t":"Main Refinancing Rate","c":"EUR","d":"2026-04-30T08:15:00-04:00","i":"High","f":"2.15%","p":"2.15%"},{"t":"Monetary Policy Statement","c":"EUR","d":"2026-04-30T08:15:00-04:00","i":"High","f":"","p":""},{"t":"GDP m/m","c":"CAD","d":"2026-04-30T08:30:00-04:00","i":"High","f":"0.2%","p":"0.1%"},{"t":"Advance GDP q/q","c":"USD","d":"2026-04-30T08:30:00-04:00","i":"High","f":"2.2%","p":"1.4%"},{"t":"Core PCE Price Index m/m","c":"USD","d":"2026-04-30T08:30:00-04:00","i":"High","f":"0.3%","p":"0.4%"},{"t":"Employment Cost Index q/q","c":"USD","d":"2026-04-30T08:30:00-04:00","i":"High","f":"0.8%","p":"0.7%"},{"t":"Advance GDP Price Index q/q","c":"USD","d":"2026-04-30T08:30:00-04:00","i":"Medium","f":"3.8%","p":"3.6%"},{"t":"Unemployment Claims","c":"USD","d":"2026-04-30T08:30:00-04:00","i":"Medium","f":"213K","p":"214K"},{"t":"Personal Income m/m","c":"USD","d":"2026-04-30T08:30:00-04:00","i":"Low","f":"0.3%","p":"-0.1%"},{"t":"Personal Spending m/m","c":"USD","d":"2026-04-30T08:30:00-04:00","i":"Low","f":"0.9%","p":"0.5%"},{"t":"ECB Press Conference","c":"EUR","d":"2026-04-30T08:45:00-04:00","i":"High","f":"","p":""},{"t":"Chicago PMI","c":"USD","d":"2026-04-30T09:45:00-04:00","i":"Low","f":"54.8","p":"52.8"},{"t":"CB Leading Index m/m","c":"USD","d":"2026-04-30T10:00:00-04:00","i":"Low","f":"-0.2%","p":"-0.1%"},{"t":"Natural Gas Storage","c":"USD","d":"2026-04-30T10:30:00-04:00","i":"Low","f":"83B","p":"103B"},{"t":"Building Consents m/m","c":"NZD","d":"2026-04-30T18:45:00-04:00","i":"Low","f":"","p":"2.7%"},{"t":"Tokyo Core CPI y/y","c":"JPY","d":"2026-04-30T19:30:00-04:00","i":"Medium","f":"1.8%","p":"1.7%"},{"t":"Final Manufacturing PMI","c":"JPY","d":"2026-04-30T20:30:00-04:00","i":"Low","f":"54.9","p":"54.9"},{"t":"PPI q/q","c":"AUD","d":"2026-04-30T21:30:00-04:00","i":"Low","f":"0.9%","p":"0.8%"},{"t":"Bank Holiday","c":"CHF","d":"2026-05-01T01:00:00-04:00","i":"Holiday","f":"","p":""},{"t":"Nationwide HPI m/m","c":"GBP","d":"2026-05-01T02:00:00-04:00","i":"Low","f":"-0.3%","p":"0.9%"},{"t":"French Bank Holiday","c":"EUR","d":"2026-05-01T02:01:00-04:00","i":"Holiday","f":"","p":""},{"t":"German Bank Holiday","c":"EUR","d":"2026-05-01T02:02:00-04:00","i":"Holiday","f":"","p":""},{"t":"Italian Bank Holiday","c":"EUR","d":"2026-05-01T02:03:00-04:00","i":"Holiday","f":"","p":""},{"t":"Commodity Prices y/y","c":"AUD","d":"2026-05-01T02:30:00-04:00","i":"Low","f":"","p":"12.8%"},{"t":"Retail Sales y/y","c":"CHF","d":"2026-05-01T02:30:00-04:00","i":"Low","f":"0.6%","p":"0.9%"},{"t":"Final Manufacturing PMI","c":"GBP","d":"2026-05-01T04:30:00-04:00","i":"Low","f":"53.3","p":"53.6"},{"t":"M4 Money Supply m/m","c":"GBP","d":"2026-05-01T04:30:00-04:00","i":"Low","f":"0.5%","p":"0.6%"},{"t":"Mortgage Approvals","c":"GBP","d":"2026-05-01T04:30:00-04:00","i":"Low","f":"60K","p":"63K"},{"t":"Net Lending to Individuals m/m","c":"GBP","d":"2026-05-01T04:30:00-04:00","i":"Low","f":"5.9B","p":"6.8B"},{"t":"MPC Member Pill Speaks","c":"GBP","d":"2026-05-01T07:15:00-04:00","i":"Low","f":"","p":""},{"t":"Manufacturing PMI","c":"CAD","d":"2026-05-01T09:30:00-04:00","i":"Low","f":"","p":"50.0"},{"t":"Final Manufacturing PMI","c":"USD","d":"2026-05-01T09:45:00-04:00","i":"Low","f":"54.0","p":"54.0"},{"t":"ISM Manufacturing PMI","c":"USD","d":"2026-05-01T10:00:00-04:00","i":"Medium","f":"53.1","p":"52.7"},{"t":"ISM Manufacturing Prices","c":"USD","d":"2026-05-01T10:00:00-04:00","i":"Medium","f":"80.0","p":"78.3"},{"t":"Wards Total Vehicle Sales","c":"USD","d":"2026-05-01T10:15:00-04:00","i":"Low","f":"16.0M","p":"16.3M"}];
+// Embedded fallback data — real ForexFactory events for the week of May 5-11, 2026
+const CAL_FALLBACK_DATA = [{"t":"Bank Holiday","c":"JPY","d":"2026-05-03T19:00:00-04:00","i":"Holiday","f":"","p":""},{"t":"Bank Holiday","c":"CNY","d":"2026-05-03T19:01:00-04:00","i":"Holiday","f":"","p":""},{"t":"MI Inflation Gauge m/m","c":"AUD","d":"2026-05-03T21:00:00-04:00","i":"Low","f":"","p":"1.3%"},{"t":"ANZ Job Advertisements m/m","c":"AUD","d":"2026-05-03T21:30:00-04:00","i":"Low","f":"","p":"-3.1%"},{"t":"Building Approvals m/m","c":"AUD","d":"2026-05-03T21:30:00-04:00","i":"Low","f":"-10.2%","p":"29.7%"},{"t":"Bank Holiday","c":"GBP","d":"2026-05-04T03:00:00-04:00","i":"Holiday","f":"","p":""},{"t":"Spanish Manufacturing PMI","c":"EUR","d":"2026-05-04T03:15:00-04:00","i":"Low","f":"49.5","p":"48.7"},{"t":"Manufacturing PMI","c":"CHF","d":"2026-05-04T03:30:00-04:00","i":"Low","f":"52.0","p":"53.3"},{"t":"Italian Manufacturing PMI","c":"EUR","d":"2026-05-04T03:45:00-04:00","i":"Low","f":"51.6","p":"51.3"},{"t":"French Final Manufacturing PMI","c":"EUR","d":"2026-05-04T03:50:00-04:00","i":"Low","f":"52.8","p":"52.8"},{"t":"German Final Manufacturing PMI","c":"EUR","d":"2026-05-04T03:55:00-04:00","i":"Low","f":"51.2","p":"51.2"},{"t":"Final Manufacturing PMI","c":"EUR","d":"2026-05-04T04:00:00-04:00","i":"Low","f":"52.2","p":"52.2"},{"t":"Sentix Investor Confidence","c":"EUR","d":"2026-05-04T04:30:00-04:00","i":"Low","f":"-20.9","p":"-19.2"},{"t":"Eurogroup Meetings","c":"EUR","d":"2026-05-04T05:15:00-04:00","i":"Low","f":"","p":""},{"t":"Factory Orders m/m","c":"USD","d":"2026-05-04T10:00:00-04:00","i":"Low","f":"0.5%","p":"0.0%"},{"t":"FOMC Member Williams Speaks","c":"USD","d":"2026-05-04T12:50:00-04:00","i":"Low","f":"","p":""},{"t":"German Buba President Nagel Speaks","c":"EUR","d":"2026-05-04T13:05:00-04:00","i":"Low","f":"","p":""},{"t":"Loan Officer Survey","c":"USD","d":"2026-05-04T14:00:00-04:00","i":"Low","f":"","p":""},{"t":"BOC Gov Macklem Speaks","c":"CAD","d":"2026-05-04T15:30:00-04:00","i":"Medium","f":"","p":""},{"t":"Bank Holiday","c":"JPY","d":"2026-05-04T19:00:00-04:00","i":"Holiday","f":"","p":""},{"t":"Bank Holiday","c":"CNY","d":"2026-05-04T19:01:00-04:00","i":"Holiday","f":"","p":""},{"t":"ANZ Commodity Prices m/m","c":"NZD","d":"2026-05-04T21:00:00-04:00","i":"Low","f":"","p":"4.1%"},{"t":"Household Spending m/m","c":"AUD","d":"2026-05-04T21:30:00-04:00","i":"Low","f":"1.8%","p":"0.3%"},{"t":"Cash Rate","c":"AUD","d":"2026-05-05T00:30:00-04:00","i":"High","f":"4.35%","p":"4.10%"},{"t":"RBA Monetary Policy Statement","c":"AUD","d":"2026-05-05T00:30:00-04:00","i":"High","f":"","p":""},{"t":"RBA Rate Statement","c":"AUD","d":"2026-05-05T00:30:00-04:00","i":"High","f":"","p":""},{"t":"RBA Press Conference","c":"AUD","d":"2026-05-05T01:30:00-04:00","i":"High","f":"","p":""},{"t":"CPI m/m","c":"CHF","d":"2026-05-05T02:30:00-04:00","i":"Medium","f":"0.3%","p":"0.2%"},{"t":"Spanish Unemployment Change","c":"EUR","d":"2026-05-05T03:00:00-04:00","i":"Low","f":"-18.6K","p":"-22.9K"},{"t":"ECOFIN Meetings","c":"EUR","d":"2026-05-05T05:15:00-04:00","i":"Low","f":"","p":""},{"t":"Trade Balance","c":"CAD","d":"2026-05-05T08:30:00-04:00","i":"Low","f":"-2.4B","p":"-5.7B"},{"t":"ECB President Lagarde Speaks","c":"EUR","d":"2026-05-05T08:30:00-04:00","i":"Medium","f":"","p":""},{"t":"Trade Balance","c":"USD","d":"2026-05-05T08:30:00-04:00","i":"Low","f":"-61.0B","p":"-57.3B"},{"t":"French Gov Budget Balance","c":"EUR","d":"2026-05-05T09:31:00-04:00","i":"Low","f":"","p":"-32.1B"},{"t":"Final Services PMI","c":"USD","d":"2026-05-05T09:45:00-04:00","i":"Low","f":"51.3","p":"51.3"},{"t":"New Home Sales","c":"USD","d":"2026-05-05T09:59:00-04:00","i":"Medium","f":"","p":"587K"},{"t":"ISM Services PMI","c":"USD","d":"2026-05-05T10:00:00-04:00","i":"High","f":"53.7","p":"54.0"},{"t":"JOLTS Job Openings","c":"USD","d":"2026-05-05T10:00:00-04:00","i":"High","f":"6.86M","p":"6.88M"},{"t":"New Home Sales","c":"USD","d":"2026-05-05T10:00:00-04:00","i":"Medium","f":"652K","p":"635K"},{"t":"FOMC Member Bowman Speaks","c":"USD","d":"2026-05-05T10:00:00-04:00","i":"Low","f":"","p":""},{"t":"RCM/TIPP Economic Optimism","c":"USD","d":"2026-05-05T10:03:00-04:00","i":"Low","f":"42.0","p":"42.8"},{"t":"GDT Price Index","c":"NZD","d":"2026-05-05T10:59:00-04:00","i":"Low","f":"","p":"-2.7%"},{"t":"FOMC Member Barr Speaks","c":"USD","d":"2026-05-05T12:30:00-04:00","i":"Low","f":"","p":""},{"t":"API Weekly Statistical Bulletin","c":"USD","d":"2026-05-05T16:30:00-04:00","i":"Low","f":"","p":""},{"t":"RBNZ Financial Stability Report","c":"NZD","d":"2026-05-05T17:00:00-04:00","i":"Low","f":"","p":""},{"t":"Employment Change q/q","c":"NZD","d":"2026-05-05T18:45:00-04:00","i":"High","f":"0.3%","p":"0.5%"},{"t":"Unemployment Rate","c":"NZD","d":"2026-05-05T18:45:00-04:00","i":"High","f":"5.4%","p":"5.4%"},{"t":"Labor Cost Index q/q","c":"NZD","d":"2026-05-05T18:45:00-04:00","i":"Low","f":"0.4%","p":"0.4%"},{"t":"Bank Holiday","c":"JPY","d":"2026-05-05T19:00:00-04:00","i":"Holiday","f":"","p":""},{"t":"RBNZ Gov Breman Speaks","c":"NZD","d":"2026-05-05T21:00:00-04:00","i":"Medium","f":"","p":""},{"t":"RatingDog Services PMI","c":"CNY","d":"2026-05-05T21:45:00-04:00","i":"Low","f":"52.0","p":"52.1"},{"t":"French Industrial Production m/m","c":"EUR","d":"2026-05-06T02:45:00-04:00","i":"Low","f":"0.5%","p":"-0.7%"},{"t":"Spanish Services PMI","c":"EUR","d":"2026-05-06T03:15:00-04:00","i":"Low","f":"51.9","p":"53.3"},{"t":"Italian Services PMI","c":"EUR","d":"2026-05-06T03:45:00-04:00","i":"Low","f":"47.9","p":"48.8"},{"t":"French Final Services PMI","c":"EUR","d":"2026-05-06T03:50:00-04:00","i":"Low","f":"46.5","p":"46.5"},{"t":"German Final Services PMI","c":"EUR","d":"2026-05-06T03:55:00-04:00","i":"Low","f":"46.9","p":"46.9"},{"t":"Final Services PMI","c":"EUR","d":"2026-05-06T04:00:00-04:00","i":"Low","f":"47.4","p":"47.4"},{"t":"Italian Retail Sales m/m","c":"EUR","d":"2026-05-06T04:00:00-04:00","i":"Low","f":"-0.4%","p":"0.0%"},{"t":"Final Services PMI","c":"GBP","d":"2026-05-06T04:30:00-04:00","i":"Low","f":"52.0","p":"52.0"},{"t":"PPI m/m","c":"EUR","d":"2026-05-06T05:00:00-04:00","i":"Low","f":"3.3%","p":"-0.7%"},{"t":"ADP Non-Farm Employment Change","c":"USD","d":"2026-05-06T08:15:00-04:00","i":"Medium","f":"116K","p":"62K"},{"t":"FOMC Member Musalem Speaks","c":"USD","d":"2026-05-06T09:30:00-04:00","i":"Low","f":"","p":""},{"t":"Ivey PMI","c":"CAD","d":"2026-05-06T10:00:00-04:00","i":"Medium","f":"49.9","p":"49.7"},{"t":"Crude Oil Inventories","c":"USD","d":"2026-05-06T10:30:00-04:00","i":"Low","f":"-3.4M","p":"-6.2M"},{"t":"FOMC Member Goolsbee Speaks","c":"USD","d":"2026-05-06T13:00:00-04:00","i":"Low","f":"","p":""},{"t":"BOC Gov Macklem Speaks","c":"CAD","d":"2026-05-06T16:15:00-04:00","i":"Medium","f":"","p":""},{"t":"RBNZ Gov Breman Speaks","c":"NZD","d":"2026-05-06T17:10:00-04:00","i":"Medium","f":"","p":""},{"t":"Monetary Base y/y","c":"JPY","d":"2026-05-06T19:50:00-04:00","i":"Low","f":"-10.5%","p":"-11.6%"},{"t":"Monetary Policy Meeting Minutes","c":"JPY","d":"2026-05-06T19:50:00-04:00","i":"Low","f":"","p":""},{"t":"Goods Trade Balance","c":"AUD","d":"2026-05-06T21:30:00-04:00","i":"Low","f":"4.38B","p":"5.69B"},{"t":"German Factory Orders m/m","c":"EUR","d":"2026-05-07T02:00:00-04:00","i":"Low","f":"1.0%","p":"0.9%"},{"t":"French Trade Balance","c":"EUR","d":"2026-05-07T02:45:00-04:00","i":"Low","f":"-5.6B","p":"-5.8B"},{"t":"Foreign Currency Reserves","c":"CHF","d":"2026-05-07T03:00:00-04:00","i":"Low","f":"","p":"721B"},{"t":"Unemployment Rate","c":"CHF","d":"2026-05-07T03:00:00-04:00","i":"Low","f":"3.0%","p":"3.0%"},{"t":"MPC Member Lombardelli Speaks","c":"GBP","d":"2026-05-07T04:00:00-04:00","i":"Low","f":"","p":""},{"t":"Construction PMI","c":"GBP","d":"2026-05-07T04:30:00-04:00","i":"Low","f":"46.0","p":"45.6"},{"t":"Retail Sales m/m","c":"EUR","d":"2026-05-07T05:00:00-04:00","i":"Low","f":"-0.3%","p":"-0.2%"},{"t":"Spanish 10-y Bond Auction","c":"EUR","d":"2026-05-07T05:03:00-04:00","i":"Low","f":"","p":"3.44|2.0"},{"t":"French 10-y Bond Auction","c":"EUR","d":"2026-05-07T05:18:00-04:00","i":"Low","f":"","p":"3.73|1.9"},{"t":"Challenger Job Cuts y/y","c":"USD","d":"2026-05-07T07:30:00-04:00","i":"Low","f":"","p":"-78.0%"},{"t":"Unemployment Claims","c":"USD","d":"2026-05-07T08:30:00-04:00","i":"Medium","f":"205K","p":"189K"},{"t":"Prelim Nonfarm Productivity q/q","c":"USD","d":"2026-05-07T08:30:00-04:00","i":"Low","f":"1.0%","p":"2.8%"},{"t":"Prelim Unit Labor Costs q/q","c":"USD","d":"2026-05-07T08:30:00-04:00","i":"Low","f":"2.5%","p":"2.8%"},{"t":"MPC Member Taylor Speaks","c":"GBP","d":"2026-05-07T08:40:00-04:00","i":"Low","f":"","p":""},{"t":"Construction Spending m/m","c":"USD","d":"2026-05-07T10:00:00-04:00","i":"Low","f":"0.2%","p":""},{"t":"Construction Spending m/m","c":"USD","d":"2026-05-07T10:00:00-04:00","i":"Low","f":"","p":"-0.3%"},{"t":"Natural Gas Storage","c":"USD","d":"2026-05-07T10:30:00-04:00","i":"Low","f":"","p":"79B"},{"t":"FOMC Member Kashkari Speaks","c":"USD","d":"2026-05-07T13:00:00-04:00","i":"Low","f":"","p":""},{"t":"FOMC Member Hammack Speaks","c":"USD","d":"2026-05-07T14:05:00-04:00","i":"Low","f":"","p":""},{"t":"Consumer Credit m/m","c":"USD","d":"2026-05-07T15:00:00-04:00","i":"Low","f":"12.5B","p":"9.5B"},{"t":"FOMC Member Williams Speaks","c":"USD","d":"2026-05-07T15:30:00-04:00","i":"Low","f":"","p":""},{"t":"Average Cash Earnings y/y","c":"JPY","d":"2026-05-07T19:30:00-04:00","i":"Low","f":"3.2%","p":"3.3%"},{"t":"Trade Balance","c":"CNY","d":"2026-05-07T22:03:00-04:00","i":"Low","f":"570B","p":"355B"},{"t":"USD-Denominated Trade Balance","c":"CNY","d":"2026-05-07T22:04:00-04:00","i":"Low","f":"82.4B","p":"51.1B"},{"t":"German Industrial Production m/m","c":"EUR","d":"2026-05-08T02:00:00-04:00","i":"Low","f":"0.4%","p":"-0.3%"},{"t":"German Trade Balance","c":"EUR","d":"2026-05-08T02:00:00-04:00","i":"Low","f":"17.5B","p":"19.8B"},{"t":"Halifax HPI m/m","c":"GBP","d":"2026-05-08T02:00:00-04:00","i":"Low","f":"0.2%","p":"-0.5%"},{"t":"French Bank Holiday","c":"EUR","d":"2026-05-08T02:01:00-04:00","i":"Holiday","f":"","p":""},{"t":"SECO Consumer Climate","c":"CHF","d":"2026-05-08T03:00:00-04:00","i":"Low","f":"-46","p":"-43"},{"t":"ECB President Lagarde Speaks","c":"EUR","d":"2026-05-08T03:00:00-04:00","i":"Medium","f":"","p":""},{"t":"FOMC Member Cook Speaks","c":"USD","d":"2026-05-08T05:45:00-04:00","i":"Low","f":"","p":""},{"t":"BOE Gov Bailey Speaks","c":"GBP","d":"2026-05-08T08:20:00-04:00","i":"High","f":"","p":""},{"t":"Employment Change","c":"CAD","d":"2026-05-08T08:30:00-04:00","i":"High","f":"11.6K","p":"14.1K"},{"t":"Unemployment Rate","c":"CAD","d":"2026-05-08T08:30:00-04:00","i":"High","f":"6.7%","p":"6.7%"},{"t":"Average Hourly Earnings m/m","c":"USD","d":"2026-05-08T08:30:00-04:00","i":"High","f":"0.3%","p":"0.2%"},{"t":"Non-Farm Employment Change","c":"USD","d":"2026-05-08T08:30:00-04:00","i":"High","f":"64K","p":"178K"},{"t":"Unemployment Rate","c":"USD","d":"2026-05-08T08:30:00-04:00","i":"High","f":"4.3%","p":"4.3%"},{"t":"Prelim UoM Consumer Sentiment","c":"USD","d":"2026-05-08T10:00:00-04:00","i":"Medium","f":"49.5","p":"47.6"},{"t":"Prelim UoM Inflation Expectations","c":"USD","d":"2026-05-08T10:00:00-04:00","i":"Medium","f":"","p":"4.8%"},{"t":"Final Wholesale Inventories m/m","c":"USD","d":"2026-05-08T10:00:00-04:00","i":"Low","f":"1.4%","p":"1.4%"},{"t":"German Buba President Nagel Speaks","c":"EUR","d":"2026-05-08T12:15:00-04:00","i":"Low","f":"","p":""},{"t":"FOMC Member Bowman Speaks","c":"USD","d":"2026-05-08T19:30:00-04:00","i":"Low","f":"","p":""},{"t":"FOMC Member Daly Speaks","c":"USD","d":"2026-05-08T19:30:00-04:00","i":"Low","f":"","p":""},{"t":"FOMC Member Goolsbee Speaks","c":"USD","d":"2026-05-08T19:30:00-04:00","i":"Low","f":"","p":""},{"t":"FOMC Member Waller Speaks","c":"USD","d":"2026-05-08T19:30:00-04:00","i":"Low","f":"","p":""}];
 
 async function calFetchEvents() {
     calSetLoading(true);
@@ -1540,59 +1539,75 @@ async function calFetchEvents() {
     let data = null;
     let source = '';
 
-    // Strategy 1: allorigins.win CORS proxy
-    try {
-        const resp = await calFetchWithTimeout(
-            'https://api.allorigins.win/get?url=' + encodeURIComponent(FF_URL), {}, 8000
-        );
-        if (!resp.ok) throw new Error('HTTP ' + resp.status);
-        const wrapper = await resp.json();
-        if (!wrapper.contents) throw new Error('Empty response');
-        data = JSON.parse(wrapper.contents);
-        source = 'ForexFactory Live';
-    } catch(e) {
-        console.warn('Strategy 1 (allorigins) failed:', e.message);
-        // Strategy 2: direct fetch
+    // List of CORS proxy strategies to try in order
+    const proxyStrategies = [
+        {
+            name: 'corsproxy.io',
+            buildUrl: (u) => 'https://corsproxy.io/?' + encodeURIComponent(u),
+            parse: async (resp) => await resp.json(),
+            timeout: 10000
+        },
+        {
+            name: 'allorigins/raw',
+            buildUrl: (u) => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u),
+            parse: async (resp) => await resp.json(),
+            timeout: 9000
+        },
+        {
+            name: 'allorigins/get',
+            buildUrl: (u) => 'https://api.allorigins.win/get?url=' + encodeURIComponent(u),
+            parse: async (resp) => { const w = await resp.json(); if (!w.contents) throw new Error('Empty'); return JSON.parse(w.contents); },
+            timeout: 9000
+        },
+        {
+            name: 'thingproxy',
+            buildUrl: (u) => 'https://thingproxy.freeboard.io/fetch/' + u,
+            parse: async (resp) => await resp.json(),
+            timeout: 10000
+        },
+        {
+            name: 'direct',
+            buildUrl: (u) => u,
+            parse: async (resp) => await resp.json(),
+            timeout: 6000
+        }
+    ];
+
+    // Try each proxy strategy
+    for (const strategy of proxyStrategies) {
         try {
-            const resp = await calFetchWithTimeout(FF_URL, {}, 6000);
+            const url = strategy.buildUrl(FF_URL);
+            const resp = await calFetchWithTimeout(url, {}, strategy.timeout);
             if (!resp.ok) throw new Error('HTTP ' + resp.status);
-            data = await resp.json();
-            source = 'ForexFactory Direct';
-        } catch(e2) {
-            console.warn('Strategy 2 (direct) failed:', e2.message);
-            // Strategy 3: codetabs proxy
-            try {
-                const resp = await calFetchWithTimeout(
-                    'https://api.codetabs.com/v1/proxy/?quest=' + encodeURIComponent(FF_URL), {}, 8000
-                );
-                if (!resp.ok) throw new Error('HTTP ' + resp.status);
-                data = await resp.json();
-                source = 'ForexFactory (proxy)';
-            } catch(e3) {
-                console.warn('Strategy 3 (codetabs) failed:', e3.message);
-            }
+            data = await strategy.parse(resp);
+            if (!data || (Array.isArray(data) && data.length === 0)) throw new Error('Empty data');
+            source = 'ForexFactory (' + strategy.name + ')';
+            console.log('Calendar data loaded via', strategy.name);
+            break;
+        } catch(e) {
+            console.warn('Strategy (' + strategy.name + ') failed:', e.message);
         }
     }
 
-    // Strategy 4: try localStorage cache from a previous successful fetch
+    // Strategy: try localStorage cache from a previous successful fetch
     if (!data) {
         try {
             const cached = localStorage.getItem('cal_ff_cache');
             if (cached) {
                 const parsed = JSON.parse(cached);
                 const cacheAge = Date.now() - (parsed.ts || 0);
-                if (cacheAge < 3600000) { // cache valid for 1 hour
+                if (cacheAge < 7200000) { // cache valid for 2 hours
                     data = parsed.data;
-                    source = 'ForexFactory (кэш)';
+                    source = 'ForexFactory (кэш ' + Math.round(cacheAge / 60000) + ' мин назад)';
                 }
             }
         } catch(e) { /* ignore cache errors */ }
     }
 
-    // Strategy 5: use embedded fallback data
+    // Last resort: use embedded fallback data
     if (!data) {
         data = CAL_FALLBACK_DATA;
-        source = 'ForexFactory (офлайн)';
+        source = 'Офлайн-данные (текущая неделя)';
     }
 
     try {
@@ -1601,15 +1616,16 @@ async function calFetchEvents() {
         calApiWeekStart = result.apiWeekStart || calGetWeekStart(new Date());
         calAllEvents = result.events;
 
-        // Cache successful data to localStorage
-        if (source.indexOf('офлайн') === -1 && source.indexOf('кэш') === -1) {
+        // Cache successful data to localStorage (only for live data)
+        if (source.indexOf('Офлайн') === -1 && source.indexOf('кэш') === -1) {
             try {
                 localStorage.setItem('cal_ff_cache', JSON.stringify({ ts: Date.now(), data: data }));
             } catch(e) { /* ignore quota errors */ }
         }
 
         calClearStates();
-        calUpdateSourceBadge(true, source);
+        const isLive = source.indexOf('Офлайн') === -1;
+        calUpdateSourceBadge(isLive, source);
         calRender();
         return result.events;
     } catch (err) {
@@ -1631,8 +1647,8 @@ function calRender() {
     const today = new Date(nowLocal.year, nowLocal.month, nowLocal.day);
 
     let filtered = calAllEvents.filter(e => {
-        if (calImpactFilter !== 'all' && e.impact !== calImpactFilter) return false;
-        if (calCountryFilter !== 'all' && e.country !== calCountryFilter && e.currency !== calCountryFilter) return false;
+        if (calImpactFilter.size > 0 && !calImpactFilter.has(e.impact)) return false;
+        if (calCountryFilter.size > 0 && !calCountryFilter.has(e.country) && !calCountryFilter.has(e.currency)) return false;
         return true;
     });
 
@@ -1644,7 +1660,7 @@ function calRender() {
         return ld.year === nowLocal.year && ld.month === nowLocal.month && ld.day === nowLocal.day;
     }).length;
 
-    document.getElementById('calStatTotal').textContent = totalEvents;
+    document.getElementById('calStatTotal').textContent = filtered.length + ' / ' + totalEvents;
     document.getElementById('calStatHigh').textContent = highEvents;
     document.getElementById('calStatMed').textContent = medEvents;
     document.getElementById('calStatToday').textContent = todayEvents;
@@ -1785,14 +1801,22 @@ function calGoToday() {
     calRender();
 }
 
-function calFilterImpact(impact) {
-    calImpactFilter = impact;
-    document.querySelectorAll('.cal-filter-btn').forEach(b => b.classList.toggle('active', b.dataset.impact === impact));
+function calToggleImpact(impact) {
+    if (calImpactFilter.has(impact)) {
+        calImpactFilter.delete(impact);
+    } else {
+        calImpactFilter.add(impact);
+    }
+    document.querySelectorAll('.cal-filter-btn').forEach(b => b.classList.toggle('active', calImpactFilter.has(b.dataset.impact)));
     calRender();
 }
-function calFilterCountry(country) {
-    calCountryFilter = country;
-    document.querySelectorAll('.cal-country-btn').forEach(b => b.classList.toggle('active', b.dataset.country === country));
+function calToggleCountry(country) {
+    if (calCountryFilter.has(country)) {
+        calCountryFilter.delete(country);
+    } else {
+        calCountryFilter.add(country);
+    }
+    document.querySelectorAll('.cal-country-btn').forEach(b => b.classList.toggle('active', calCountryFilter.has(b.dataset.country)));
     calRender();
 }
 

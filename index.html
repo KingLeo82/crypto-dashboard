@@ -190,6 +190,22 @@
         .natr-tab:hover { color: var(--fg); background: rgba(255,255,255,0.03); }
         .natr-tab.active { background: var(--accent-dim); color: var(--accent); border-color: rgba(240,185,11,0.2); }
 
+        .natr-cat-tabs { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; align-items: center; }
+        .natr-cat-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin-right: 4px; }
+        .natr-cat-tab {
+            padding: 7px 14px; border-radius: 8px; font-size: 12px; font-weight: 600;
+            cursor: pointer; background: transparent; border: 1px solid var(--border);
+            color: var(--muted); transition: all 0.2s; white-space: nowrap;
+        }
+        .natr-cat-tab:hover { color: var(--fg); background: rgba(255,255,255,0.03); }
+        .natr-cat-tab.active { color: var(--accent); border-color: rgba(240,185,11,0.3); background: var(--accent-dim); }
+        .natr-cat-count { font-size: 10px; opacity: 0.6; margin-left: 4px; }
+        .natr-cat-loading { color: var(--muted); font-size: 11px; display: flex; align-items: center; gap: 6px; }
+        .natr-cat-loading .cat-spinner {
+            width: 12px; height: 12px; border: 2px solid rgba(255,255,255,0.1); border-top-color: var(--accent);
+            border-radius: 50%; animation: spin 1s linear infinite;
+        }
+
         .natr-stats {
             display: flex; justify-content: space-between; align-items: center;
             padding: 14px 18px; background: var(--bg-card);
@@ -241,6 +257,8 @@
         .rank-n { background: rgba(255,255,255,0.06); color: var(--muted); }
 
         .ticker-cell { cursor: pointer; user-select: none; -webkit-user-select: none; position: relative; }
+        .ticker-cell:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; border-radius: 4px; }
+        .cal-event-card:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
         .ticker-name { font-weight: 600; font-size: 15px; letter-spacing: -0.01em; transition: all 0.2s; display: inline-block; }
         .ticker-cell:hover .ticker-name { color: var(--accent); transform: translateX(2px); }
         .ticker-sub { font-size: 11px; color: var(--muted); margin-top: 2px; transition: all 0.2s; }
@@ -783,6 +801,24 @@
             </button>
         </div>
     </div>
+    <div class="natr-cat-tabs" id="natrCatTabs">
+        <span class="natr-cat-label">Категория:</span>
+        <button class="natr-cat-tab active" data-cat="all" onclick="natrSwitchCategory('all')">Все</button>
+        <button class="natr-cat-tab" data-cat="TradFi" onclick="natrSwitchCategory('TradFi')">TradFi</button>
+        <button class="natr-cat-tab" data-cat="Meme" onclick="natrSwitchCategory('Meme')">Meme</button>
+        <button class="natr-cat-tab" data-cat="DeFi" onclick="natrSwitchCategory('DeFi')">DeFi</button>
+        <button class="natr-cat-tab" data-cat="Layer-1" onclick="natrSwitchCategory('Layer-1')">Layer-1</button>
+        <button class="natr-cat-tab" data-cat="AI" onclick="natrSwitchCategory('AI')">AI</button>
+        <button class="natr-cat-tab" data-cat="Gaming" onclick="natrSwitchCategory('Gaming')">Gaming</button>
+        <button class="natr-cat-tab" data-cat="Layer-2" onclick="natrSwitchCategory('Layer-2')">Layer-2</button>
+        <button class="natr-cat-tab" data-cat="PoW" onclick="natrSwitchCategory('PoW')">PoW</button>
+        <button class="natr-cat-tab" data-cat="Infrastructure" onclick="natrSwitchCategory('Infrastructure')">Infra</button>
+        <button class="natr-cat-tab" data-cat="Metaverse" onclick="natrSwitchCategory('Metaverse')">Metaverse</button>
+        <button class="natr-cat-tab" data-cat="NFT" onclick="natrSwitchCategory('NFT')">NFT</button>
+        <button class="natr-cat-tab" data-cat="Storage" onclick="natrSwitchCategory('Storage')">Storage</button>
+        <button class="natr-cat-tab" data-cat="RWA" onclick="natrSwitchCategory('RWA')">RWA</button>
+
+    </div>
     <div class="natr-tabs">
         <button class="natr-tab active" data-mode="5_14" onclick="natrSwitchMode('5_14')">NATR 5/14 (5m x 14)</button>
         <button class="natr-tab" data-mode="1_30" onclick="natrSwitchMode('1_30')">NATR 1/30 (1m x 30)</button>
@@ -1006,6 +1042,7 @@ function switchSection(name) {
     document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
     document.getElementById('section-' + name).classList.add('active');
     document.querySelector('.nav-tab[data-section="' + name + '"]').classList.add('active');
+    try { localStorage.setItem('ct_active_section', name); } catch(e) { /* storage unavailable (private mode / restricted context) — non-fatal */ }
     if (name === 'tw' && !twInitialized) { twInit(); twInitialized = true; }
     if (name === 'cai' && !caiInitialized) { caiInitialized = true; }
     if (name === 'cal' && !calInitialized) { calInit(); calInitialized = true; }
@@ -1014,6 +1051,25 @@ function switchSection(name) {
 // ============================================================
 //  SHARED UTILS
 // ============================================================
+// Escapes text pulled from third-party APIs (CoinGecko, ForexFactory, Binance)
+// before it is ever concatenated into an innerHTML string. Always run
+// untrusted/external strings through this before inserting as HTML.
+function escapeHtml(str) {
+    if (str === null || str === undefined) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+// Only allows http(s) URLs through into href/src attributes — blocks
+// javascript:, data:, vbscript: etc. that a malicious API field could contain.
+function safeUrl(url) {
+    if (!url) return '';
+    var u = String(url).trim();
+    return /^https?:\/\//i.test(u) ? u : '';
+}
 function showToast(text) {
     const t = document.getElementById('globalToast');
     document.getElementById('globalToastText').textContent = text;
@@ -1040,7 +1096,7 @@ let natrMode = '5_14';
 let natrAllResults = [];
 let natrIsScanning = false;
 let natrIsBgUpdating = false;
-const NATR_SCAN_CFG = { batchSize: 60, maxRetries: 1, retryDelay: 80, batchDelay: 0, cacheResults: true, abortOnNewScan: true, timeout: 3000 };
+const NATR_SCAN_CFG = { batchSize: 60, maxRetries: 1, retryDelay: 80, batchDelay: 150, cacheResults: true, abortOnNewScan: true, timeout: 3000 };
 let natrAbortCtrl = null;
 const natrResultsCache = new Map();
 const NATR_CACHE_TTL = 58000;
@@ -1048,7 +1104,12 @@ const natrPendingRequests = new Map();
 const NATR_REFRESH_INTERVAL = 60;
 let natrRefreshCountdown = NATR_REFRESH_INTERVAL;
 let natrRefreshTimerId = null;
+let natrSelectedCategory = 'all';
+let natrCategoryMap = null; // will be set to NATR_EMBEDDED_CATEGORIES on init
+let natrCategoryLoading = false;
 
+// Embedded category map — avoids CORS, works offline
+const NATR_EMBEDDED_CATEGORIES={"BTCUSDT":"PoW","ETHUSDT":"Layer-1","BCHUSDT":"Payment","XRPUSDT":"Payment","EOSUSDT":"NONE","LTCUSDT":"Payment","TRXUSDT":"Layer-1","ETCUSDT":"PoW","LINKUSDT":"Infrastructure","XLMUSDT":"Layer-2","ADAUSDT":"Layer-1","XMRUSDT":"PoW","DASHUSDT":"PoW","ZECUSDT":"PoW","XTZUSDT":"Layer-1","BNBUSDT":"Layer-1","ATOMUSDT":"Layer-1","ONTUSDT":"PoW","IOTAUSDT":"PoW","BATUSDT":"Infrastructure","VETUSDT":"Layer-1","NEOUSDT":"Layer-1","QTUMUSDT":"Layer-1","IOSTUSDT":"Layer-1","THETAUSDT":"AI","ALGOUSDT":"Layer-1","ZILUSDT":"PoW","KNCUSDT":"DeFi","ZRXUSDT":"DeFi","COMPUSDT":"DeFi","OMGUSDT":"Layer-2","DOGEUSDT":"Meme","KAVAUSDT":"DeFi","BANDUSDT":"DeFi","RLCUSDT":"AI","WAVESUSDT":"Layer-1","MKRUSDT":"DeFi","SNXUSDT":"DeFi","DOTUSDT":"Layer-1","DEFIUSDT":"Index","YFIUSDT":"DeFi","BALUSDT":"DEX","CRVUSDT":"DeFi","TRBUSDT":"Infrastructure","RUNEUSDT":"DeFi","SUSHIUSDT":"DeFi","EGLDUSDT":"Layer-1","SOLUSDT":"Layer-1","ICXUSDT":"Layer-1","STORJUSDT":"Storage","BLZUSDT":"Storage","UNIUSDT":"DeFi","AVAXUSDT":"Layer-1","FTMUSDT":"Layer-1","ENJUSDT":"Gaming","FLMUSDT":"DeFi","KSMUSDT":"Layer-1","NEARUSDT":"Layer-1","AAVEUSDT":"DeFi","FILUSDT":"Storage","RSRUSDT":"DeFi","LRCUSDT":"DeFi","OCEANUSDT":"AI","BELUSDT":"DeFi","AXSUSDT":"Metaverse","ALPHAUSDT":"DeFi","ZENUSDT":"PoW","SKLUSDT":"Layer-2","GRTUSDT":"AI","1INCHUSDT":"DeFi","CHZUSDT":"NFT","SANDUSDT":"Metaverse","ANKRUSDT":"DeFi","HOTUSDT":"Storage","DENTUSDT":"Infrastructure","CELRUSDT":"Layer-2","MTLUSDT":"Infrastructure","OGNUSDT":"DeFi","NKNUSDT":"PoW","SCUSDT":"Storage","DGBUSDT":"Payment","1000SHIBUSDT":"Meme","BAKEUSDT":"DeFi","BTCDOMUSDT":"Index","IOTXUSDT":"Infrastructure","RAYUSDT":"DEX","C98USDT":"DeFi","MASKUSDT":"Infrastructure","ATAUSDT":"Infrastructure","DYDXUSDT":"DeFi","1000XECUSDT":"Payment","GALAUSDT":"Gaming","CELOUSDT":"Layer-1","ARUSDT":"Storage","KLAYUSDT":"Layer-1","ARPAUSDT":"Infrastructure","CTSIUSDT":"Layer-2","LPTUSDT":"AI","ENSUSDT":"Infrastructure","PEOPLEUSDT":"Meme","ROSEUSDT":"Layer-1","DUSKUSDT":"Layer-1","FLOWUSDT":"Layer-1","IMXUSDT":"NFT","API3USDT":"Infrastructure","GMTUSDT":"NFT","APEUSDT":"NFT","WOOUSDT":"DeFi","JASMYUSDT":"Infrastructure","DARUSDT":"NFT","OPUSDT":"Layer-2","INJUSDT":"DeFi","STGUSDT":"DeFi","SPELLUSDT":"DeFi","1000LUNCUSDT":"DeFi","LUNA2USDT":"Layer-1","LDOUSDT":"DeFi","ICPUSDT":"Layer-1","APTUSDT":"Layer-1","QNTUSDT":"Infrastructure","FETUSDT":"AI","FXSUSDT":"DeFi","HOOKUSDT":"Infrastructure","MAGICUSDT":"Metaverse","TUSDT":"Infrastructure","RNDRUSDT":"NONE","HIGHUSDT":"Metaverse","MINAUSDT":"Layer-1","ASTRUSDT":"Layer-1","AGIXUSDT":"AI","PHBUSDT":"AI","GMXUSDT":"DeFi","CFXUSDT":"PoW","STXUSDT":"Infrastructure","CKBUSDT":"PoW","PERPUSDT":"DeFi","TRUUSDT":"DeFi","LQTYUSDT":"DeFi","IDUSDT":"Infrastructure","ARBUSDT":"Layer-2","JOEUSDT":"DeFi","TLMUSDT":"Metaverse","AMBUSDT":"Layer-1","LEVERUSDT":"DeFi","RDNTUSDT":"DeFi","HFTUSDT":"DeFi","XVSUSDT":"DeFi","BLURUSDT":"NFT","EDUUSDT":"Metaverse","IDEXUSDT":"DeFi","SUIUSDT":"Layer-1","1000PEPEUSDT":"Meme","1000FLOKIUSDT":"Meme","UMAUSDT":"DeFi","RADUSDT":"DeFi","KEYUSDT":"Infrastructure","COMBOUSDT":"Metaverse","NMRUSDT":"AI","MAVUSDT":"Infrastructure","MDTUSDT":"Infrastructure","XVGUSDT":"PoW","WLDUSDT":"AI","PENDLEUSDT":"DeFi","ARKMUSDT":"Infrastructure","AGLDUSDT":"Gaming","YGGUSDT":"Gaming","DODOXUSDT":"DeFi","BNTUSDT":"DeFi","OXTUSDT":"Infrastructure","SEIUSDT":"Layer-1","CYBERUSDT":"Infrastructure","HIFIUSDT":"DeFi","ARKUSDT":"Layer-1","GLMRUSDT":"Layer-2","BICOUSDT":"Infrastructure","STRAXUSDT":"Layer-2","LOOMUSDT":"Infrastructure","BIGTIMEUSDT":"Gaming","BONDUSDT":"DeFi","ORBSUSDT":"Infrastructure","STPTUSDT":"DeFi","WAXPUSDT":"Gaming","BSVUSDT":"PoW","RIFUSDT":"Storage","POLYXUSDT":"Infrastructure","GASUSDT":"Infrastructure","POWRUSDT":"Layer-2","TIAUSDT":"Infrastructure","SNTUSDT":"DeFi","CAKEUSDT":"DeFi","MEMEUSDT":"Meme","TWTUSDT":"Infrastructure","TOKENUSDT":"DeFi","ORDIUSDT":"Meme","STEEMUSDT":"DeFi","BADGERUSDT":"Bitcoin Eco","ILVUSDT":"Metaverse","NTRNUSDT":"Layer-1","KASUSDT":"Layer-1","BEAMXUSDT":"Gaming","1000BONKUSDT":"Meme","PYTHUSDT":"Infrastructure","SUPERUSDT":"Gaming","ONGUSDT":"Layer-1","ETHWUSDT":"PoW","JTOUSDT":"DeFi","1000SATSUSDT":"Meme","AUCTIONUSDT":"DeFi","1000RATSUSDT":"Meme","ACEUSDT":"Gaming","MOVRUSDT":"Layer-1","NFPUSDT":"AI","AIUSDT":"AI","XAIUSDT":"Gaming","WIFUSDT":"Meme","MANTAUSDT":"Layer-2","ONDOUSDT":"DeFi","LSKUSDT":"Layer-2","ALTUSDT":"Infrastructure","JUPUSDT":"DeFi","ZETAUSDT":"Layer-1","RONINUSDT":"Gaming","DYMUSDT":"Infrastructure","OMUSDT":"DeFi","PIXELUSDT":"Gaming","STRKUSDT":"Layer-1","GLMUSDT":"Infrastructure","PORTALUSDT":"Gaming","TONUSDT":"Layer-1","AXLUSDT":"Infrastructure","METISUSDT":"Layer-2","AEVOUSDT":"DeFi","VANRYUSDT":"Metaverse","BOMEUSDT":"Meme","ETHFIUSDT":"DeFi","ENAUSDT":"DeFi","WUSDT":"Infrastructure","TNSRUSDT":"NFT","SAGAUSDT":"Layer-1","TAOUSDT":"AI","OMNIUSDT":"Layer-1","REZUSDT":"DeFi","BBUSDT":"Layer-1","NOTUSDT":"Gaming","TURBOUSDT":"AI","IOUSDT":"AI","ZKUSDT":"Layer-2","MEWUSDT":"Meme","LISTAUSDT":"DeFi","ZROUSDT":"Infrastructure","RENDERUSDT":"Infrastructure","BANANAUSDT":"DeFi","RAREUSDT":"NFT","GUSDT":"Infrastructure","SYNUSDT":"DeFi","SYSUSDT":"PoW","VOXELUSDT":"Gaming","BRETTUSDT":"Meme","ALPACAUSDT":"DeFi","POPCATUSDT":"Meme","SUNUSDT":"DeFi","VIDTUSDT":"AI","NULSUSDT":"Infrastructure","DOGSUSDT":"Meme","MBOXUSDT":"Metaverse","CHESSUSDT":"DeFi","FLUXUSDT":"AI","BSWUSDT":"DeFi","QUICKUSDT":"DeFi","NEIROETHUSDT":"Meme","RPLUSDT":"DeFi","POLUSDT":"Layer-2","UXLINKUSDT":"Infrastructure","1MBABYDOGEUSDT":"Meme","NEIROUSDT":"Meme","KDAUSDT":"PoW","FIDAUSDT":"Infrastructure","FIOUSDT":"NFT","CATIUSDT":"Gaming","GHSTUSDT":"Metaverse","LOKAUSDT":"Gaming","HMSTRUSDT":"Gaming","REIUSDT":"Layer-1","EIGENUSDT":"Infrastructure","DIAUSDT":"Infrastructure","1000CATUSDT":"Meme","SCRUSDT":"Layer-1","GOATUSDT":"AI","MOODENGUSDT":"Meme","SAFEUSDT":"Infrastructure","PONKEUSDT":"Meme","COWUSDT":"DeFi","CETUSUSDT":"DeFi","1000000MOGUSDT":"Meme","GRASSUSDT":"AI","DRIFTUSDT":"DeFi","SWELLUSDT":"DeFi","ACTUSDT":"AI","PNUTUSDT":"Meme","HIPPOUSDT":"Meme","1000XUSDT":"AI","DEGENUSDT":"Meme","BANUSDT":"Meme","AKTUSDT":"AI","SLERFUSDT":"Meme","SCRTUSDT":"Layer-1","1000CHEEMSUSDT":"Meme","1000WHYUSDT":"Meme","THEUSDT":"DeFi","MORPHOUSDT":"DeFi","CHILLGUYUSDT":"Meme","KAIAUSDT":"DeFi","AEROUSDT":"DeFi","ACXUSDT":"DeFi","ORCAUSDT":"DeFi","MOVEUSDT":"Layer-1","VIRTUALUSDT":"AI","SPXUSDT":"Meme","MEUSDT":"NFT","AVAUSDT":"NONE","DEGOUSDT":"NFT","VELODROMEUSDT":"DeFi","MOCAUSDT":"Metaverse","VANAUSDT":"AI","PENGUUSDT":"Meme","LUMIAUSDT":"DeFi","USUALUSDT":"DeFi","AIXBTUSDT":"AI","FARTCOINUSDT":"Meme","KMNOUSDT":"DeFi","CGPTUSDT":"AI","HIVEUSDT":"Layer-1","DEXEUSDT":"DeFi","PHAUSDT":"AI","DFUSDT":"DeFi","GRIFFAINUSDT":"AI","AI16ZUSDT":"AI","ZEREBROUSDT":"AI","COOKIEUSDT":"AI","ALCHUSDT":"AI","SWARMSUSDT":"AI","SONICUSDT":"Gaming","DUSDT":"Metaverse","PROMUSDT":"NFT","SUSDT":"Layer-1","SOLVUSDT":"DeFi","ARCUSDT":"AI","AVAAIUSDT":"AI","TRUMPUSDT":"Meme","MELANIAUSDT":"Meme","VTHOUSDT":"Layer-1","ANIMEUSDT":"NFT","VINEUSDT":"Meme","PIPPINUSDT":"Meme","VVVUSDT":"AI","BERAUSDT":"Layer-1","TSTUSDT":"Meme","LAYERUSDT":"Infrastructure","HEIUSDT":"Infrastructure","B3USDT":"Alpha","IPUSDT":"AI","GPSUSDT":"Infrastructure","SHELLUSDT":"AI","KAITOUSDT":"Infrastructure","REDUSDT":"Infrastructure","VICUSDT":"Layer-1","EPICUSDT":"NFT","BMTUSDT":"Infrastructure","MUBARAKUSDT":"Meme","FORMUSDT":"Gaming","BIDUSDT":"AI","TUTUSDT":"Meme","BROCCOLI714USDT":"Meme","BROCCOLIF3BUSDT":"Meme","SIRENUSDT":"Alpha","BANANAS31USDT":"Meme","BRUSDT":"DeFi","PLUMEUSDT":"Layer-1","NILUSDT":"AI","PARTIUSDT":"Layer-1","JELLYJELLYUSDT":"Alpha","MAVIAUSDT":"Gaming","PAXGUSDT":"RWA","WALUSDT":"Storage","FUNUSDT":"DeFi","MLNUSDT":"DeFi","GUNUSDT":"Gaming","ATHUSDT":"AI","BABYUSDT":"DeFi","FORTHUSDT":"DeFi","PROMPTUSDT":"AI","XCNUSDT":"PoW","STOUSDT":"DeFi","FHEUSDT":"AI","KERNELUSDT":"DeFi","WCTUSDT":"Infrastructure","INITUSDT":"Layer-1","BANKUSDT":"Meme","EPTUSDT":"AI","DEEPUSDT":"DeFi","HYPERUSDT":"DeFi","MEMEFIUSDT":"Gaming","FISUSDT":"DeFi","JSTUSDT":"DeFi","SIGNUSDT":"Infrastructure","PUNDIXUSDT":"DeFi","CTKUSDT":"Infrastructure","AIOTUSDT":"AI","DOLOUSDT":"DeFi","HAEDALUSDT":"DeFi","SXTUSDT":"AI","B2USDT":"DeFi","MILKUSDT":"DeFi","SYRUPUSDT":"DeFi","OBOLUSDT":"DeFi","DOODUSDT":"Alpha","OGUSDT":"NONE","ZKJUSDT":"Layer-2","SKYAIUSDT":"AI","NXPCUSDT":"Gaming","CVCUSDT":"Infrastructure","AGTUSDT":"AI","AWEUSDT":"AI","BUSDT":"Meme","SOONUSDT":"Infrastructure","HUMAUSDT":"Payment","AUSDT":"Layer-2","SOPHUSDT":"Layer-2","MERLUSDT":"Layer-2","HYPEUSDT":"DeFi","PUFFERUSDT":"Layer-2","PORT3USDT":"AI","1000000BOBUSDT":"Meme","LAUSDT":"AI","SKATEUSDT":"Layer-1","HOMEUSDT":"DeFi","RESOLVUSDT":"DeFi","TAIKOUSDT":"Layer-2","SQDUSDT":"DeFi","PUMPBTCUSDT":"DeFi","SPKUSDT":"DeFi","MYXUSDT":"DeFi","FUSDT":"DeFi","NEWTUSDT":"Meme","DMCUSDT":"Gaming","HUSDT":"Infrastructure","OLUSDT":"Gaming","SAHARAUSDT":"AI","BULLAUSDT":"Alpha","IDOLUSDT":"AI","MUSDT":"Meme","TANSSIUSDT":"Infrastructure","PUMPUSDT":"Meme","CROSSUSDT":"Gaming","AINUSDT":"AI","CUSDT":"AI","VELVETUSDT":"DeFi","TACUSDT":"Gaming","ERAUSDT":"DeFi","TAUSDT":"AI","CVXUSDT":"DeFi","SLPUSDT":"Gaming","ZORAUSDT":"Layer-2","TAGUSDT":"AI","ZRCUSDT":"DeFi","ESPORTSUSDT":"Gaming","TREEUSDT":"DeFi","A2ZUSDT":"Gaming","PLAYUSDT":"Gaming","NAORISUSDT":"Infrastructure","PROVEUSDT":"Infrastructure","ALLUSDT":"Index","INUSDT":"Alpha","YALAUSDT":"DeFi","CARVUSDT":"Alpha","AIOUSDT":"Alpha","XNYUSDT":"Alpha","USELESSUSDT":"Meme","DAMUSDT":"DeFi","CUDISUSDT":"Alpha","SAPIENUSDT":"Alpha","XPLUSDT":"Layer-1","WLFIUSDT":"DeFi","SOMIUSDT":"DeFi","BASUSDT":"Alpha","BTRUSDT":"Layer-2","MITOUSDT":"DeFi","HEMIUSDT":"DeFi","LINEAUSDT":"Layer-2","QUSDT":"Alpha","ARIAUSDT":"Alpha","TAKEUSDT":"Gaming","PTBUSDT":"Alpha","OPENUSDT":"AI","FLOCKUSDT":"AI","SKYUSDT":"DeFi","AVNTUSDT":"DeFi","HOLOUSDT":"AI","XPINUSDT":"Alpha","UBUSDT":"Alpha","TOSHIUSDT":"Meme","STBLUSDT":"DeFi","0GUSDT":"Layer-1","BARDUSDT":"DeFi","ASTERUSDT":"DeFi","TRADOORUSDT":"Alpha","BLESSUSDT":"Alpha","FLUIDUSDT":"DeFi","COAIUSDT":"Alpha","HANAUSDT":"Alpha","MIRAUSDT":"AI","AKEUSDT":"Alpha","ORDERUSDT":"DeFi","LIGHTUSDT":"Infrastructure","XANUSDT":"DeFi","EDENUSDT":"DeFi","NOMUSDT":"DeFi","TRUTHUSDT":"Alpha","2ZUSDT":"Infrastructure","EVAAUSDT":"DeFi","LYNUSDT":"Alpha","KGENUSDT":"Alpha","4USDT":"Alpha","GIGGLEUSDT":"Meme","MONUSDT":"DeFi","YBUSDT":"DeFi","METUSDT":"DeFi","LITUSDT":"DeFi","BREVUSDT":"Infrastructure","COLLECTUSDT":"Alpha","MAGMAUSDT":"Alpha","XAUUSDT":"TradFi","USUSDT":"Alpha","CYSUSDT":"Alpha","RAVEUSDT":"Alpha","ZKPUSDT":"Alpha","GUAUSDT":"Alpha","IRUSDT":"Alpha","RECALLUSDT":"AI","ZBTUSDT":"DeFi","LABUSDT":"Alpha","RIVERUSDT":"Alpha","RVVUSDT":"Alpha","BLUAIUSDT":"Alpha","TURTLEUSDT":"DeFi","APRUSDT":"Alpha","ONUSDT":"Alpha","42USDT":"Alpha","COMMONUSDT":"Alpha","KITEUSDT":"AI","ATUSDT":"Alpha","CCUSDT":"Layer-1","MMTUSDT":"DeFi","TRUSTUSDT":"AI","UAIUSDT":"Alpha","FOLKSUSDT":"Alpha","STABLEUSDT":"Alpha","JCTUSDT":"Alpha","ALLOUSDT":"AI","CLANKERUSDT":"Alpha","BEATUSDT":"Alpha","PIEVERSEUSDT":"Alpha","SENTUSDT":"AI","BOBUSDT":"Alpha","IRYSUSDT":"Alpha","RLSUSDT":"Alpha","POWERUSDT":"Alpha","WETUSDT":"Alpha","NIGHTUSDT":"Alpha","XAGUSDT":"TradFi","ZAMAUSDT":"Infrastructure","FOGOUSDT":"Infrastructure","FRAXUSDT":"DeFi","AIAUSDT":"Alpha","ACUUSDT":"Alpha","ELSAUSDT":"Alpha","SKRUSDT":"Alpha","SPACEUSDT":"Alpha","FIGHTUSDT":"Alpha","TSLAUSDT":"TradFi","BIRBUSDT":"Alpha","GWEIUSDT":"Alpha","XPTUSDT":"TradFi","XPDUSDT":"TradFi","MEGAUSDT":"DeFi","INXUSDT":"Alpha","INTCUSDT":"TradFi","HOODUSDT":"TradFi","TRIAUSDT":"Alpha","MSTRUSDT":"TradFi","AMZNUSDT":"TradFi","CRCLUSDT":"TradFi","COINUSDT":"TradFi","PLTRUSDT":"TradFi","AZTECUSDT":"Layer-2","OPNUSDT":"DeFi","ROBOUSDT":"Alpha","KATUSDT":"Infrastructure","MANTRAUSDT":"RWA","COPPERUSDT":"TradFi","EWYUSDT":"TradFi","CFGUSDT":"RWA","EWJUSDT":"TradFi","EDGEUSDT":"DeFi","PAYPUSDT":"TradFi","METAUSDT":"TradFi","NVDAUSDT":"TradFi","GOOGLUSDT":"TradFi","XAUTUSDT":"RWA","CLUSDT":"TradFi","BZUSDT":"TradFi","NATGASUSDT":"TradFi","PRLUSDT":"Alpha","QQQUSDT":"TradFi","SPYUSDT":"TradFi","AAPLUSDT":"TradFi","TSMUSDT":"TradFi","MUUSDT":"TradFi","SNDKUSDT":"TradFi","MSFTUSDT":"TradFi","AVGOUSDT":"TradFi","BABAUSDT":"TradFi","AMDUSDT":"TradFi","QCOMUSDT":"TradFi","USARUSDT":"TradFi","LITEUSDT":"TradFi","ORCLUSDT":"TradFi","DISUSDT":"TradFi","UBERUSDT":"TradFi","CSCOUSDT":"TradFi","HDUSDT":"TradFi","SOXLUSDT":"TradFi","MRVLUSDT":"TradFi","CRWVUSDT":"TradFi","WMTUSDT":"TradFi","JPMUSDT":"TradFi","BRKBUSDT":"TradFi","FLNCUSDT":"TradFi","DRAMUSDT":"TradFi","RKLBUSDT":"TradFi","CBRSUSDT":"TradFi","SPCXUSDT":"TradFi","OPENAIUSDT":"TradFi","NBISUSDT":"TradFi","WDCUSDT":"TradFi","ARMUSDT":"TradFi","BEUSDT":"TradFi","COHRUSDT":"TradFi","QNTXUSDT":"TradFi","LLYUSDT":"TradFi","NVOUSDT":"TradFi","BBXUSDT":"TradFi","NOKUSDT":"TradFi","EWTUSDT":"TradFi","ASTSUSDT":"TradFi","DELLUSDT":"TradFi","IBMUSDT":"TradFi","NOWUSDT":"TradFi","CRMUSDT":"TradFi","IRENUSDT":"TradFi","ONDSUSDT":"TradFi","BXUSDT":"TradFi","HPEUSDT":"TradFi","AMATUSDT":"TradFi","CRWDUSDT":"TradFi","CRDOUSDT":"TradFi","AAOIUSDT":"TradFi","IWMUSDT":"TradFi","AXTIUSDT":"TradFi","NFLXUSDT":"TradFi","COSTUSDT":"TradFi","URNMUSDT":"TradFi","HIMSUSDT":"TradFi","EBAYUSDT":"TradFi","ZMUSDT":"TradFi","DKNGUSDT":"TradFi","RIVNUSDT":"TradFi","GMEUSDT":"TradFi","XLEUSDT":"TradFi","EWZUSDT":"TradFi","BMNRUSDT":"TradFi","UVXYUSDT":"TradFi","ADBEUSDT":"TradFi","GLWUSDT":"TradFi","STXXUSDT":"TradFi","ASMLUSDT":"TradFi","REUSDT":"Alpha","LRCXUSDT":"TradFi","KLACUSDT":"TradFi","ALABUSDT":"TradFi","SMCIUSDT":"TradFi","CIENUSDT":"TradFi","KORUUSDT":"TradFi","SONYUSDT":"TradFi","MVLLUSDT":"TradFi","TQQQUSDT":"TradFi","SQQQUSDT":"TradFi","STRCUSDT":"TradFi","CATUSDT":"TradFi","TXNUSDT":"TradFi","FLEXUSDT":"TradFi","TERUSDT":"TradFi","TTWOUSDT":"TradFi","KSTRUSDT":"TradFi","BSPUSDT":"TradFi","BOTUSDT":"TradFi","WENUSDT":"TradFi","INTWUSDT":"TradFi","SNXXUSDT":"TradFi","XBIUSDT":"TradFi","BNCUSDT":"TradFi","FWDIUSDT":"TradFi","GEVUSDT":"TradFi","VRTUSDT":"TradFi","SNOWUSDT":"TradFi","APPUSDT":"TradFi","MUUUSDT":"TradFi","SOXSUSDT":"TradFi","TZAUSDT":"TradFi","MINIMAXUSDT":"TradFi","ZHIPUUSDT":"TradFi","HK0700USDT":"TradFi","HK1810USDT":"TradFi","TENCENTUSDT":"TradFi","SHAZUSDT":"TradFi","SOFIUSDT":"TradFi","PANWUSDT":"TradFi","PENGUSDT":"TradFi","POPMARTUSDT":"TradFi","ANTHROPICUSDT":"TradFi","HYUNDAIUSDT":"TradFi","SAMSUNGUSDT":"TradFi","SKHYNIXUSDT":"TradFi","SKHYUSDT":"TradFi","SPCXUSD1":"TradFi"};
 function natrSetStatus(text, active, updating) {
     const b = document.getElementById('natrStatusBadge');
     document.getElementById('natrStatusText').textContent = text;
@@ -1094,11 +1155,91 @@ function natrStartAutoRefresh() {
     }, 1000);
     document.getElementById('natrAutoRefresh').classList.add('active');
 }
+function natrInitCategories() {
+    natrCategoryMap = Object.assign({}, NATR_EMBEDDED_CATEGORIES);
+    natrUpdateCatTabCounts();
+    // Try to update from API in background (may fail due to CORS — that's OK)
+    natrTryUpdateCategories();
+}
+async function natrTryUpdateCategories() {
+    try {
+        const resp = await fetch('https://www.binance.com/bapi/futures/v1/public/future/common/symbol-config-info', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'clienttype': 'web' },
+            body: JSON.stringify({})
+        });
+        if (!resp.ok) return;
+        const json = await resp.json();
+        if (!json.data || !json.data.configInfoList) return;
+        const newEntries = {};
+        json.data.configInfoList.forEach(item => {
+            const cat = (item.underlyingTypeSub || '').split(',')[0].trim() || 'NONE';
+            newEntries[item.symbol] = cat;
+        });
+        // Merge: API data overrides embedded, but keep embedded for symbols not in API
+        natrCategoryMap = Object.assign({}, NATR_EMBEDDED_CATEGORIES, newEntries);
+        natrUpdateCatTabCounts();
+        console.log('Categories updated from Binance API');
+    } catch(e) {
+        console.log('Category API update skipped (CORS or network):', e.message);
+    }
+}
+function natrUpdateCatTabCounts() {
+    if (!natrCategoryMap) return;
+    // Count perpetual USDT symbols per category
+    const catCounts = {};
+    for (const [sym, cat] of Object.entries(natrCategoryMap)) {
+        if (sym.endsWith('USDT') || sym.endsWith('USD1')) {
+            const c = cat.split(',')[0]; // handle "Pre-IPO,TradFi" -> "Pre-IPO"
+            catCounts[c] = (catCounts[c] || 0) + 1;
+        }
+    }
+    document.querySelectorAll('#natrCatTabs .natr-cat-tab').forEach(btn => {
+        const cat = btn.dataset.cat;
+        if (cat === 'all') {
+            const total = Object.values(catCounts).reduce((a,b) => a+b, 0);
+            btn.innerHTML = 'Все<span class="natr-cat-count">' + total + '</span>';
+        } else if (catCounts[cat] !== undefined) {
+            // keep label, add count (category text can come from the Binance API — escape it)
+            const label = escapeHtml(cat);
+            btn.innerHTML = label + '<span class="natr-cat-count">' + catCounts[cat] + '</span>';
+        }
+    });
+}
+function natrSwitchCategory(cat) {
+    natrSelectedCategory = cat;
+    document.querySelectorAll('#natrCatTabs .natr-cat-tab').forEach(t => t.classList.toggle('active', t.dataset.cat === cat));
+    // If we have results, re-filter and re-render
+    if (natrAllResults.length > 0) {
+        natrReFilterAndRender();
+    }
+}
+function natrFilterByCategory(symbols) {
+    if (natrSelectedCategory === 'all' || !natrCategoryMap) return symbols;
+    return symbols.filter(sym => {
+        const cat = (natrCategoryMap[sym] || 'NONE').split(',')[0];
+        return cat === natrSelectedCategory;
+    });
+}
+function natrReFilterAndRender() {
+    if (natrSelectedCategory === 'all') {
+        natrRenderTable([...natrAllResults].sort((a,b) => b.natr - a.natr));
+    } else {
+        const filtered = natrAllResults.filter(r => {
+            const cat = (natrCategoryMap[r.symbol] || 'NONE').split(',')[0];
+            return cat === natrSelectedCategory;
+        });
+        natrRenderTable(filtered.sort((a,b) => b.natr - a.natr));
+    }
+}
 async function natrGetAllPairs() {
     try {
+        // Ensure categories are initialized
+        if (!natrCategoryMap) natrInitCategories();
         const r = await fetch(NATR_API + '/fapi/v1/exchangeInfo');
         const d = await r.json();
-        return d.symbols.filter(s => s.contractType === 'PERPETUAL' && s.quoteAsset === 'USDT' && s.status === 'TRADING').map(s => s.symbol);
+        const pairs = d.symbols.filter(s => (s.contractType === 'PERPETUAL' || s.contractType === 'TRADIFI_PERPETUAL') && (s.quoteAsset === 'USDT' || s.quoteAsset === 'USD1') && s.status === 'TRADING').map(s => s.symbol);
+        return pairs;
     } catch(e) { return []; }
 }
 function natrCalcATR(klines, period) {
@@ -1127,17 +1268,26 @@ async function natrGetKlines(symbol, interval, limit) {
     if (natrPendingRequests.has(ck)) return natrPendingRequests.get(ck);
     let resolveP; const promise = new Promise(r => { resolveP = r; });
     natrPendingRequests.set(ck, promise);
+    const attempts = 1 + Math.max(0, NATR_SCAN_CFG.maxRetries || 0);
     try {
-        const ctrl = new AbortController();
-        const tid = setTimeout(() => ctrl.abort(), NATR_SCAN_CFG.timeout);
-        const resp = await fetch(NATR_API + '/fapi/v1/klines?symbol=' + symbol + '&interval=' + interval + '&limit=' + limit, {signal:ctrl.signal});
-        clearTimeout(tid);
-        if (!resp.ok) throw new Error('HTTP ' + resp.status);
-        const data = await resp.json();
-        if (NATR_SCAN_CFG.cacheResults) natrResultsCache.set(ck, {data, ts: Date.now()});
-        resolveP(data); return data;
-    } catch(e) { resolveP(null); return null; }
-    finally { setTimeout(() => natrPendingRequests.delete(ck), 100); }
+        for (let attempt = 0; attempt < attempts; attempt++) {
+            try {
+                const ctrl = new AbortController();
+                const tid = setTimeout(() => ctrl.abort(), NATR_SCAN_CFG.timeout);
+                const resp = await fetch(NATR_API + '/fapi/v1/klines?symbol=' + symbol + '&interval=' + interval + '&limit=' + limit, {signal:ctrl.signal});
+                clearTimeout(tid);
+                if (!resp.ok) throw new Error('HTTP ' + resp.status);
+                const data = await resp.json();
+                if (NATR_SCAN_CFG.cacheResults) natrResultsCache.set(ck, {data, ts: Date.now()});
+                resolveP(data); return data;
+            } catch(e) {
+                if (attempt < attempts - 1 && NATR_SCAN_CFG.retryDelay > 0) {
+                    await new Promise(r => setTimeout(r, NATR_SCAN_CFG.retryDelay));
+                }
+            }
+        }
+        resolveP(null); return null;
+    } finally { setTimeout(() => natrPendingRequests.delete(ck), 100); }
 }
 async function natrProcessMax(pairs, interval, limit, onProgress) {
     const results = []; const total = pairs.length; let processed = 0;
@@ -1149,7 +1299,7 @@ async function natrProcessMax(pairs, interval, limit, onProgress) {
             if (!klines) return null;
             const ap = natrMode === '5_14' ? 14 : 30;
             const natr = natrCalcNATR(klines, ap);
-            return natr != null && natr !== 0 && natr < 1000 ? {symbol: sym.replace('USDT',''), natr} : null;
+            return natr != null && natr !== 0 && natr < 1000 ? {symbol: sym, natr} : null;
         });
         const br = await Promise.all(batchP);
         results.push(...br.filter(Boolean));
@@ -1178,20 +1328,25 @@ function natrRenderTable(data, animate) {
         const rc = i===0?'rank-1':i===1?'rank-2':i===2?'rank-3':'rank-n';
         const nc = item.natr > maxVal*0.7?'natr-hi':item.natr > maxVal*0.4?'natr-mid':'natr-lo';
         const bc = i===9?'border-after':'';
+        const displaySymbol = escapeHtml(item.symbol.replace(/USDT$|USD1$/, ''));
         const changed = prevData && prevData[i] && prevData[i].natr !== item.natr;
         const ra = changed?'row-updated':'';
         const na = changed?'natr-changed':'';
         return '<tr class="'+bc+' '+ra+'"><td><span class="natr-rank '+rc+' mono">'+(i+1)+'</span></td>'+
-            '<td class="ticker-cell" data-symbol="'+item.symbol+'"><div class="ticker-name">'+item.symbol+'</div>'+
+            '<td class="ticker-cell" tabindex="0" role="button" aria-label="Скопировать тикер '+displaySymbol+'" data-symbol="'+displaySymbol+'"><div class="ticker-name">'+displaySymbol+'</div>'+
             '<div class="ticker-sub">нажми чтобы скопировать</div>'+
             '<svg class="copy-icon" style="width:14px;height:14px" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></td>'+
             '<td><span class="natr-val mono '+nc+' '+na+'">'+item.natr.toFixed(3)+'<small style="font-size:0.65em;color:var(--muted)">%</small></span></td></tr>';
     }).join('');
     document.querySelectorAll('#natrTableBody .ticker-cell').forEach(cell => {
-        cell.addEventListener('click', function() {
-            copyToClipboard(this.getAttribute('data-symbol'));
-            this.classList.add('copied');
-            setTimeout(() => this.classList.remove('copied'), 800);
+        const activate = function() {
+            copyToClipboard(cell.getAttribute('data-symbol'));
+            cell.classList.add('copied');
+            setTimeout(() => cell.classList.remove('copied'), 800);
+        };
+        cell.addEventListener('click', activate);
+        cell.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); activate(); }
         });
     });
     document.getElementById('natrStatsBar').style.display = 'flex';
@@ -1204,7 +1359,7 @@ function natrRenderTable(data, animate) {
 function natrSwitchMode(m) {
     natrMode = m;
     document.querySelectorAll('.natr-tab').forEach(t => t.classList.toggle('active', t.dataset.mode === m));
-    if (natrAllResults.length) natrRenderTable([...natrAllResults].sort((a,b) => b.natr - a.natr));
+    if (natrAllResults.length) natrReFilterAndRender();
 }
 async function natrStartBgUpdate() {
     if (natrIsScanning || natrIsBgUpdating) return;
@@ -1219,7 +1374,7 @@ async function natrStartBgUpdate() {
     });
     if (natrAbortCtrl.signal.aborted) { natrFinishBgUpdate(false); return; }
     natrAllResults = results.sort((a,b) => b.natr - a.natr);
-    natrRenderTable(natrAllResults, true);
+    natrReFilterAndRender();
     natrFinishBgUpdate(true);
 }
 function natrFinishBgUpdate(ok) {
@@ -1250,7 +1405,7 @@ async function natrStartScan() {
         natrIsScanning = false; natrAbortCtrl = null; return;
     }
     natrAllResults = results.sort((a,b) => b.natr - a.natr);
-    natrHideSkeleton(); natrRenderTable(natrAllResults);
+    natrHideSkeleton(); natrReFilterAndRender();
     natrSetStatus('Готово: '+results.length, true);
     document.getElementById('natrScanBtn').classList.remove('loading');
     natrIsScanning = false; natrAbortCtrl = null;
@@ -1564,6 +1719,32 @@ async function calFetchWithTimeout(url, options, timeoutMs) {
 // Embedded fallback data — real ForexFactory events for the week of May 5-11, 2026
 const CAL_FALLBACK_DATA = [{"t":"Bank Holiday","c":"JPY","d":"2026-05-03T19:00:00-04:00","i":"Holiday","f":"","p":""},{"t":"Bank Holiday","c":"CNY","d":"2026-05-03T19:01:00-04:00","i":"Holiday","f":"","p":""},{"t":"MI Inflation Gauge m/m","c":"AUD","d":"2026-05-03T21:00:00-04:00","i":"Low","f":"","p":"1.3%"},{"t":"ANZ Job Advertisements m/m","c":"AUD","d":"2026-05-03T21:30:00-04:00","i":"Low","f":"","p":"-3.1%"},{"t":"Building Approvals m/m","c":"AUD","d":"2026-05-03T21:30:00-04:00","i":"Low","f":"-10.2%","p":"29.7%"},{"t":"Bank Holiday","c":"GBP","d":"2026-05-04T03:00:00-04:00","i":"Holiday","f":"","p":""},{"t":"Spanish Manufacturing PMI","c":"EUR","d":"2026-05-04T03:15:00-04:00","i":"Low","f":"49.5","p":"48.7"},{"t":"Manufacturing PMI","c":"CHF","d":"2026-05-04T03:30:00-04:00","i":"Low","f":"52.0","p":"53.3"},{"t":"Italian Manufacturing PMI","c":"EUR","d":"2026-05-04T03:45:00-04:00","i":"Low","f":"51.6","p":"51.3"},{"t":"French Final Manufacturing PMI","c":"EUR","d":"2026-05-04T03:50:00-04:00","i":"Low","f":"52.8","p":"52.8"},{"t":"German Final Manufacturing PMI","c":"EUR","d":"2026-05-04T03:55:00-04:00","i":"Low","f":"51.2","p":"51.2"},{"t":"Final Manufacturing PMI","c":"EUR","d":"2026-05-04T04:00:00-04:00","i":"Low","f":"52.2","p":"52.2"},{"t":"Sentix Investor Confidence","c":"EUR","d":"2026-05-04T04:30:00-04:00","i":"Low","f":"-20.9","p":"-19.2"},{"t":"Eurogroup Meetings","c":"EUR","d":"2026-05-04T05:15:00-04:00","i":"Low","f":"","p":""},{"t":"Factory Orders m/m","c":"USD","d":"2026-05-04T10:00:00-04:00","i":"Low","f":"0.5%","p":"0.0%"},{"t":"FOMC Member Williams Speaks","c":"USD","d":"2026-05-04T12:50:00-04:00","i":"Low","f":"","p":""},{"t":"German Buba President Nagel Speaks","c":"EUR","d":"2026-05-04T13:05:00-04:00","i":"Low","f":"","p":""},{"t":"Loan Officer Survey","c":"USD","d":"2026-05-04T14:00:00-04:00","i":"Low","f":"","p":""},{"t":"BOC Gov Macklem Speaks","c":"CAD","d":"2026-05-04T15:30:00-04:00","i":"Medium","f":"","p":""},{"t":"Bank Holiday","c":"JPY","d":"2026-05-04T19:00:00-04:00","i":"Holiday","f":"","p":""},{"t":"Bank Holiday","c":"CNY","d":"2026-05-04T19:01:00-04:00","i":"Holiday","f":"","p":""},{"t":"ANZ Commodity Prices m/m","c":"NZD","d":"2026-05-04T21:00:00-04:00","i":"Low","f":"","p":"4.1%"},{"t":"Household Spending m/m","c":"AUD","d":"2026-05-04T21:30:00-04:00","i":"Low","f":"1.8%","p":"0.3%"},{"t":"Cash Rate","c":"AUD","d":"2026-05-05T00:30:00-04:00","i":"High","f":"4.35%","p":"4.10%"},{"t":"RBA Monetary Policy Statement","c":"AUD","d":"2026-05-05T00:30:00-04:00","i":"High","f":"","p":""},{"t":"RBA Rate Statement","c":"AUD","d":"2026-05-05T00:30:00-04:00","i":"High","f":"","p":""},{"t":"RBA Press Conference","c":"AUD","d":"2026-05-05T01:30:00-04:00","i":"High","f":"","p":""},{"t":"CPI m/m","c":"CHF","d":"2026-05-05T02:30:00-04:00","i":"Medium","f":"0.3%","p":"0.2%"},{"t":"Spanish Unemployment Change","c":"EUR","d":"2026-05-05T03:00:00-04:00","i":"Low","f":"-18.6K","p":"-22.9K"},{"t":"ECOFIN Meetings","c":"EUR","d":"2026-05-05T05:15:00-04:00","i":"Low","f":"","p":""},{"t":"Trade Balance","c":"CAD","d":"2026-05-05T08:30:00-04:00","i":"Low","f":"-2.4B","p":"-5.7B"},{"t":"ECB President Lagarde Speaks","c":"EUR","d":"2026-05-05T08:30:00-04:00","i":"Medium","f":"","p":""},{"t":"Trade Balance","c":"USD","d":"2026-05-05T08:30:00-04:00","i":"Low","f":"-61.0B","p":"-57.3B"},{"t":"French Gov Budget Balance","c":"EUR","d":"2026-05-05T09:31:00-04:00","i":"Low","f":"","p":"-32.1B"},{"t":"Final Services PMI","c":"USD","d":"2026-05-05T09:45:00-04:00","i":"Low","f":"51.3","p":"51.3"},{"t":"New Home Sales","c":"USD","d":"2026-05-05T09:59:00-04:00","i":"Medium","f":"","p":"587K"},{"t":"ISM Services PMI","c":"USD","d":"2026-05-05T10:00:00-04:00","i":"High","f":"53.7","p":"54.0"},{"t":"JOLTS Job Openings","c":"USD","d":"2026-05-05T10:00:00-04:00","i":"High","f":"6.86M","p":"6.88M"},{"t":"New Home Sales","c":"USD","d":"2026-05-05T10:00:00-04:00","i":"Medium","f":"652K","p":"635K"},{"t":"FOMC Member Bowman Speaks","c":"USD","d":"2026-05-05T10:00:00-04:00","i":"Low","f":"","p":""},{"t":"RCM/TIPP Economic Optimism","c":"USD","d":"2026-05-05T10:03:00-04:00","i":"Low","f":"42.0","p":"42.8"},{"t":"GDT Price Index","c":"NZD","d":"2026-05-05T10:59:00-04:00","i":"Low","f":"","p":"-2.7%"},{"t":"FOMC Member Barr Speaks","c":"USD","d":"2026-05-05T12:30:00-04:00","i":"Low","f":"","p":""},{"t":"API Weekly Statistical Bulletin","c":"USD","d":"2026-05-05T16:30:00-04:00","i":"Low","f":"","p":""},{"t":"RBNZ Financial Stability Report","c":"NZD","d":"2026-05-05T17:00:00-04:00","i":"Low","f":"","p":""},{"t":"Employment Change q/q","c":"NZD","d":"2026-05-05T18:45:00-04:00","i":"High","f":"0.3%","p":"0.5%"},{"t":"Unemployment Rate","c":"NZD","d":"2026-05-05T18:45:00-04:00","i":"High","f":"5.4%","p":"5.4%"},{"t":"Labor Cost Index q/q","c":"NZD","d":"2026-05-05T18:45:00-04:00","i":"Low","f":"0.4%","p":"0.4%"},{"t":"Bank Holiday","c":"JPY","d":"2026-05-05T19:00:00-04:00","i":"Holiday","f":"","p":""},{"t":"RBNZ Gov Breman Speaks","c":"NZD","d":"2026-05-05T21:00:00-04:00","i":"Medium","f":"","p":""},{"t":"RatingDog Services PMI","c":"CNY","d":"2026-05-05T21:45:00-04:00","i":"Low","f":"52.0","p":"52.1"},{"t":"French Industrial Production m/m","c":"EUR","d":"2026-05-06T02:45:00-04:00","i":"Low","f":"0.5%","p":"-0.7%"},{"t":"Spanish Services PMI","c":"EUR","d":"2026-05-06T03:15:00-04:00","i":"Low","f":"51.9","p":"53.3"},{"t":"Italian Services PMI","c":"EUR","d":"2026-05-06T03:45:00-04:00","i":"Low","f":"47.9","p":"48.8"},{"t":"French Final Services PMI","c":"EUR","d":"2026-05-06T03:50:00-04:00","i":"Low","f":"46.5","p":"46.5"},{"t":"German Final Services PMI","c":"EUR","d":"2026-05-06T03:55:00-04:00","i":"Low","f":"46.9","p":"46.9"},{"t":"Final Services PMI","c":"EUR","d":"2026-05-06T04:00:00-04:00","i":"Low","f":"47.4","p":"47.4"},{"t":"Italian Retail Sales m/m","c":"EUR","d":"2026-05-06T04:00:00-04:00","i":"Low","f":"-0.4%","p":"0.0%"},{"t":"Final Services PMI","c":"GBP","d":"2026-05-06T04:30:00-04:00","i":"Low","f":"52.0","p":"52.0"},{"t":"PPI m/m","c":"EUR","d":"2026-05-06T05:00:00-04:00","i":"Low","f":"3.3%","p":"-0.7%"},{"t":"ADP Non-Farm Employment Change","c":"USD","d":"2026-05-06T08:15:00-04:00","i":"Medium","f":"116K","p":"62K"},{"t":"FOMC Member Musalem Speaks","c":"USD","d":"2026-05-06T09:30:00-04:00","i":"Low","f":"","p":""},{"t":"Ivey PMI","c":"CAD","d":"2026-05-06T10:00:00-04:00","i":"Medium","f":"49.9","p":"49.7"},{"t":"Crude Oil Inventories","c":"USD","d":"2026-05-06T10:30:00-04:00","i":"Low","f":"-3.4M","p":"-6.2M"},{"t":"FOMC Member Goolsbee Speaks","c":"USD","d":"2026-05-06T13:00:00-04:00","i":"Low","f":"","p":""},{"t":"BOC Gov Macklem Speaks","c":"CAD","d":"2026-05-06T16:15:00-04:00","i":"Medium","f":"","p":""},{"t":"RBNZ Gov Breman Speaks","c":"NZD","d":"2026-05-06T17:10:00-04:00","i":"Medium","f":"","p":""},{"t":"Monetary Base y/y","c":"JPY","d":"2026-05-06T19:50:00-04:00","i":"Low","f":"-10.5%","p":"-11.6%"},{"t":"Monetary Policy Meeting Minutes","c":"JPY","d":"2026-05-06T19:50:00-04:00","i":"Low","f":"","p":""},{"t":"Goods Trade Balance","c":"AUD","d":"2026-05-06T21:30:00-04:00","i":"Low","f":"4.38B","p":"5.69B"},{"t":"German Factory Orders m/m","c":"EUR","d":"2026-05-07T02:00:00-04:00","i":"Low","f":"1.0%","p":"0.9%"},{"t":"French Trade Balance","c":"EUR","d":"2026-05-07T02:45:00-04:00","i":"Low","f":"-5.6B","p":"-5.8B"},{"t":"Foreign Currency Reserves","c":"CHF","d":"2026-05-07T03:00:00-04:00","i":"Low","f":"","p":"721B"},{"t":"Unemployment Rate","c":"CHF","d":"2026-05-07T03:00:00-04:00","i":"Low","f":"3.0%","p":"3.0%"},{"t":"MPC Member Lombardelli Speaks","c":"GBP","d":"2026-05-07T04:00:00-04:00","i":"Low","f":"","p":""},{"t":"Construction PMI","c":"GBP","d":"2026-05-07T04:30:00-04:00","i":"Low","f":"46.0","p":"45.6"},{"t":"Retail Sales m/m","c":"EUR","d":"2026-05-07T05:00:00-04:00","i":"Low","f":"-0.3%","p":"-0.2%"},{"t":"Spanish 10-y Bond Auction","c":"EUR","d":"2026-05-07T05:03:00-04:00","i":"Low","f":"","p":"3.44|2.0"},{"t":"French 10-y Bond Auction","c":"EUR","d":"2026-05-07T05:18:00-04:00","i":"Low","f":"","p":"3.73|1.9"},{"t":"Challenger Job Cuts y/y","c":"USD","d":"2026-05-07T07:30:00-04:00","i":"Low","f":"","p":"-78.0%"},{"t":"Unemployment Claims","c":"USD","d":"2026-05-07T08:30:00-04:00","i":"Medium","f":"205K","p":"189K"},{"t":"Prelim Nonfarm Productivity q/q","c":"USD","d":"2026-05-07T08:30:00-04:00","i":"Low","f":"1.0%","p":"2.8%"},{"t":"Prelim Unit Labor Costs q/q","c":"USD","d":"2026-05-07T08:30:00-04:00","i":"Low","f":"2.5%","p":"2.8%"},{"t":"MPC Member Taylor Speaks","c":"GBP","d":"2026-05-07T08:40:00-04:00","i":"Low","f":"","p":""},{"t":"Construction Spending m/m","c":"USD","d":"2026-05-07T10:00:00-04:00","i":"Low","f":"0.2%","p":""},{"t":"Construction Spending m/m","c":"USD","d":"2026-05-07T10:00:00-04:00","i":"Low","f":"","p":"-0.3%"},{"t":"Natural Gas Storage","c":"USD","d":"2026-05-07T10:30:00-04:00","i":"Low","f":"","p":"79B"},{"t":"FOMC Member Kashkari Speaks","c":"USD","d":"2026-05-07T13:00:00-04:00","i":"Low","f":"","p":""},{"t":"FOMC Member Hammack Speaks","c":"USD","d":"2026-05-07T14:05:00-04:00","i":"Low","f":"","p":""},{"t":"Consumer Credit m/m","c":"USD","d":"2026-05-07T15:00:00-04:00","i":"Low","f":"12.5B","p":"9.5B"},{"t":"FOMC Member Williams Speaks","c":"USD","d":"2026-05-07T15:30:00-04:00","i":"Low","f":"","p":""},{"t":"Average Cash Earnings y/y","c":"JPY","d":"2026-05-07T19:30:00-04:00","i":"Low","f":"3.2%","p":"3.3%"},{"t":"Trade Balance","c":"CNY","d":"2026-05-07T22:03:00-04:00","i":"Low","f":"570B","p":"355B"},{"t":"USD-Denominated Trade Balance","c":"CNY","d":"2026-05-07T22:04:00-04:00","i":"Low","f":"82.4B","p":"51.1B"},{"t":"German Industrial Production m/m","c":"EUR","d":"2026-05-08T02:00:00-04:00","i":"Low","f":"0.4%","p":"-0.3%"},{"t":"German Trade Balance","c":"EUR","d":"2026-05-08T02:00:00-04:00","i":"Low","f":"17.5B","p":"19.8B"},{"t":"Halifax HPI m/m","c":"GBP","d":"2026-05-08T02:00:00-04:00","i":"Low","f":"0.2%","p":"-0.5%"},{"t":"French Bank Holiday","c":"EUR","d":"2026-05-08T02:01:00-04:00","i":"Holiday","f":"","p":""},{"t":"SECO Consumer Climate","c":"CHF","d":"2026-05-08T03:00:00-04:00","i":"Low","f":"-46","p":"-43"},{"t":"ECB President Lagarde Speaks","c":"EUR","d":"2026-05-08T03:00:00-04:00","i":"Medium","f":"","p":""},{"t":"FOMC Member Cook Speaks","c":"USD","d":"2026-05-08T05:45:00-04:00","i":"Low","f":"","p":""},{"t":"BOE Gov Bailey Speaks","c":"GBP","d":"2026-05-08T08:20:00-04:00","i":"High","f":"","p":""},{"t":"Employment Change","c":"CAD","d":"2026-05-08T08:30:00-04:00","i":"High","f":"11.6K","p":"14.1K"},{"t":"Unemployment Rate","c":"CAD","d":"2026-05-08T08:30:00-04:00","i":"High","f":"6.7%","p":"6.7%"},{"t":"Average Hourly Earnings m/m","c":"USD","d":"2026-05-08T08:30:00-04:00","i":"High","f":"0.3%","p":"0.2%"},{"t":"Non-Farm Employment Change","c":"USD","d":"2026-05-08T08:30:00-04:00","i":"High","f":"64K","p":"178K"},{"t":"Unemployment Rate","c":"USD","d":"2026-05-08T08:30:00-04:00","i":"High","f":"4.3%","p":"4.3%"},{"t":"Prelim UoM Consumer Sentiment","c":"USD","d":"2026-05-08T10:00:00-04:00","i":"Medium","f":"49.5","p":"47.6"},{"t":"Prelim UoM Inflation Expectations","c":"USD","d":"2026-05-08T10:00:00-04:00","i":"Medium","f":"","p":"4.8%"},{"t":"Final Wholesale Inventories m/m","c":"USD","d":"2026-05-08T10:00:00-04:00","i":"Low","f":"1.4%","p":"1.4%"},{"t":"German Buba President Nagel Speaks","c":"EUR","d":"2026-05-08T12:15:00-04:00","i":"Low","f":"","p":""},{"t":"FOMC Member Bowman Speaks","c":"USD","d":"2026-05-08T19:30:00-04:00","i":"Low","f":"","p":""},{"t":"FOMC Member Daly Speaks","c":"USD","d":"2026-05-08T19:30:00-04:00","i":"Low","f":"","p":""},{"t":"FOMC Member Goolsbee Speaks","c":"USD","d":"2026-05-08T19:30:00-04:00","i":"Low","f":"","p":""},{"t":"FOMC Member Waller Speaks","c":"USD","d":"2026-05-08T19:30:00-04:00","i":"Low","f":"","p":""}];
 
+// The embedded fallback dataset is a real ForexFactory week captured at build time,
+// so its literal dates go stale the moment time passes. Instead of hand-updating it
+// forever, shift every event by whole weeks so it always lands on the CURRENT week
+// (same weekday/time-of-day). The specific figures are still an old snapshot — that's
+// unavoidable for a static last-resort fallback — but the calendar grid itself won't
+// show a dead date range from months ago.
+function calShiftFallbackToCurrentWeek(rawData) {
+    let anchor = null;
+    for (const e of rawData) {
+        if (e.i === 'Holiday') continue;
+        const d = new Date(e.d);
+        if (!isNaN(d.getTime())) { anchor = d; break; }
+    }
+    if (!anchor) return rawData;
+    const originalWeekStart = calGetWeekStart(anchor);
+    const currentWeekStart = calGetWeekStart(new Date());
+    const weeksDiff = Math.round((currentWeekStart - originalWeekStart) / (7 * 24 * 60 * 60 * 1000));
+    if (weeksDiff === 0) return rawData;
+    return rawData.map(e => {
+        const d = new Date(e.d);
+        if (isNaN(d.getTime())) return e;
+        d.setDate(d.getDate() + weeksDiff * 7);
+        return Object.assign({}, e, { d: d.toISOString() });
+    });
+}
+
 async function calFetchEvents() {
     calSetLoading(true);
     const FF_URL = 'https://nfs.faireconomy.media/ff_calendar_thisweek.json';
@@ -1635,10 +1816,10 @@ async function calFetchEvents() {
         } catch(e) { /* ignore cache errors */ }
     }
 
-    // Last resort: use embedded fallback data
+    // Last resort: use embedded fallback data, re-anchored onto the current week
     if (!data) {
-        data = CAL_FALLBACK_DATA;
-        source = 'Офлайн-данные (текущая неделя)';
+        data = calShiftFallbackToCurrentWeek(CAL_FALLBACK_DATA);
+        source = 'Офлайн-данные (демо-набор, не актуальные цифры)';
     }
 
     try {
@@ -1733,10 +1914,26 @@ function calRender() {
                 dayEvents.forEach(evt => {
                     const card = document.createElement('div');
                     card.className = 'cal-event-card impact-' + evt.impact;
-                    card.onclick = function() { this.classList.toggle('expanded'); };
+                    card.tabIndex = 0;
+                    card.setAttribute('role', 'button');
+                    card.setAttribute('aria-expanded', 'false');
+                    const toggle = function() {
+                        card.classList.toggle('expanded');
+                        card.setAttribute('aria-expanded', card.classList.contains('expanded') ? 'true' : 'false');
+                    };
+                    card.onclick = toggle;
+                    card.addEventListener('keydown', function(e) {
+                        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); }
+                    });
                     const localTime = calUTCToLocal(evt.utcDate, targetTZ);
                     const timeStr = localTime.hourStr + ':' + localTime.minuteStr;
                     const flag = CAL_COUNTRY_FLAGS[evt.country] || CAL_CURRENCY_FLAGS[evt.currency] || evt.currency;
+                    // evt.title/previous/forecast/actual come from the ForexFactory feed (fetched
+                    // through third-party CORS proxies) — never trust it as-is, escape before insertion.
+                    const safeTitle = escapeHtml(evt.title);
+                    const safePrevious = escapeHtml(evt.previous);
+                    const safeForecast = escapeHtml(evt.forecast);
+                    const safeActual = escapeHtml(evt.actual);
                     const impactDots = evt.impact === 'high' ?
                         '<span class="cal-impact-dot on-high"></span><span class="cal-impact-dot on-high"></span><span class="cal-impact-dot on-high"></span>' :
                         evt.impact === 'medium' ?
@@ -1745,8 +1942,8 @@ function calRender() {
                     let valuesHTML = '';
                     if (evt.previous || evt.forecast || evt.actual) {
                         valuesHTML = '<div class="cal-event-values">';
-                        if (evt.previous) valuesHTML += '<div class="cal-event-val"><span class="cal-event-val-label">\u041f\u0440\u0435\u0434.</span><span class="cal-event-val-num">' + evt.previous + '</span></div>';
-                        if (evt.forecast) valuesHTML += '<div class="cal-event-val"><span class="cal-event-val-label">\u041f\u0440\u043e\u0433\u043d\u043e\u0437</span><span class="cal-event-val-num">' + evt.forecast + '</span></div>';
+                        if (evt.previous) valuesHTML += '<div class="cal-event-val"><span class="cal-event-val-label">\u041f\u0440\u0435\u0434.</span><span class="cal-event-val-num">' + safePrevious + '</span></div>';
+                        if (evt.forecast) valuesHTML += '<div class="cal-event-val"><span class="cal-event-val-label">\u041f\u0440\u043e\u0433\u043d\u043e\u0437</span><span class="cal-event-val-num">' + safeForecast + '</span></div>';
                         if (evt.actual) {
                             let cls = '';
                             if (evt.forecast && evt.actual) {
@@ -1754,21 +1951,21 @@ function calRender() {
                                 const fNum = parseFloat(evt.forecast.replace(/[^0-9.-]/g,''));
                                 if (!isNaN(aNum) && !isNaN(fNum)) cls = aNum > fNum ? ' better' : aNum < fNum ? ' worse' : '';
                             }
-                            valuesHTML += '<div class="cal-event-val"><span class="cal-event-val-label">\u0424\u0430\u043a\u0442</span><span class="cal-event-val-num' + cls + '">' + evt.actual + '</span></div>';
+                            valuesHTML += '<div class="cal-event-val"><span class="cal-event-val-label">\u0424\u0430\u043a\u0442</span><span class="cal-event-val-num' + cls + '">' + safeActual + '</span></div>';
                         }
                         valuesHTML += '</div>';
                     }
                     let detailHTML = '';
                     if (evt.detail || evt.category) {
                         const detailParts = [];
-                        if (evt.category) detailParts.push('[' + evt.category + ']');
-                        if (evt.detail) detailParts.push(evt.detail);
+                        if (evt.category) detailParts.push('[' + escapeHtml(evt.category) + ']');
+                        if (evt.detail) detailParts.push(escapeHtml(evt.detail));
                         detailHTML = '<div class="cal-event-expanded"><div class="cal-event-detail">' + detailParts.join(' ') + '</div></div>';
                     }
                     card.innerHTML =
                         '<div class="cal-event-impact-badge">' + impactDots + '</div>' +
                         '<div class="cal-event-time">' + timeStr + '</div>' +
-                        '<div class="cal-event-title">' + flag + ' ' + evt.title + '</div>' +
+                        '<div class="cal-event-title">' + flag + ' ' + safeTitle + '</div>' +
                         valuesHTML + detailHTML;
                     col.appendChild(card);
                 });
@@ -1951,7 +2148,7 @@ function caiHideAll() {
     if (caiRateLimitTimer) { clearInterval(caiRateLimitTimer); caiRateLimitTimer = null; }
 }
 function caiShowError(msg) { caiHideAll(); document.getElementById('caiError').classList.add('show'); document.getElementById('caiErrorText').textContent = msg; }
-function caiShowStablecoin(name) { caiHideAll(); document.getElementById('caiStablecoin').classList.add('show'); document.getElementById('caiStablecoinText').innerHTML = '<strong>'+name+'</strong> — это стейблкоин.<br><br>Стейблкоины сохраняют стабильную стоимость.'; }
+function caiShowStablecoin(name) { caiHideAll(); document.getElementById('caiStablecoin').classList.add('show'); document.getElementById('caiStablecoinText').innerHTML = '<strong>'+escapeHtml(name)+'</strong> — это стейблкоин.<br><br>Стейблкоины сохраняют стабильную стоимость.'; }
 function caiShowRateLimit() {
     caiHideAll(); document.getElementById('caiRateLimit').classList.add('show');
     var btn = document.getElementById('caiRetryBtn');
@@ -2050,22 +2247,25 @@ async function caiGetDescription(data, coinId) {
 }
 
 function caiGenerateLinks(data, coinId) {
+    // Every field here is attacker-influenceable (project-supplied metadata on CoinGecko),
+    // so URLs are scheme-validated via safeUrl() and any text going into an attribute
+    // is escaped via escapeHtml() before concatenation.
     var html = '<div class="cai-links-section"><div class="links-title">Ссылки:</div><div class="links-container">';
     var websiteUrl = '';
     if (data.links) {
-        if (data.links.website&&data.links.website[0]) websiteUrl = data.links.website[0];
-        else if (data.links.homepage&&data.links.homepage[0]) websiteUrl = data.links.homepage[0];
+        if (data.links.website&&data.links.website[0]) websiteUrl = safeUrl(data.links.website[0]);
+        else if (data.links.homepage&&data.links.homepage[0]) websiteUrl = safeUrl(data.links.homepage[0]);
     }
-    if (websiteUrl) html += '<a href="'+websiteUrl+'" target="_blank" rel="noopener noreferrer" class="link-btn website">Сайт проекта</a>';
-    else html += '<a href="https://www.coingecko.com/en/coins/'+coinId+'" target="_blank" rel="noopener noreferrer" class="link-btn website">CoinGecko</a>';
+    if (websiteUrl) html += '<a href="'+escapeHtml(websiteUrl)+'" target="_blank" rel="noopener noreferrer" class="link-btn website">Сайт проекта</a>';
+    else html += '<a href="https://www.coingecko.com/en/coins/'+encodeURIComponent(coinId)+'" target="_blank" rel="noopener noreferrer" class="link-btn website">CoinGecko</a>';
     if (data.links) {
-        if (data.links.twitter_screen_name) html += '<a href="https://twitter.com/'+data.links.twitter_screen_name+'" target="_blank" rel="noopener noreferrer" class="link-btn social">Twitter</a>';
-        if (data.links.telegram_channel_identifier) html += '<a href="https://t.me/'+data.links.telegram_channel_identifier+'" target="_blank" rel="noopener noreferrer" class="link-btn social">Telegram</a>';
-        if (data.links.discord_chat_url&&data.links.discord_chat_url[0]) html += '<a href="'+data.links.discord_chat_url[0]+'" target="_blank" rel="noopener noreferrer" class="link-btn social">Discord</a>';
-        if (data.links.reddit_url) html += '<a href="'+data.links.reddit_url+'" target="_blank" rel="noopener noreferrer" class="link-btn social">Reddit</a>';
-        if (data.links.facebook_username) html += '<a href="https://facebook.com/'+data.links.facebook_username+'" target="_blank" rel="noopener noreferrer" class="link-btn social">Facebook</a>';
-        if (data.links.repos_url&&data.links.repos_url.github&&data.links.repos_url.github[0]) html += '<a href="'+data.links.repos_url.github[0]+'" target="_blank" rel="noopener noreferrer" class="link-btn social">GitHub</a>';
-        if (data.links.blockchain_site&&data.links.blockchain_site[0]) html += '<a href="'+data.links.blockchain_site[0]+'" target="_blank" rel="noopener noreferrer" class="link-btn social">Эксплорер</a>';
+        if (data.links.twitter_screen_name) html += '<a href="https://twitter.com/'+encodeURIComponent(data.links.twitter_screen_name)+'" target="_blank" rel="noopener noreferrer" class="link-btn social">Twitter</a>';
+        if (data.links.telegram_channel_identifier) html += '<a href="https://t.me/'+encodeURIComponent(data.links.telegram_channel_identifier)+'" target="_blank" rel="noopener noreferrer" class="link-btn social">Telegram</a>';
+        if (data.links.discord_chat_url&&data.links.discord_chat_url[0]&&safeUrl(data.links.discord_chat_url[0])) html += '<a href="'+escapeHtml(safeUrl(data.links.discord_chat_url[0]))+'" target="_blank" rel="noopener noreferrer" class="link-btn social">Discord</a>';
+        if (data.links.reddit_url&&safeUrl(data.links.reddit_url)) html += '<a href="'+escapeHtml(safeUrl(data.links.reddit_url))+'" target="_blank" rel="noopener noreferrer" class="link-btn social">Reddit</a>';
+        if (data.links.facebook_username) html += '<a href="https://facebook.com/'+encodeURIComponent(data.links.facebook_username)+'" target="_blank" rel="noopener noreferrer" class="link-btn social">Facebook</a>';
+        if (data.links.repos_url&&data.links.repos_url.github&&data.links.repos_url.github[0]&&safeUrl(data.links.repos_url.github[0])) html += '<a href="'+escapeHtml(safeUrl(data.links.repos_url.github[0]))+'" target="_blank" rel="noopener noreferrer" class="link-btn social">GitHub</a>';
+        if (data.links.blockchain_site&&data.links.blockchain_site[0]&&safeUrl(data.links.blockchain_site[0])) html += '<a href="'+escapeHtml(safeUrl(data.links.blockchain_site[0]))+'" target="_blank" rel="noopener noreferrer" class="link-btn social">Эксплорер</a>';
     }
     html += '</div></div>'; return html;
 }
@@ -2098,10 +2298,17 @@ async function caiSearch() {
         var ch7d = md.price_change_percentage_7d||0;
         var descResult = await caiGetDescription(data, coinId);
         var linksHTML = caiGenerateLinks(data, coinId);
+        // data.name / data.symbol / cat.name / description all come from CoinGecko (or a
+        // translation service relaying CoinGecko text) — escape before innerHTML insertion.
+        var safeName = escapeHtml(data.name);
+        var safeSymbol = escapeHtml(data.symbol ? data.symbol.toUpperCase() : '');
+        var safeCatName = escapeHtml(cat.name);
+        var safeImgUrl = escapeHtml(safeUrl(data.image ? data.image.large : ''));
+        var safeDescription = escapeHtml(descResult.text);
         document.getElementById('caiResult').innerHTML =
             '<div class="cai-result-header">'+
-                '<img src="'+(data.image?data.image.large:'')+'" class="cai-logo" alt="'+data.name+'" onerror="this.src=\'https://via.placeholder.com/75\'">'+
-                '<div class="cai-result-title"><h2>'+data.name+'</h2><div class="cai-symbol">'+(data.symbol?data.symbol.toUpperCase():'')+'</div><span class="category-badge '+cat.cls+'">'+cat.icon+' '+cat.name+'</span></div>'+
+                '<img src="'+safeImgUrl+'" class="cai-logo" alt="'+safeName+'" onerror="this.src=\'https://via.placeholder.com/75\'">'+
+                '<div class="cai-result-title"><h2>'+safeName+'</h2><div class="cai-symbol">'+safeSymbol+'</div><span class="category-badge '+cat.cls+'">'+cat.icon+' '+safeCatName+'</span></div>'+
             '</div>'+
             '<div class="cai-stats">'+
                 '<div class="cai-stat"><div class="stat-label">Цена</div><div class="stat-value">'+caiFmtPrice(price)+'</div></div>'+
@@ -2111,7 +2318,7 @@ async function caiSearch() {
                 '<div class="cai-stat"><div class="stat-label">Объём 24ч</div><div class="stat-value">'+caiFmt(md.total_volume?md.total_volume.usd:0)+'</div></div>'+
                 '<div class="cai-stat"><div class="stat-label">Рейтинг</div><div class="stat-value">#'+(md.market_cap_rank||'—')+'</div></div>'+
             '</div>'+
-            '<div class="cai-description">'+descResult.text+'</div>'+
+            '<div class="cai-description">'+safeDescription+'</div>'+
             linksHTML;
         caiHideAll();
         document.getElementById('caiResult').classList.add('show');
@@ -2129,6 +2336,11 @@ async function caiSearch() {
 //  INIT
 // ============================================================
 document.addEventListener('DOMContentLoaded', function() {
+    let saved = null;
+    try { saved = localStorage.getItem('ct_active_section'); } catch(e) { /* storage unavailable — fall back to default tab */ }
+    if (saved && saved !== 'natr') {
+        switchSection(saved);
+    }
     natrUpdateTimerDisplay();
     natrStartScan();
 });

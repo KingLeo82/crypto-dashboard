@@ -206,6 +206,54 @@
             border-radius: 50%; animation: spin 1s linear infinite;
         }
 
+        .natr-tools {
+            display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+            margin-bottom: 16px; padding: 10px 14px; background: var(--bg-card);
+            border-radius: 12px; border: 1px solid var(--border);
+        }
+        .natr-tool-group { display: flex; align-items: center; gap: 6px; }
+        .natr-tool-label { font-size: 11px; color: var(--muted); font-weight: 600; white-space: nowrap; }
+        .natr-tool-btn {
+            padding: 8px 14px; border-radius: 8px; font-size: 12px; font-weight: 600;
+            cursor: pointer; background: transparent; border: 1px solid var(--border);
+            color: var(--muted); transition: all 0.2s; font-family: 'Space Grotesk', sans-serif;
+            white-space: nowrap;
+        }
+        .natr-tool-btn:hover { color: var(--fg); background: rgba(255,255,255,0.03); }
+        .natr-tool-btn.active { color: var(--accent); border-color: rgba(240,185,11,0.35); background: var(--accent-dim); }
+        .natr-alert-input {
+            width: 80px; padding: 8px 10px; border-radius: 8px; font-size: 12px;
+            background: var(--bg); border: 1px solid var(--border); color: var(--fg);
+            font-family: 'JetBrains Mono', monospace; outline: none;
+        }
+        .natr-alert-input:focus { border-color: var(--accent); }
+
+        .natr-star {
+            display: inline-block; cursor: pointer; font-size: 15px; color: var(--muted);
+            opacity: 0.35; margin-right: 6px; transition: all 0.2s; vertical-align: middle;
+        }
+        .natr-star:hover { opacity: 0.8; }
+        .natr-star.pinned { color: var(--accent); opacity: 1; }
+        .natr-star:focus-visible { outline: 2px solid var(--accent); border-radius: 4px; }
+
+        .natr-price-cell { font-size: 12px; line-height: 1.5; }
+        .natr-price-cell .p-price { font-family: 'JetBrains Mono', monospace; color: var(--fg); }
+        .natr-price-cell .p-vol { color: var(--muted); font-size: 11px; }
+
+        .natr-cai-link {
+            color: var(--accent); cursor: pointer; text-decoration: none; font-weight: 600;
+        }
+        .natr-cai-link:hover { text-decoration: underline; }
+        .natr-cai-link:focus-visible { outline: 2px solid var(--accent); }
+
+        .natr-spark { display: block; }
+        .natr-trend-flat { color: var(--muted); font-size: 12px; }
+
+        @media (max-width: 640px) {
+            .natr-table-wrap { overflow-x: auto; }
+            .natr-table-wrap table { min-width: 560px; }
+        }
+
         .natr-stats {
             display: flex; justify-content: space-between; align-items: center;
             padding: 14px 18px; background: var(--bg-card);
@@ -338,10 +386,14 @@
             height: 40px; background: rgba(255,255,255,0.05);
             border-radius: 6px; position: relative; display: flex;
             overflow: visible; border: 1px solid var(--border);
-            margin-bottom: 30px; cursor: crosshair;
+            margin-bottom: 10px; cursor: crosshair;
         }
         .tw-hour-cell { flex: 1; border-right: 1px solid rgba(255,255,255,0.06); }
         .tw-hour-cell:last-child { border-right: none; }
+
+        .tw-overlap-strip { height: 10px; border-radius: 4px; margin-bottom: 8px; }
+        .tw-overlap-legend { font-size: 11px; color: var(--muted); margin-bottom: 22px; display: flex; align-items: center; gap: 6px; }
+        .tw-overlap-legend .dot { width: 8px; height: 8px; border-radius: 2px; background: rgba(240,185,11,0.75); display: inline-block; }
 
         .tw-mouse-time-indicator {
             position: absolute; top: -45px; left: 0; transform: translateX(-50%);
@@ -379,7 +431,7 @@
             pointer-events: none; display: none;
         }
 
-        .tw-row { height: 70px; margin-bottom: 6px; position: relative; }
+        .tw-row { height: 82px; margin-bottom: 6px; position: relative; }
         .tw-bar-area { height: 100%; position: relative; margin-left: 20px; margin-right: 15px; }
         .tw-session {
             position: absolute; top: 6px; bottom: 6px; border-radius: 6px;
@@ -390,6 +442,7 @@
             box-shadow: 0 4px 15px rgba(0,0,0,0.3);
         }
         .tw-session:hover { transform: translateY(-2px); }
+        .tw-session.closed { filter: grayscale(0.7); opacity: 0.55; }
         .usa { background: linear-gradient(135deg,rgba(52,152,219,0.85),rgba(41,128,185,0.85)); }
         .uk { background: linear-gradient(135deg,rgba(231,76,60,0.85),rgba(192,57,43,0.85)); }
         .germany { background: linear-gradient(135deg,rgba(243,156,18,0.85),rgba(230,126,34,0.85)); }
@@ -406,6 +459,7 @@
         .country-time { font-family: 'JetBrains Mono', monospace; font-size: 16px; font-weight: 700; letter-spacing: 1px; }
         .separator { opacity: 0.5; font-size: 10px; }
         .session-hours { font-size: 11px; font-weight: 500; }
+        .session-countdown { font-size: 10px; font-weight: 600; margin-top: 3px; opacity: 0.9; letter-spacing: 0.02em; }
 
         @media (max-width:768px) {
             .tw-wrap { padding: 10px; }
@@ -414,12 +468,14 @@
             .tw-tz-selector { position: static; transform: none; }
             .tw-scale-wrapper,.tw-bar-area { margin-left: 10px; margin-right: 5px; }
             .tw-scale-numbers { font-size: 11px; }
-            .tw-scale-bar { height: 28px; margin-bottom: 20px; }
-            .tw-row { height: 55px; margin-bottom: 4px; }
+            .tw-scale-bar { height: 28px; margin-bottom: 8px; }
+            .tw-overlap-legend { margin-bottom: 16px; }
+            .tw-row { height: 66px; margin-bottom: 4px; }
             .tw-session { padding: 5px 10px; }
             .exchange-name { font-size: 10px; }
             .country-time { font-size: 12px; }
             .session-hours { font-size: 8px; }
+            .session-countdown { font-size: 7px; }
         }
 
         /* ======================================================
@@ -478,6 +534,16 @@
         }
         .cai-tag:hover { background: var(--accent-dim); border-color: rgba(240,185,11,0.3); color: var(--accent); transform: translateY(-2px); }
 
+        .cai-history-row { display: flex; align-items: center; gap: 10px; justify-content: center; flex-wrap: wrap; margin: -18px 0 30px; }
+        .cai-history-label { font-size: 12px; color: var(--muted); font-weight: 600; }
+        .cai-history-chips { display: flex; gap: 8px; flex-wrap: wrap; }
+        .cai-history-chip {
+            padding: 5px 12px; background: rgba(255,255,255,0.04); border: 1px solid var(--border);
+            border-radius: 14px; cursor: pointer; font-size: 12px; color: var(--muted); transition: all 0.2s;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .cai-history-chip:hover { color: var(--accent); border-color: rgba(240,185,11,0.3); }
+
         .cai-result {
             background: var(--bg-card); border-radius: 16px; padding: 32px;
             margin-top: 20px; display: none;
@@ -527,6 +593,33 @@
             background: rgba(255,255,255,0.03); border-radius: 12px;
         }
 
+        .cai-sparkline-box {
+            background: rgba(255,255,255,0.03); border: 1px solid var(--border);
+            border-radius: 12px; padding: 16px 18px; margin-bottom: 24px;
+        }
+        .cai-sparkline-title { font-size: 0.85rem; color: var(--muted); font-weight: 600; margin-bottom: 8px; }
+        .cai-sparkline-box svg { display: block; width: 100%; height: 64px; }
+
+        .cai-converter {
+            display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+            background: rgba(255,255,255,0.03); border: 1px solid var(--border);
+            border-radius: 12px; padding: 16px 18px; margin-bottom: 24px;
+        }
+        .cai-converter label { font-size: 0.85rem; color: var(--muted); font-weight: 600; }
+        .cai-converter input[type=number] {
+            width: 120px; padding: 9px 12px; border-radius: 8px; font-size: 14px;
+            background: var(--bg); border: 1px solid var(--border); color: var(--fg);
+            font-family: 'JetBrains Mono', monospace; outline: none;
+        }
+        .cai-converter input[type=number]:focus { border-color: var(--accent); }
+        .cai-converter select {
+            padding: 9px 12px; border-radius: 8px; font-size: 14px;
+            background: var(--bg); border: 1px solid var(--border); color: var(--fg);
+            font-family: 'Space Grotesk', sans-serif; outline: none; cursor: pointer;
+        }
+        .cai-converter .conv-equals { color: var(--muted); }
+        .cai-converter .conv-result { font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 1.05rem; color: var(--accent); }
+
         .cai-links-section { margin-top: 28px; padding-top: 24px; border-top: 1px solid var(--border); }
         .links-title { font-size: 1.1rem; font-weight: 600; margin-bottom: 18px; color: var(--fg); }
         .links-container { display: flex; flex-wrap: wrap; gap: 11px; align-items: center; }
@@ -555,6 +648,20 @@
             animation: spin 1s linear infinite; margin: 0 auto 22px;
         }
         .cai-rate-limit { background: rgba(251,191,36,0.1); border: 2px solid rgba(251,191,36,0.3); border-radius: 16px; }
+
+        .cai-disambig { display: none; padding: 40px 20px; text-align: center; }
+        .cai-disambig.show { display: block; }
+        #caiDisambigList { display: flex; flex-direction: column; gap: 10px; max-width: 480px; margin: 0 auto; }
+        .cai-disambig-item {
+            display: flex; align-items: center; gap: 14px; padding: 14px 18px;
+            background: rgba(255,255,255,0.04); border: 1px solid var(--border);
+            border-radius: 12px; cursor: pointer; text-align: left; transition: all 0.2s;
+        }
+        .cai-disambig-item:hover { background: var(--accent-dim); border-color: rgba(240,185,11,0.35); transform: translateY(-1px); }
+        .cai-disambig-item img { width: 36px; height: 36px; border-radius: 9px; flex-shrink: 0; }
+        .cai-disambig-item .di-name { font-weight: 600; }
+        .cai-disambig-item .di-id { font-size: 12px; color: var(--muted); }
+        .cai-disambig-item .di-rank { margin-left: auto; font-size: 12px; color: var(--muted); font-family: 'JetBrains Mono', monospace; white-space: nowrap; }
         .retry-btn {
             margin-top: 20px; padding: 12px 30px;
             background: var(--accent); color: #000; font-weight: 700;
@@ -823,6 +930,31 @@
         <button class="natr-tab active" data-mode="5_14" onclick="natrSwitchMode('5_14')">NATR 5/14 (5m x 14)</button>
         <button class="natr-tab" data-mode="1_30" onclick="natrSwitchMode('1_30')">NATR 1/30 (1m x 30)</button>
     </div>
+    <div class="natr-tools" id="natrTools">
+        <div class="natr-tool-group">
+            <label class="natr-tool-label" for="natrTopNSelect">Показать:</label>
+            <select class="sec-select" id="natrTopNSelect" onchange="natrChangeTopN(this.value)">
+                <option value="10">Топ 10</option>
+                <option value="20">Топ 20</option>
+                <option value="50">Топ 50</option>
+                <option value="99999">Все</option>
+            </select>
+        </div>
+        <div class="natr-tool-group">
+            <label class="natr-tool-label" for="natrLiqSelect">Ликвидность:</label>
+            <select class="sec-select" id="natrLiqSelect" onchange="natrChangeLiqFilter(this.value)">
+                <option value="0">Любая</option>
+                <option value="100000">Объём 24ч &gt; $100 тыс</option>
+                <option value="1000000">Объём 24ч &gt; $1 млн</option>
+                <option value="10000000">Объём 24ч &gt; $10 млн</option>
+            </select>
+        </div>
+        <button class="natr-tool-btn" id="natrWatchlistBtn" onclick="natrToggleWatchlistOnly()" title="Показывать только избранное">★ Избранное</button>
+        <div class="natr-tool-group">
+            <input type="number" class="natr-alert-input" id="natrAlertInput" placeholder="Порог %" min="0" step="0.1">
+            <button class="natr-tool-btn" id="natrAlertBtn" onclick="natrToggleAlerts()" title="Уведомлять, когда NATR превышает порог">🔔 Алерт выкл</button>
+        </div>
+    </div>
     <div class="natr-stats" id="natrStatsBar" style="display:none;">
         <div>Всего контрактов: <strong id="natrStatTotal" class="mono">--</strong></div>
         <div>Max NATR: <strong id="natrStatMax" class="mono">--%</strong></div>
@@ -835,7 +967,7 @@
     <div class="natr-table-wrap" id="natrTableWrap">
         <div class="bg-update-overlay"></div>
         <table>
-            <thead><tr><th style="width:60px;">#</th><th>Тикер</th><th style="width:140px;">NATR (%)</th></tr></thead>
+            <thead><tr><th style="width:40px;">#</th><th>Тикер</th><th style="width:100px;">Цена / Объём</th><th style="width:64px;">Тренд</th><th style="width:120px;">NATR (%)</th></tr></thead>
             <tbody id="natrTableBody"></tbody>
         </table>
         <div id="natrSkeleton" style="display:none;"></div>
@@ -888,6 +1020,8 @@
             <div class="tw-hour-cell"></div><div class="tw-hour-cell"></div><div class="tw-hour-cell"></div>
             <div class="tw-hour-cell"></div><div class="tw-hour-cell"></div><div class="tw-hour-cell"></div>
         </div>
+        <div class="tw-overlap-strip" id="twOverlapStrip"></div>
+        <div class="tw-overlap-legend"><span class="dot"></span> Пересечение сессий (2+ рынка открыты одновременно — обычно выше ликвидность)</div>
     </div>
     <div class="tw-now-line" id="twNowLine" data-time="00:00"></div>
     <div class="tw-mouse-line" id="twMouseLine"></div>
@@ -934,10 +1068,15 @@
         </div>
     </div>
     <div class="cal-filters">
+        <span class="cal-filter-label">Поиск:</span>
+        <input type="text" id="calSearchInput" class="natr-alert-input" style="width:180px;" placeholder="Название события..." oninput="calSetSearchQuery(this.value)">
+        <div class="cal-filter-sep"></div>
         <span class="cal-filter-label">Важность:</span>
         <button class="cal-filter-btn active" data-impact="high" onclick="calToggleImpact('high')"><span class="cal-filter-dot cal-impact-high"></span> Высокая</button>
         <button class="cal-filter-btn active" data-impact="medium" onclick="calToggleImpact('medium')"><span class="cal-filter-dot cal-impact-medium"></span> Средняя</button>
         <button class="cal-filter-btn active" data-impact="low" onclick="calToggleImpact('low')"><span class="cal-filter-dot cal-impact-low"></span> Низкая</button>
+        <div class="cal-filter-sep"></div>
+        <button class="natr-tool-btn" id="calNotifyBtn" onclick="calToggleNotify()" title="Уведомлять за 5 минут до событий высокой важности">🔔 Напоминания выкл</button>
         <div class="cal-filter-sep"></div>
         <span class="cal-filter-label">Страна:</span>
         <div class="cal-country-filter">
@@ -1000,7 +1139,16 @@
         <span class="cai-tag" onclick="caiSetInput('DOGE')">DOGE</span>
         <span class="cai-tag" onclick="caiSetInput('BNB')">BNB</span>
     </div>
+    <div class="cai-history-row" id="caiHistoryRow" style="display:none;">
+        <span class="cai-history-label">Недавние:</span>
+        <div class="cai-history-chips" id="caiHistoryChips"></div>
+    </div>
     <div class="cai-loading" id="caiLoading"><div class="cai-spinner"></div><p id="caiLoadingText">Загрузка данных...</p></div>
+    <div class="cai-disambig" id="caiDisambig">
+        <h2 style="margin-bottom:14px;font-size:1.3rem;">Нашлось несколько монет с таким тикером</h2>
+        <p style="margin-bottom:16px;color:var(--muted);">Уточните, какая нужна:</p>
+        <div id="caiDisambigList"></div>
+    </div>
     <div class="cai-stablecoin" id="caiStablecoin">
         <div style="font-size:70px;margin-bottom:18px;">&#9888;&#65039;</div>
         <h2 style="margin-bottom:12px;color:#fbbf24;font-size:1.8rem;">Стейблкоин!</h2>
@@ -1070,6 +1218,50 @@ function safeUrl(url) {
     var u = String(url).trim();
     return /^https?:\/\//i.test(u) ? u : '';
 }
+
+// ---- Sound alerts (NATR threshold + calendar reminders) ----
+// Generated with the Web Audio API instead of a bundled mp3/wav so the whole
+// tool stays a single HTML file with no external asset dependency.
+let ctAudioCtx = null;
+function ctGetAudioCtx() {
+    if (!ctAudioCtx) {
+        try { ctAudioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+        catch(e) { return null; }
+    }
+    if (ctAudioCtx.state === 'suspended') { ctAudioCtx.resume().catch(() => {}); }
+    return ctAudioCtx;
+}
+// Browsers block audio until the page has seen a user gesture. Alerts restored
+// from a previous session can fire before the user clicks anything on this load,
+// so we unlock on the very first click/keydown anywhere on the page.
+function ctUnlockAudioOnce() {
+    ctGetAudioCtx();
+    document.removeEventListener('click', ctUnlockAudioOnce);
+    document.removeEventListener('keydown', ctUnlockAudioOnce);
+}
+document.addEventListener('click', ctUnlockAudioOnce);
+document.addEventListener('keydown', ctUnlockAudioOnce);
+// kind: 'natr' (higher two-tone chime) or 'calendar' (lower two-tone chime) —
+// just enough of a difference to tell the two alert sources apart by ear.
+function playAlertSound(kind) {
+    const ctx = ctGetAudioCtx();
+    if (!ctx) return;
+    const now = ctx.currentTime;
+    const freqs = kind === 'calendar' ? [660, 880] : [880, 1175];
+    freqs.forEach((f, i) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.value = f;
+        const start = now + i * 0.15;
+        gain.gain.setValueAtTime(0, start);
+        gain.gain.linearRampToValueAtTime(0.3, start + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.001, start + 0.3);
+        osc.connect(gain).connect(ctx.destination);
+        osc.start(start);
+        osc.stop(start + 0.32);
+    });
+}
 function showToast(text) {
     const t = document.getElementById('globalToast');
     document.getElementById('globalToastText').textContent = text;
@@ -1107,6 +1299,50 @@ let natrRefreshTimerId = null;
 let natrSelectedCategory = 'all';
 let natrCategoryMap = null; // will be set to NATR_EMBEDDED_CATEGORIES on init
 let natrCategoryLoading = false;
+
+// --- Top-N / watchlist / liquidity filter / alerts state ---
+let natrTopN = 10;
+let natrWatchlist = new Set();
+let natrWatchlistOnly = false;
+let natrMinVolume = 0;
+let natrTicker24hMap = new Map(); // symbol -> {price, volume}
+let natrHistoryMap = new Map();   // symbol -> array of recent NATR readings (session-only, resets on reload)
+let natrAlertsEnabled = false;
+let natrAlertThreshold = null;
+let natrAlertedSymbols = new Set(); // edge-triggered so we don't re-notify every refresh while still above threshold
+try {
+    natrTopN = parseInt(localStorage.getItem('natr_topn'), 10) || 10;
+    natrMinVolume = parseInt(localStorage.getItem('natr_minvol'), 10) || 0;
+    natrWatchlist = new Set(JSON.parse(localStorage.getItem('natr_watchlist') || '[]'));
+    const savedMode = localStorage.getItem('natr_mode');
+    if (savedMode === '5_14' || savedMode === '1_30') natrMode = savedMode;
+    const savedCat = localStorage.getItem('natr_category');
+    if (savedCat) natrSelectedCategory = savedCat;
+    natrAlertsEnabled = localStorage.getItem('natr_alerts_enabled') === '1';
+    const savedThr = parseFloat(localStorage.getItem('natr_alert_threshold'));
+    if (!isNaN(savedThr) && savedThr > 0) natrAlertThreshold = savedThr;
+    if (!natrAlertThreshold) natrAlertsEnabled = false; // enabled flag with no valid threshold shouldn't stick
+} catch(e) { /* storage unavailable — defaults are fine */ }
+
+// Syncs toolbar controls (select values, active tab classes, watchlist button)
+// with whatever was restored from localStorage above — runs once on DOMContentLoaded.
+function natrApplyRestoredUI() {
+    const validTopN = [10, 20, 50, 99999];
+    if (!validTopN.includes(natrTopN)) natrTopN = 10;
+    const topSel = document.getElementById('natrTopNSelect');
+    if (topSel) topSel.value = String(natrTopN);
+    const liqSel = document.getElementById('natrLiqSelect');
+    if (liqSel) liqSel.value = String(natrMinVolume);
+    document.querySelectorAll('#natrCatTabs .natr-cat-tab').forEach(t => t.classList.toggle('active', t.dataset.cat === natrSelectedCategory));
+    document.querySelectorAll('.natr-tab').forEach(t => t.classList.toggle('active', t.dataset.mode === natrMode));
+    const alertInput = document.getElementById('natrAlertInput');
+    const alertBtn = document.getElementById('natrAlertBtn');
+    if (alertInput && natrAlertThreshold) alertInput.value = natrAlertThreshold;
+    if (alertBtn && natrAlertsEnabled && natrAlertThreshold) {
+        alertBtn.classList.add('active');
+        alertBtn.textContent = '🔔 Алерт вкл (' + natrAlertThreshold + '%)';
+    }
+}
 
 // Embedded category map — avoids CORS, works offline
 const NATR_EMBEDDED_CATEGORIES={"BTCUSDT":"PoW","ETHUSDT":"Layer-1","BCHUSDT":"Payment","XRPUSDT":"Payment","EOSUSDT":"NONE","LTCUSDT":"Payment","TRXUSDT":"Layer-1","ETCUSDT":"PoW","LINKUSDT":"Infrastructure","XLMUSDT":"Layer-2","ADAUSDT":"Layer-1","XMRUSDT":"PoW","DASHUSDT":"PoW","ZECUSDT":"PoW","XTZUSDT":"Layer-1","BNBUSDT":"Layer-1","ATOMUSDT":"Layer-1","ONTUSDT":"PoW","IOTAUSDT":"PoW","BATUSDT":"Infrastructure","VETUSDT":"Layer-1","NEOUSDT":"Layer-1","QTUMUSDT":"Layer-1","IOSTUSDT":"Layer-1","THETAUSDT":"AI","ALGOUSDT":"Layer-1","ZILUSDT":"PoW","KNCUSDT":"DeFi","ZRXUSDT":"DeFi","COMPUSDT":"DeFi","OMGUSDT":"Layer-2","DOGEUSDT":"Meme","KAVAUSDT":"DeFi","BANDUSDT":"DeFi","RLCUSDT":"AI","WAVESUSDT":"Layer-1","MKRUSDT":"DeFi","SNXUSDT":"DeFi","DOTUSDT":"Layer-1","DEFIUSDT":"Index","YFIUSDT":"DeFi","BALUSDT":"DEX","CRVUSDT":"DeFi","TRBUSDT":"Infrastructure","RUNEUSDT":"DeFi","SUSHIUSDT":"DeFi","EGLDUSDT":"Layer-1","SOLUSDT":"Layer-1","ICXUSDT":"Layer-1","STORJUSDT":"Storage","BLZUSDT":"Storage","UNIUSDT":"DeFi","AVAXUSDT":"Layer-1","FTMUSDT":"Layer-1","ENJUSDT":"Gaming","FLMUSDT":"DeFi","KSMUSDT":"Layer-1","NEARUSDT":"Layer-1","AAVEUSDT":"DeFi","FILUSDT":"Storage","RSRUSDT":"DeFi","LRCUSDT":"DeFi","OCEANUSDT":"AI","BELUSDT":"DeFi","AXSUSDT":"Metaverse","ALPHAUSDT":"DeFi","ZENUSDT":"PoW","SKLUSDT":"Layer-2","GRTUSDT":"AI","1INCHUSDT":"DeFi","CHZUSDT":"NFT","SANDUSDT":"Metaverse","ANKRUSDT":"DeFi","HOTUSDT":"Storage","DENTUSDT":"Infrastructure","CELRUSDT":"Layer-2","MTLUSDT":"Infrastructure","OGNUSDT":"DeFi","NKNUSDT":"PoW","SCUSDT":"Storage","DGBUSDT":"Payment","1000SHIBUSDT":"Meme","BAKEUSDT":"DeFi","BTCDOMUSDT":"Index","IOTXUSDT":"Infrastructure","RAYUSDT":"DEX","C98USDT":"DeFi","MASKUSDT":"Infrastructure","ATAUSDT":"Infrastructure","DYDXUSDT":"DeFi","1000XECUSDT":"Payment","GALAUSDT":"Gaming","CELOUSDT":"Layer-1","ARUSDT":"Storage","KLAYUSDT":"Layer-1","ARPAUSDT":"Infrastructure","CTSIUSDT":"Layer-2","LPTUSDT":"AI","ENSUSDT":"Infrastructure","PEOPLEUSDT":"Meme","ROSEUSDT":"Layer-1","DUSKUSDT":"Layer-1","FLOWUSDT":"Layer-1","IMXUSDT":"NFT","API3USDT":"Infrastructure","GMTUSDT":"NFT","APEUSDT":"NFT","WOOUSDT":"DeFi","JASMYUSDT":"Infrastructure","DARUSDT":"NFT","OPUSDT":"Layer-2","INJUSDT":"DeFi","STGUSDT":"DeFi","SPELLUSDT":"DeFi","1000LUNCUSDT":"DeFi","LUNA2USDT":"Layer-1","LDOUSDT":"DeFi","ICPUSDT":"Layer-1","APTUSDT":"Layer-1","QNTUSDT":"Infrastructure","FETUSDT":"AI","FXSUSDT":"DeFi","HOOKUSDT":"Infrastructure","MAGICUSDT":"Metaverse","TUSDT":"Infrastructure","RNDRUSDT":"NONE","HIGHUSDT":"Metaverse","MINAUSDT":"Layer-1","ASTRUSDT":"Layer-1","AGIXUSDT":"AI","PHBUSDT":"AI","GMXUSDT":"DeFi","CFXUSDT":"PoW","STXUSDT":"Infrastructure","CKBUSDT":"PoW","PERPUSDT":"DeFi","TRUUSDT":"DeFi","LQTYUSDT":"DeFi","IDUSDT":"Infrastructure","ARBUSDT":"Layer-2","JOEUSDT":"DeFi","TLMUSDT":"Metaverse","AMBUSDT":"Layer-1","LEVERUSDT":"DeFi","RDNTUSDT":"DeFi","HFTUSDT":"DeFi","XVSUSDT":"DeFi","BLURUSDT":"NFT","EDUUSDT":"Metaverse","IDEXUSDT":"DeFi","SUIUSDT":"Layer-1","1000PEPEUSDT":"Meme","1000FLOKIUSDT":"Meme","UMAUSDT":"DeFi","RADUSDT":"DeFi","KEYUSDT":"Infrastructure","COMBOUSDT":"Metaverse","NMRUSDT":"AI","MAVUSDT":"Infrastructure","MDTUSDT":"Infrastructure","XVGUSDT":"PoW","WLDUSDT":"AI","PENDLEUSDT":"DeFi","ARKMUSDT":"Infrastructure","AGLDUSDT":"Gaming","YGGUSDT":"Gaming","DODOXUSDT":"DeFi","BNTUSDT":"DeFi","OXTUSDT":"Infrastructure","SEIUSDT":"Layer-1","CYBERUSDT":"Infrastructure","HIFIUSDT":"DeFi","ARKUSDT":"Layer-1","GLMRUSDT":"Layer-2","BICOUSDT":"Infrastructure","STRAXUSDT":"Layer-2","LOOMUSDT":"Infrastructure","BIGTIMEUSDT":"Gaming","BONDUSDT":"DeFi","ORBSUSDT":"Infrastructure","STPTUSDT":"DeFi","WAXPUSDT":"Gaming","BSVUSDT":"PoW","RIFUSDT":"Storage","POLYXUSDT":"Infrastructure","GASUSDT":"Infrastructure","POWRUSDT":"Layer-2","TIAUSDT":"Infrastructure","SNTUSDT":"DeFi","CAKEUSDT":"DeFi","MEMEUSDT":"Meme","TWTUSDT":"Infrastructure","TOKENUSDT":"DeFi","ORDIUSDT":"Meme","STEEMUSDT":"DeFi","BADGERUSDT":"Bitcoin Eco","ILVUSDT":"Metaverse","NTRNUSDT":"Layer-1","KASUSDT":"Layer-1","BEAMXUSDT":"Gaming","1000BONKUSDT":"Meme","PYTHUSDT":"Infrastructure","SUPERUSDT":"Gaming","ONGUSDT":"Layer-1","ETHWUSDT":"PoW","JTOUSDT":"DeFi","1000SATSUSDT":"Meme","AUCTIONUSDT":"DeFi","1000RATSUSDT":"Meme","ACEUSDT":"Gaming","MOVRUSDT":"Layer-1","NFPUSDT":"AI","AIUSDT":"AI","XAIUSDT":"Gaming","WIFUSDT":"Meme","MANTAUSDT":"Layer-2","ONDOUSDT":"DeFi","LSKUSDT":"Layer-2","ALTUSDT":"Infrastructure","JUPUSDT":"DeFi","ZETAUSDT":"Layer-1","RONINUSDT":"Gaming","DYMUSDT":"Infrastructure","OMUSDT":"DeFi","PIXELUSDT":"Gaming","STRKUSDT":"Layer-1","GLMUSDT":"Infrastructure","PORTALUSDT":"Gaming","TONUSDT":"Layer-1","AXLUSDT":"Infrastructure","METISUSDT":"Layer-2","AEVOUSDT":"DeFi","VANRYUSDT":"Metaverse","BOMEUSDT":"Meme","ETHFIUSDT":"DeFi","ENAUSDT":"DeFi","WUSDT":"Infrastructure","TNSRUSDT":"NFT","SAGAUSDT":"Layer-1","TAOUSDT":"AI","OMNIUSDT":"Layer-1","REZUSDT":"DeFi","BBUSDT":"Layer-1","NOTUSDT":"Gaming","TURBOUSDT":"AI","IOUSDT":"AI","ZKUSDT":"Layer-2","MEWUSDT":"Meme","LISTAUSDT":"DeFi","ZROUSDT":"Infrastructure","RENDERUSDT":"Infrastructure","BANANAUSDT":"DeFi","RAREUSDT":"NFT","GUSDT":"Infrastructure","SYNUSDT":"DeFi","SYSUSDT":"PoW","VOXELUSDT":"Gaming","BRETTUSDT":"Meme","ALPACAUSDT":"DeFi","POPCATUSDT":"Meme","SUNUSDT":"DeFi","VIDTUSDT":"AI","NULSUSDT":"Infrastructure","DOGSUSDT":"Meme","MBOXUSDT":"Metaverse","CHESSUSDT":"DeFi","FLUXUSDT":"AI","BSWUSDT":"DeFi","QUICKUSDT":"DeFi","NEIROETHUSDT":"Meme","RPLUSDT":"DeFi","POLUSDT":"Layer-2","UXLINKUSDT":"Infrastructure","1MBABYDOGEUSDT":"Meme","NEIROUSDT":"Meme","KDAUSDT":"PoW","FIDAUSDT":"Infrastructure","FIOUSDT":"NFT","CATIUSDT":"Gaming","GHSTUSDT":"Metaverse","LOKAUSDT":"Gaming","HMSTRUSDT":"Gaming","REIUSDT":"Layer-1","EIGENUSDT":"Infrastructure","DIAUSDT":"Infrastructure","1000CATUSDT":"Meme","SCRUSDT":"Layer-1","GOATUSDT":"AI","MOODENGUSDT":"Meme","SAFEUSDT":"Infrastructure","PONKEUSDT":"Meme","COWUSDT":"DeFi","CETUSUSDT":"DeFi","1000000MOGUSDT":"Meme","GRASSUSDT":"AI","DRIFTUSDT":"DeFi","SWELLUSDT":"DeFi","ACTUSDT":"AI","PNUTUSDT":"Meme","HIPPOUSDT":"Meme","1000XUSDT":"AI","DEGENUSDT":"Meme","BANUSDT":"Meme","AKTUSDT":"AI","SLERFUSDT":"Meme","SCRTUSDT":"Layer-1","1000CHEEMSUSDT":"Meme","1000WHYUSDT":"Meme","THEUSDT":"DeFi","MORPHOUSDT":"DeFi","CHILLGUYUSDT":"Meme","KAIAUSDT":"DeFi","AEROUSDT":"DeFi","ACXUSDT":"DeFi","ORCAUSDT":"DeFi","MOVEUSDT":"Layer-1","VIRTUALUSDT":"AI","SPXUSDT":"Meme","MEUSDT":"NFT","AVAUSDT":"NONE","DEGOUSDT":"NFT","VELODROMEUSDT":"DeFi","MOCAUSDT":"Metaverse","VANAUSDT":"AI","PENGUUSDT":"Meme","LUMIAUSDT":"DeFi","USUALUSDT":"DeFi","AIXBTUSDT":"AI","FARTCOINUSDT":"Meme","KMNOUSDT":"DeFi","CGPTUSDT":"AI","HIVEUSDT":"Layer-1","DEXEUSDT":"DeFi","PHAUSDT":"AI","DFUSDT":"DeFi","GRIFFAINUSDT":"AI","AI16ZUSDT":"AI","ZEREBROUSDT":"AI","COOKIEUSDT":"AI","ALCHUSDT":"AI","SWARMSUSDT":"AI","SONICUSDT":"Gaming","DUSDT":"Metaverse","PROMUSDT":"NFT","SUSDT":"Layer-1","SOLVUSDT":"DeFi","ARCUSDT":"AI","AVAAIUSDT":"AI","TRUMPUSDT":"Meme","MELANIAUSDT":"Meme","VTHOUSDT":"Layer-1","ANIMEUSDT":"NFT","VINEUSDT":"Meme","PIPPINUSDT":"Meme","VVVUSDT":"AI","BERAUSDT":"Layer-1","TSTUSDT":"Meme","LAYERUSDT":"Infrastructure","HEIUSDT":"Infrastructure","B3USDT":"Alpha","IPUSDT":"AI","GPSUSDT":"Infrastructure","SHELLUSDT":"AI","KAITOUSDT":"Infrastructure","REDUSDT":"Infrastructure","VICUSDT":"Layer-1","EPICUSDT":"NFT","BMTUSDT":"Infrastructure","MUBARAKUSDT":"Meme","FORMUSDT":"Gaming","BIDUSDT":"AI","TUTUSDT":"Meme","BROCCOLI714USDT":"Meme","BROCCOLIF3BUSDT":"Meme","SIRENUSDT":"Alpha","BANANAS31USDT":"Meme","BRUSDT":"DeFi","PLUMEUSDT":"Layer-1","NILUSDT":"AI","PARTIUSDT":"Layer-1","JELLYJELLYUSDT":"Alpha","MAVIAUSDT":"Gaming","PAXGUSDT":"RWA","WALUSDT":"Storage","FUNUSDT":"DeFi","MLNUSDT":"DeFi","GUNUSDT":"Gaming","ATHUSDT":"AI","BABYUSDT":"DeFi","FORTHUSDT":"DeFi","PROMPTUSDT":"AI","XCNUSDT":"PoW","STOUSDT":"DeFi","FHEUSDT":"AI","KERNELUSDT":"DeFi","WCTUSDT":"Infrastructure","INITUSDT":"Layer-1","BANKUSDT":"Meme","EPTUSDT":"AI","DEEPUSDT":"DeFi","HYPERUSDT":"DeFi","MEMEFIUSDT":"Gaming","FISUSDT":"DeFi","JSTUSDT":"DeFi","SIGNUSDT":"Infrastructure","PUNDIXUSDT":"DeFi","CTKUSDT":"Infrastructure","AIOTUSDT":"AI","DOLOUSDT":"DeFi","HAEDALUSDT":"DeFi","SXTUSDT":"AI","B2USDT":"DeFi","MILKUSDT":"DeFi","SYRUPUSDT":"DeFi","OBOLUSDT":"DeFi","DOODUSDT":"Alpha","OGUSDT":"NONE","ZKJUSDT":"Layer-2","SKYAIUSDT":"AI","NXPCUSDT":"Gaming","CVCUSDT":"Infrastructure","AGTUSDT":"AI","AWEUSDT":"AI","BUSDT":"Meme","SOONUSDT":"Infrastructure","HUMAUSDT":"Payment","AUSDT":"Layer-2","SOPHUSDT":"Layer-2","MERLUSDT":"Layer-2","HYPEUSDT":"DeFi","PUFFERUSDT":"Layer-2","PORT3USDT":"AI","1000000BOBUSDT":"Meme","LAUSDT":"AI","SKATEUSDT":"Layer-1","HOMEUSDT":"DeFi","RESOLVUSDT":"DeFi","TAIKOUSDT":"Layer-2","SQDUSDT":"DeFi","PUMPBTCUSDT":"DeFi","SPKUSDT":"DeFi","MYXUSDT":"DeFi","FUSDT":"DeFi","NEWTUSDT":"Meme","DMCUSDT":"Gaming","HUSDT":"Infrastructure","OLUSDT":"Gaming","SAHARAUSDT":"AI","BULLAUSDT":"Alpha","IDOLUSDT":"AI","MUSDT":"Meme","TANSSIUSDT":"Infrastructure","PUMPUSDT":"Meme","CROSSUSDT":"Gaming","AINUSDT":"AI","CUSDT":"AI","VELVETUSDT":"DeFi","TACUSDT":"Gaming","ERAUSDT":"DeFi","TAUSDT":"AI","CVXUSDT":"DeFi","SLPUSDT":"Gaming","ZORAUSDT":"Layer-2","TAGUSDT":"AI","ZRCUSDT":"DeFi","ESPORTSUSDT":"Gaming","TREEUSDT":"DeFi","A2ZUSDT":"Gaming","PLAYUSDT":"Gaming","NAORISUSDT":"Infrastructure","PROVEUSDT":"Infrastructure","ALLUSDT":"Index","INUSDT":"Alpha","YALAUSDT":"DeFi","CARVUSDT":"Alpha","AIOUSDT":"Alpha","XNYUSDT":"Alpha","USELESSUSDT":"Meme","DAMUSDT":"DeFi","CUDISUSDT":"Alpha","SAPIENUSDT":"Alpha","XPLUSDT":"Layer-1","WLFIUSDT":"DeFi","SOMIUSDT":"DeFi","BASUSDT":"Alpha","BTRUSDT":"Layer-2","MITOUSDT":"DeFi","HEMIUSDT":"DeFi","LINEAUSDT":"Layer-2","QUSDT":"Alpha","ARIAUSDT":"Alpha","TAKEUSDT":"Gaming","PTBUSDT":"Alpha","OPENUSDT":"AI","FLOCKUSDT":"AI","SKYUSDT":"DeFi","AVNTUSDT":"DeFi","HOLOUSDT":"AI","XPINUSDT":"Alpha","UBUSDT":"Alpha","TOSHIUSDT":"Meme","STBLUSDT":"DeFi","0GUSDT":"Layer-1","BARDUSDT":"DeFi","ASTERUSDT":"DeFi","TRADOORUSDT":"Alpha","BLESSUSDT":"Alpha","FLUIDUSDT":"DeFi","COAIUSDT":"Alpha","HANAUSDT":"Alpha","MIRAUSDT":"AI","AKEUSDT":"Alpha","ORDERUSDT":"DeFi","LIGHTUSDT":"Infrastructure","XANUSDT":"DeFi","EDENUSDT":"DeFi","NOMUSDT":"DeFi","TRUTHUSDT":"Alpha","2ZUSDT":"Infrastructure","EVAAUSDT":"DeFi","LYNUSDT":"Alpha","KGENUSDT":"Alpha","4USDT":"Alpha","GIGGLEUSDT":"Meme","MONUSDT":"DeFi","YBUSDT":"DeFi","METUSDT":"DeFi","LITUSDT":"DeFi","BREVUSDT":"Infrastructure","COLLECTUSDT":"Alpha","MAGMAUSDT":"Alpha","XAUUSDT":"TradFi","USUSDT":"Alpha","CYSUSDT":"Alpha","RAVEUSDT":"Alpha","ZKPUSDT":"Alpha","GUAUSDT":"Alpha","IRUSDT":"Alpha","RECALLUSDT":"AI","ZBTUSDT":"DeFi","LABUSDT":"Alpha","RIVERUSDT":"Alpha","RVVUSDT":"Alpha","BLUAIUSDT":"Alpha","TURTLEUSDT":"DeFi","APRUSDT":"Alpha","ONUSDT":"Alpha","42USDT":"Alpha","COMMONUSDT":"Alpha","KITEUSDT":"AI","ATUSDT":"Alpha","CCUSDT":"Layer-1","MMTUSDT":"DeFi","TRUSTUSDT":"AI","UAIUSDT":"Alpha","FOLKSUSDT":"Alpha","STABLEUSDT":"Alpha","JCTUSDT":"Alpha","ALLOUSDT":"AI","CLANKERUSDT":"Alpha","BEATUSDT":"Alpha","PIEVERSEUSDT":"Alpha","SENTUSDT":"AI","BOBUSDT":"Alpha","IRYSUSDT":"Alpha","RLSUSDT":"Alpha","POWERUSDT":"Alpha","WETUSDT":"Alpha","NIGHTUSDT":"Alpha","XAGUSDT":"TradFi","ZAMAUSDT":"Infrastructure","FOGOUSDT":"Infrastructure","FRAXUSDT":"DeFi","AIAUSDT":"Alpha","ACUUSDT":"Alpha","ELSAUSDT":"Alpha","SKRUSDT":"Alpha","SPACEUSDT":"Alpha","FIGHTUSDT":"Alpha","TSLAUSDT":"TradFi","BIRBUSDT":"Alpha","GWEIUSDT":"Alpha","XPTUSDT":"TradFi","XPDUSDT":"TradFi","MEGAUSDT":"DeFi","INXUSDT":"Alpha","INTCUSDT":"TradFi","HOODUSDT":"TradFi","TRIAUSDT":"Alpha","MSTRUSDT":"TradFi","AMZNUSDT":"TradFi","CRCLUSDT":"TradFi","COINUSDT":"TradFi","PLTRUSDT":"TradFi","AZTECUSDT":"Layer-2","OPNUSDT":"DeFi","ROBOUSDT":"Alpha","KATUSDT":"Infrastructure","MANTRAUSDT":"RWA","COPPERUSDT":"TradFi","EWYUSDT":"TradFi","CFGUSDT":"RWA","EWJUSDT":"TradFi","EDGEUSDT":"DeFi","PAYPUSDT":"TradFi","METAUSDT":"TradFi","NVDAUSDT":"TradFi","GOOGLUSDT":"TradFi","XAUTUSDT":"RWA","CLUSDT":"TradFi","BZUSDT":"TradFi","NATGASUSDT":"TradFi","PRLUSDT":"Alpha","QQQUSDT":"TradFi","SPYUSDT":"TradFi","AAPLUSDT":"TradFi","TSMUSDT":"TradFi","MUUSDT":"TradFi","SNDKUSDT":"TradFi","MSFTUSDT":"TradFi","AVGOUSDT":"TradFi","BABAUSDT":"TradFi","AMDUSDT":"TradFi","QCOMUSDT":"TradFi","USARUSDT":"TradFi","LITEUSDT":"TradFi","ORCLUSDT":"TradFi","DISUSDT":"TradFi","UBERUSDT":"TradFi","CSCOUSDT":"TradFi","HDUSDT":"TradFi","SOXLUSDT":"TradFi","MRVLUSDT":"TradFi","CRWVUSDT":"TradFi","WMTUSDT":"TradFi","JPMUSDT":"TradFi","BRKBUSDT":"TradFi","FLNCUSDT":"TradFi","DRAMUSDT":"TradFi","RKLBUSDT":"TradFi","CBRSUSDT":"TradFi","SPCXUSDT":"TradFi","OPENAIUSDT":"TradFi","NBISUSDT":"TradFi","WDCUSDT":"TradFi","ARMUSDT":"TradFi","BEUSDT":"TradFi","COHRUSDT":"TradFi","QNTXUSDT":"TradFi","LLYUSDT":"TradFi","NVOUSDT":"TradFi","BBXUSDT":"TradFi","NOKUSDT":"TradFi","EWTUSDT":"TradFi","ASTSUSDT":"TradFi","DELLUSDT":"TradFi","IBMUSDT":"TradFi","NOWUSDT":"TradFi","CRMUSDT":"TradFi","IRENUSDT":"TradFi","ONDSUSDT":"TradFi","BXUSDT":"TradFi","HPEUSDT":"TradFi","AMATUSDT":"TradFi","CRWDUSDT":"TradFi","CRDOUSDT":"TradFi","AAOIUSDT":"TradFi","IWMUSDT":"TradFi","AXTIUSDT":"TradFi","NFLXUSDT":"TradFi","COSTUSDT":"TradFi","URNMUSDT":"TradFi","HIMSUSDT":"TradFi","EBAYUSDT":"TradFi","ZMUSDT":"TradFi","DKNGUSDT":"TradFi","RIVNUSDT":"TradFi","GMEUSDT":"TradFi","XLEUSDT":"TradFi","EWZUSDT":"TradFi","BMNRUSDT":"TradFi","UVXYUSDT":"TradFi","ADBEUSDT":"TradFi","GLWUSDT":"TradFi","STXXUSDT":"TradFi","ASMLUSDT":"TradFi","REUSDT":"Alpha","LRCXUSDT":"TradFi","KLACUSDT":"TradFi","ALABUSDT":"TradFi","SMCIUSDT":"TradFi","CIENUSDT":"TradFi","KORUUSDT":"TradFi","SONYUSDT":"TradFi","MVLLUSDT":"TradFi","TQQQUSDT":"TradFi","SQQQUSDT":"TradFi","STRCUSDT":"TradFi","CATUSDT":"TradFi","TXNUSDT":"TradFi","FLEXUSDT":"TradFi","TERUSDT":"TradFi","TTWOUSDT":"TradFi","KSTRUSDT":"TradFi","BSPUSDT":"TradFi","BOTUSDT":"TradFi","WENUSDT":"TradFi","INTWUSDT":"TradFi","SNXXUSDT":"TradFi","XBIUSDT":"TradFi","BNCUSDT":"TradFi","FWDIUSDT":"TradFi","GEVUSDT":"TradFi","VRTUSDT":"TradFi","SNOWUSDT":"TradFi","APPUSDT":"TradFi","MUUUSDT":"TradFi","SOXSUSDT":"TradFi","TZAUSDT":"TradFi","MINIMAXUSDT":"TradFi","ZHIPUUSDT":"TradFi","HK0700USDT":"TradFi","HK1810USDT":"TradFi","TENCENTUSDT":"TradFi","SHAZUSDT":"TradFi","SOFIUSDT":"TradFi","PANWUSDT":"TradFi","PENGUSDT":"TradFi","POPMARTUSDT":"TradFi","ANTHROPICUSDT":"TradFi","HYUNDAIUSDT":"TradFi","SAMSUNGUSDT":"TradFi","SKHYNIXUSDT":"TradFi","SKHYUSDT":"TradFi","SPCXUSD1":"TradFi"};
@@ -1209,6 +1445,7 @@ function natrUpdateCatTabCounts() {
 function natrSwitchCategory(cat) {
     natrSelectedCategory = cat;
     document.querySelectorAll('#natrCatTabs .natr-cat-tab').forEach(t => t.classList.toggle('active', t.dataset.cat === cat));
+    try { localStorage.setItem('natr_category', cat); } catch(e) { /* non-fatal */ }
     // If we have results, re-filter and re-render
     if (natrAllResults.length > 0) {
         natrReFilterAndRender();
@@ -1222,15 +1459,141 @@ function natrFilterByCategory(symbols) {
     });
 }
 function natrReFilterAndRender() {
-    if (natrSelectedCategory === 'all') {
-        natrRenderTable([...natrAllResults].sort((a,b) => b.natr - a.natr));
+    let list = natrSelectedCategory === 'all' ? [...natrAllResults] : natrAllResults.filter(r => {
+        const cat = (natrCategoryMap[r.symbol] || 'NONE').split(',')[0];
+        return cat === natrSelectedCategory;
+    });
+    if (natrWatchlistOnly) list = list.filter(r => natrWatchlist.has(r.symbol));
+    if (natrMinVolume > 0) list = list.filter(r => {
+        const t = natrTicker24hMap.get(r.symbol);
+        return t && t.volume >= natrMinVolume;
+    });
+    natrRenderTable(list.sort((a,b) => b.natr - a.natr));
+}
+function natrChangeTopN(v) {
+    natrTopN = parseInt(v, 10) || 10;
+    try { localStorage.setItem('natr_topn', String(natrTopN)); } catch(e) { /* non-fatal */ }
+    if (natrAllResults.length) natrReFilterAndRender();
+}
+function natrChangeLiqFilter(v) {
+    natrMinVolume = parseInt(v, 10) || 0;
+    try { localStorage.setItem('natr_minvol', String(natrMinVolume)); } catch(e) { /* non-fatal */ }
+    if (natrAllResults.length) natrReFilterAndRender();
+}
+function natrSaveWatchlist() {
+    try { localStorage.setItem('natr_watchlist', JSON.stringify([...natrWatchlist])); } catch(e) { /* non-fatal */ }
+}
+function natrToggleWatchlist(symbol) {
+    if (natrWatchlist.has(symbol)) natrWatchlist.delete(symbol); else natrWatchlist.add(symbol);
+    natrSaveWatchlist();
+    natrReFilterAndRender();
+}
+function natrToggleWatchlistOnly() {
+    natrWatchlistOnly = !natrWatchlistOnly;
+    document.getElementById('natrWatchlistBtn').classList.toggle('active', natrWatchlistOnly);
+    if (natrAllResults.length) natrReFilterAndRender();
+}
+async function natrToggleAlerts() {
+    const btn = document.getElementById('natrAlertBtn');
+    if (!natrAlertsEnabled) {
+        const thr = parseFloat(document.getElementById('natrAlertInput').value);
+        if (!thr || thr <= 0) { showToast('Укажите порог в %, больше нуля'); return; }
+        natrAlertThreshold = thr;
+        if ('Notification' in window && Notification.permission === 'default') {
+            try { await Notification.requestPermission(); } catch(e) { /* ignore */ }
+        }
+        natrAlertsEnabled = true;
+        natrAlertedSymbols.clear();
+        btn.classList.add('active');
+        btn.textContent = '🔔 Алерт вкл (' + thr + '%)';
     } else {
-        const filtered = natrAllResults.filter(r => {
-            const cat = (natrCategoryMap[r.symbol] || 'NONE').split(',')[0];
-            return cat === natrSelectedCategory;
-        });
-        natrRenderTable(filtered.sort((a,b) => b.natr - a.natr));
+        natrAlertsEnabled = false;
+        btn.classList.remove('active');
+        btn.textContent = '🔔 Алерт выкл';
     }
+    try {
+        localStorage.setItem('natr_alerts_enabled', natrAlertsEnabled ? '1' : '0');
+        localStorage.setItem('natr_alert_threshold', String(natrAlertThreshold || ''));
+    } catch(e) { /* non-fatal */ }
+}
+function natrFireAlert(symbol, natr) {
+    const msg = symbol.replace(/USDT$|USD1$/, '') + ': NATR ' + natr.toFixed(2) + '%';
+    playAlertSound('natr');
+    if ('Notification' in window && Notification.permission === 'granted') {
+        try { new Notification('⚡ NATR превысил порог', { body: msg }); return; } catch(e) { /* fall through to toast */ }
+    }
+    showToast(msg);
+}
+function natrCheckAlerts(results) {
+    if (!natrAlertsEnabled || !natrAlertThreshold) return;
+    results.forEach(r => {
+        if (r.natr >= natrAlertThreshold) {
+            if (!natrAlertedSymbols.has(r.symbol)) {
+                natrAlertedSymbols.add(r.symbol);
+                natrFireAlert(r.symbol, r.natr);
+            }
+        } else {
+            natrAlertedSymbols.delete(r.symbol); // edge-triggered: allow a fresh alert next time it crosses back up
+        }
+    });
+}
+function natrOpenInCryptoAI(symbol) {
+    switchSection('cai');
+    const base = symbol.replace(/USDT$|USD1$/, '');
+    const input = document.getElementById('caiInput');
+    if (input) input.value = base;
+    caiSearch();
+}
+// Bulk-fetches 24h price/volume for ALL futures symbols in one request (instead of
+// one request per row) — used for the price/volume column and the liquidity filter.
+async function natrFetchTicker24h() {
+    try {
+        const r = await fetch(NATR_API + '/fapi/v1/ticker/24hr');
+        const d = await r.json();
+        if (!Array.isArray(d)) return;
+        const map = new Map();
+        d.forEach(t => map.set(t.symbol, { price: +t.lastPrice, volume: +t.quoteVolume }));
+        natrTicker24hMap = map;
+    } catch(e) { /* non-fatal — price/volume column just stays blank */ }
+}
+function natrFmtVolShort(v) {
+    if (!v && v !== 0) return '—';
+    if (v >= 1e9) return '$' + (v/1e9).toFixed(2) + 'B';
+    if (v >= 1e6) return '$' + (v/1e6).toFixed(2) + 'M';
+    if (v >= 1e3) return '$' + (v/1e3).toFixed(1) + 'K';
+    return '$' + v.toFixed(0);
+}
+function natrFmtPriceShort(p) {
+    if (!p && p !== 0) return '—';
+    if (p >= 1000) return p.toLocaleString('ru-RU', {maximumFractionDigits:1});
+    if (p >= 1) return p.toFixed(2);
+    if (p >= 0.01) return p.toFixed(4);
+    return p.toFixed(8);
+}
+// Tiny inline sparkline from this session's accumulated NATR history for a symbol
+// (history starts empty on each page load — there is no persisted long-term time series).
+function natrSparklineSVG(history) {
+    if (!history || history.length < 2) return '<span class="natr-trend-flat">—</span>';
+    const w = 54, h = 22, pad = 3;
+    const min = Math.min(...history), max = Math.max(...history);
+    const range = (max - min) || 1;
+    const step = (w - pad*2) / (history.length - 1);
+    const pts = history.map((v,i) => {
+        const x = pad + i*step;
+        const y = h - pad - ((v - min) / range) * (h - pad*2);
+        return x.toFixed(1) + ',' + y.toFixed(1);
+    }).join(' ');
+    const last = history[history.length-1], prev = history[history.length-2];
+    const color = last > prev ? 'var(--accent)' : last < prev ? 'var(--muted)' : 'var(--muted)';
+    return '<svg width="'+w+'" height="'+h+'" viewBox="0 0 '+w+' '+h+'" class="natr-spark" aria-hidden="true"><polyline points="'+pts+'" fill="none" stroke="'+color+'" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+}
+function natrUpdateHistory(results) {
+    results.forEach(r => {
+        let h = natrHistoryMap.get(r.symbol);
+        if (!h) { h = []; natrHistoryMap.set(r.symbol, h); }
+        h.push(r.natr);
+        if (h.length > 8) h.shift();
+    });
 }
 async function natrGetAllPairs() {
     try {
@@ -1319,23 +1682,33 @@ function natrGetDisplayedData() {
 }
 function natrRenderTable(data, animate) {
     const body = document.getElementById('natrTableBody');
-    const top10 = data.slice(0, 10);
-    if (!top10.length) { body.innerHTML = ''; document.getElementById('natrEmptyState').style.display = 'block'; return; }
+    const shown = data.slice(0, natrTopN);
+    if (!shown.length) { body.innerHTML = ''; document.getElementById('natrEmptyState').style.display = 'block'; return; }
     document.getElementById('natrEmptyState').style.display = 'none';
-    const maxVal = top10[0].natr;
+    const maxVal = shown[0].natr;
     const prevData = animate ? natrGetDisplayedData() : null;
-    body.innerHTML = top10.map((item, i) => {
+    body.innerHTML = shown.map((item, i) => {
         const rc = i===0?'rank-1':i===1?'rank-2':i===2?'rank-3':'rank-n';
         const nc = item.natr > maxVal*0.7?'natr-hi':item.natr > maxVal*0.4?'natr-mid':'natr-lo';
-        const bc = i===9?'border-after':'';
+        const bc = i===shown.length-1?'border-after':'';
         const displaySymbol = escapeHtml(item.symbol.replace(/USDT$|USD1$/, ''));
         const changed = prevData && prevData[i] && prevData[i].natr !== item.natr;
         const ra = changed?'row-updated':'';
         const na = changed?'natr-changed':'';
+        const pinned = natrWatchlist.has(item.symbol);
+        const t24h = natrTicker24hMap.get(item.symbol);
+        const priceCell = t24h
+            ? '<div class="p-price mono">$'+natrFmtPriceShort(t24h.price)+'</div><div class="p-vol">'+natrFmtVolShort(t24h.volume)+'</div>'
+            : '<div class="p-vol">—</div>';
+        const spark = natrSparklineSVG(natrHistoryMap.get(item.symbol));
         return '<tr class="'+bc+' '+ra+'"><td><span class="natr-rank '+rc+' mono">'+(i+1)+'</span></td>'+
-            '<td class="ticker-cell" tabindex="0" role="button" aria-label="Скопировать тикер '+displaySymbol+'" data-symbol="'+displaySymbol+'"><div class="ticker-name">'+displaySymbol+'</div>'+
-            '<div class="ticker-sub">нажми чтобы скопировать</div>'+
+            '<td class="ticker-cell" tabindex="0" role="button" aria-label="Скопировать тикер '+displaySymbol+'" data-symbol="'+displaySymbol+'">'+
+            '<span class="natr-star'+(pinned?' pinned':'')+'" tabindex="0" role="button" aria-pressed="'+pinned+'" aria-label="Избранное" data-symbol="'+item.symbol+'" onclick="event.stopPropagation(); natrToggleWatchlist(\''+item.symbol+'\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();event.stopPropagation();natrToggleWatchlist(\''+item.symbol+'\');}">'+(pinned?'★':'☆')+'</span>'+
+            '<div class="ticker-name">'+displaySymbol+'</div>'+
+            '<div class="ticker-sub">нажми чтобы скопировать · <span class="natr-cai-link" tabindex="0" role="button" onclick="event.stopPropagation(); natrOpenInCryptoAI(\''+item.symbol+'\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();event.stopPropagation();natrOpenInCryptoAI(\''+item.symbol+'\');}">CryptoAI →</span></div>'+
             '<svg class="copy-icon" style="width:14px;height:14px" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></td>'+
+            '<td class="natr-price-cell">'+priceCell+'</td>'+
+            '<td>'+spark+'</td>'+
             '<td><span class="natr-val mono '+nc+' '+na+'">'+item.natr.toFixed(3)+'<small style="font-size:0.65em;color:var(--muted)">%</small></span></td></tr>';
     }).join('');
     document.querySelectorAll('#natrTableBody .ticker-cell').forEach(cell => {
@@ -1346,7 +1719,7 @@ function natrRenderTable(data, animate) {
         };
         cell.addEventListener('click', activate);
         cell.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); activate(); }
+            if ((e.key === 'Enter' || e.key === ' ') && e.target === cell) { e.preventDefault(); activate(); }
         });
     });
     document.getElementById('natrStatsBar').style.display = 'flex';
@@ -1359,6 +1732,7 @@ function natrRenderTable(data, animate) {
 function natrSwitchMode(m) {
     natrMode = m;
     document.querySelectorAll('.natr-tab').forEach(t => t.classList.toggle('active', t.dataset.mode === m));
+    try { localStorage.setItem('natr_mode', m); } catch(e) { /* non-fatal */ }
     if (natrAllResults.length) natrReFilterAndRender();
 }
 async function natrStartBgUpdate() {
@@ -1369,11 +1743,16 @@ async function natrStartBgUpdate() {
     if (!pairs.length || natrAbortCtrl.signal.aborted) { natrFinishBgUpdate(false); return; }
     const interval = natrMode==='5_14'?'5m':'1m';
     const limit = (natrMode==='5_14'?14:30) + 5;
-    const results = await natrProcessMax(pairs, interval, limit, (p,t) => {
-        if (!natrAbortCtrl.signal.aborted) natrSetStatus(p+'/'+t, true, true);
-    });
+    const [results] = await Promise.all([
+        natrProcessMax(pairs, interval, limit, (p,t) => {
+            if (!natrAbortCtrl.signal.aborted) natrSetStatus(p+'/'+t, true, true);
+        }),
+        natrFetchTicker24h()
+    ]);
     if (natrAbortCtrl.signal.aborted) { natrFinishBgUpdate(false); return; }
     natrAllResults = results.sort((a,b) => b.natr - a.natr);
+    natrUpdateHistory(natrAllResults);
+    natrCheckAlerts(natrAllResults);
     natrReFilterAndRender();
     natrFinishBgUpdate(true);
 }
@@ -1397,14 +1776,19 @@ async function natrStartScan() {
     natrSetStatus('Сканирование '+pairs.length+'...', true);
     const interval = natrMode==='5_14'?'5m':'1m';
     const limit = (natrMode==='5_14'?14:30) + 5;
-    const results = await natrProcessMax(pairs, interval, limit, (p,t) => {
-        if (!natrAbortCtrl.signal.aborted) natrSetStatus(p+'/'+t, true);
-    });
+    const [results] = await Promise.all([
+        natrProcessMax(pairs, interval, limit, (p,t) => {
+            if (!natrAbortCtrl.signal.aborted) natrSetStatus(p+'/'+t, true);
+        }),
+        natrFetchTicker24h()
+    ]);
     if (natrAbortCtrl.signal.aborted) {
         natrHideSkeleton(); document.getElementById('natrScanBtn').classList.remove('loading');
         natrIsScanning = false; natrAbortCtrl = null; return;
     }
     natrAllResults = results.sort((a,b) => b.natr - a.natr);
+    natrUpdateHistory(natrAllResults);
+    natrCheckAlerts(natrAllResults);
     natrHideSkeleton(); natrReFilterAndRender();
     natrSetStatus('Готово: '+results.length, true);
     document.getElementById('natrScanBtn').classList.remove('loading');
@@ -1473,14 +1857,58 @@ function twGetCurrentTimeInTZ(tz) {
     const p = Object.fromEntries(f.formatToParts(now).map(x=>[x.type,x.value]));
     return {h:String(p.hour).padStart(2,'0'),m:String(p.minute).padStart(2,'0')};
 }
-function twCreateBar(cls, leftPct, widthPct, name, openStr, closeStr, countryTime, showText) {
+// Is it Saturday/Sunday in the exchange's OWN local calendar (not the selected display TZ)?
+// Stock exchanges are closed on weekends regardless of which timezone we're viewing them from.
+function twIsWeekendInTZ(tz) {
+    const f = new Intl.DateTimeFormat('en-US', {timeZone: tz, weekday: 'short'});
+    const wd = f.format(new Date());
+    return wd === 'Sat' || wd === 'Sun';
+}
+function twHoursUntil(fromTotal, toTotal) {
+    let diff = toTotal - fromTotal;
+    while (diff < 0) diff += 24;
+    while (diff > 24) diff -= 24;
+    return diff;
+}
+function twFormatDuration(hoursFloat) {
+    const totalMin = Math.max(0, Math.round(hoursFloat * 60));
+    const h = Math.floor(totalMin / 60), m = totalMin % 60;
+    if (h <= 0) return m + 'м';
+    return h + 'ч ' + m + 'м';
+}
+// Builds a CSS gradient highlighting hours where 2+ exchanges are simultaneously open —
+// a quick visual cue for the highest-liquidity overlap windows (e.g. London/New York).
+function twComputeOverlapGradient() {
+    const steps = 144; // 10-minute resolution across 24h
+    const counts = new Array(steps + 1).fill(0);
+    for (const ex of Object.values(twExchanges)) {
+        if (twIsWeekendInTZ(ex.tz)) continue; // closed markets don't contribute to "overlap"
+        const openLocal = twToLocalTime(ex.tz, ex.openH, ex.openM);
+        const closeLocal = twToLocalTime(ex.tz, ex.closeH, ex.closeM);
+        const s = openLocal.total, e = closeLocal.total;
+        for (let i = 0; i <= steps; i++) {
+            const t = (i / steps) * 24;
+            const inRange = e > s ? (t >= s && t < e) : (t >= s || t < e);
+            if (inRange) counts[i]++;
+        }
+    }
+    const stops = counts.map((c, i) => {
+        const pct = (i / steps) * 100;
+        const alpha = c >= 2 ? Math.min(0.9, 0.28 + (c - 2) * 0.22) : 0;
+        return 'rgba(240,185,11,' + alpha.toFixed(2) + ') ' + pct.toFixed(2) + '%';
+    }).join(', ');
+    return 'linear-gradient(90deg, ' + stops + ')';
+}
+function twCreateBar(cls, leftPct, widthPct, name, openStr, closeStr, countryTime, showText, closed, countdownText) {
     const bar = document.createElement('div');
-    bar.className = 'tw-session ' + cls;
+    bar.className = 'tw-session ' + cls + (closed ? ' closed' : '');
     bar.style.left = leftPct + '%';
     bar.style.width = Math.max(widthPct, 0.5) + '%';
     if (showText) {
         const td = document.createElement('div'); td.className = 'session-text';
-        td.innerHTML = '<span class="exchange-name">'+name+'</span><div class="exchange-info"><span class="country-time">'+countryTime+'</span><span class="separator">|</span><span class="session-hours">'+openStr+' - '+closeStr+'</span></div>';
+        const hoursLine = closed ? 'Выходной' : (openStr + ' - ' + closeStr);
+        const countdownLine = countdownText ? '<div class="session-countdown">' + countdownText + '</div>' : '';
+        td.innerHTML = '<span class="exchange-name">'+name+'</span><div class="exchange-info"><span class="country-time">'+countryTime+'</span><span class="separator">|</span><span class="session-hours">'+hoursLine+'</span></div>'+countdownLine;
         bar.appendChild(td);
     }
     return bar;
@@ -1500,6 +1928,8 @@ function twUpdate() {
     const nowLine = document.getElementById('twNowLine');
     nowLine.style.left = exactPos + 'px';
     nowLine.setAttribute('data-time', String(nowInfo.h).padStart(2,'0') + ':' + String(nowInfo.m).padStart(2,'0'));
+    const stripEl = document.getElementById('twOverlapStrip');
+    if (stripEl) stripEl.style.background = twComputeOverlapGradient();
     for (const [key, ex] of Object.entries(twExchanges)) {
         const openLocal = twToLocalTime(ex.tz, ex.openH, ex.openM);
         const closeLocal = twToLocalTime(ex.tz, ex.closeH, ex.closeM);
@@ -1509,15 +1939,25 @@ function twUpdate() {
         const closeStr = String(ex.closeH).padStart(2,'0')+':'+String(ex.closeM).padStart(2,'0');
         const ctObj = twGetCurrentTimeInTZ(ex.tz);
         const ctStr = ctObj.h+':'+ctObj.m;
+        const closed = twIsWeekendInTZ(ex.tz);
+        let countdownText = 'Выходной — торги закрыты';
+        if (!closed) {
+            const isOpenNow = closeLocal.total > openLocal.total
+                ? (nowTotal >= openLocal.total && nowTotal < closeLocal.total)
+                : (nowTotal >= openLocal.total || nowTotal < closeLocal.total);
+            countdownText = isOpenNow
+                ? 'Закрытие через ' + twFormatDuration(twHoursUntil(nowTotal, closeLocal.total))
+                : 'Открытие через ' + twFormatDuration(twHoursUntil(nowTotal, openLocal.total));
+        }
         const area = document.getElementById('tw-area-'+key);
         area.innerHTML = '';
         if (endPct <= startPct) {
             const w1 = 100-startPct, w2 = endPct;
             const showFirst = w1 >= w2;
-            area.appendChild(twCreateBar(key, startPct, w1, ex.name, openStr, '24:00', ctStr, showFirst));
-            area.appendChild(twCreateBar(key, 0, w2, ex.name, '00:00', closeStr, ctStr, !showFirst));
+            area.appendChild(twCreateBar(key, startPct, w1, ex.name, openStr, '24:00', ctStr, showFirst, closed, countdownText));
+            area.appendChild(twCreateBar(key, 0, w2, ex.name, '00:00', closeStr, ctStr, !showFirst, closed, countdownText));
         } else {
-            area.appendChild(twCreateBar(key, startPct, endPct-startPct, ex.name, openStr, closeStr, ctStr, true));
+            area.appendChild(twCreateBar(key, startPct, endPct-startPct, ex.name, openStr, closeStr, ctStr, true, closed, countdownText));
         }
     }
 }
@@ -1548,6 +1988,10 @@ function twInit() {
 let calCurrentWeekStart = null;
 let calImpactFilter = new Set(['high', 'medium', 'low']);
 let calCountryFilter = new Set(['US', 'EU', 'UK', 'JP', 'CN', 'AU', 'CA', 'CH', 'NZ', 'RU']);
+let calSearchQuery = '';
+let calNotifyEnabled = false;
+try { calNotifyEnabled = localStorage.getItem('cal_notify_enabled') === '1'; } catch(e) { /* non-fatal */ }
+let calNotifiedEvents = new Set(); // event keys already notified, so we don't repeat every render/tick
 let calAllEvents = [];
 let calCountdownTimerId = null;
 let calAutoRefreshId = null;
@@ -1684,6 +2128,7 @@ function calParseApiData(data) {
             const impact = e.impact || e.i || '';
             const forecast = e.forecast || e.f || '';
             const previous = e.previous || e.p || '';
+            const actual = e.actual || e.a || '';
             const utcDate = new Date(dateStr);
             if (isNaN(utcDate.getTime())) return null;
             if (!apiWeekStart) apiWeekStart = calGetWeekStart(utcDate);
@@ -1695,7 +2140,7 @@ function calParseApiData(data) {
                 utcDate, country: cntry, currency: country, impact: imp,
                 title: title,
                 previous: previous, forecast: forecast,
-                actual: '', category, detail: '', isPast
+                actual: actual, category, detail: '', isPast
             };
         })
         .filter(e => e !== null)
@@ -1861,6 +2306,7 @@ function calRender() {
     let filtered = calAllEvents.filter(e => {
         if (calImpactFilter.size > 0 && !calImpactFilter.has(e.impact)) return false;
         if (calCountryFilter.size > 0 && !calCountryFilter.has(e.country) && !calCountryFilter.has(e.currency)) return false;
+        if (calSearchQuery && !e.title.toLowerCase().includes(calSearchQuery)) return false;
         return true;
     });
 
@@ -1995,6 +2441,7 @@ function calUpdateNextEvent() {
 
 function calUpdateCountdown(evt) {
     if (calCountdownTimerId) clearInterval(calCountdownTimerId);
+    const evtKey = evt.utcDate.getTime() + '|' + evt.title;
     const update = () => {
         const now = new Date();
         const diff = evt.utcDate - now;
@@ -2008,9 +2455,50 @@ function calUpdateCountdown(evt) {
         const s = Math.floor((diff % 60000) / 1000);
         document.getElementById('calNextCountdown').textContent =
             String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+        if (calNotifyEnabled && diff <= 5 * 60 * 1000 && !calNotifiedEvents.has(evtKey)) {
+            calNotifiedEvents.add(evtKey);
+            calFireReminder(evt);
+        }
     };
     update();
     calCountdownTimerId = setInterval(update, 1000);
+}
+function calFireReminder(evt) {
+    const msg = evt.title + ' \u2014 \u0447\u0435\u0440\u0435\u0437 5 \u043c\u0438\u043d\u0443\u0442' + (evt.forecast ? ' (\u043f\u0440\u043e\u0433\u043d\u043e\u0437: ' + evt.forecast + ')' : '');
+    playAlertSound('calendar');
+    if ('Notification' in window && Notification.permission === 'granted') {
+        try { new Notification('\ud83d\udcc5 \u0421\u043a\u043e\u0440\u043e \u0432\u0430\u0436\u043d\u043e\u0435 \u0441\u043e\u0431\u044b\u0442\u0438\u0435', { body: msg }); return; } catch(e) { /* fall through to toast */ }
+    }
+    showToast(msg);
+}
+async function calToggleNotify() {
+    const btn = document.getElementById('calNotifyBtn');
+    if (!calNotifyEnabled) {
+        if ('Notification' in window && Notification.permission === 'default') {
+            try { await Notification.requestPermission(); } catch(e) { /* ignore */ }
+        }
+        calNotifyEnabled = true;
+        btn.classList.add('active');
+        btn.textContent = '\ud83d\udd14 \u041d\u0430\u043f\u043e\u043c\u0438\u043d\u0430\u043d\u0438\u044f \u0432\u043a\u043b';
+    } else {
+        calNotifyEnabled = false;
+        btn.classList.remove('active');
+        btn.textContent = '\ud83d\udd14 \u041d\u0430\u043f\u043e\u043c\u0438\u043d\u0430\u043d\u0438\u044f \u0432\u044b\u043a\u043b';
+    }
+    try { localStorage.setItem('cal_notify_enabled', calNotifyEnabled ? '1' : '0'); } catch(e) { /* non-fatal */ }
+}
+// Syncs the reminder button's visual state with calNotifyEnabled restored from
+// localStorage — called once from calInit() so a reload doesn't silently lose it.
+function calApplyRestoredNotifyUI() {
+    const btn = document.getElementById('calNotifyBtn');
+    if (btn && calNotifyEnabled) {
+        btn.classList.add('active');
+        btn.textContent = '\ud83d\udd14 \u041d\u0430\u043f\u043e\u043c\u0438\u043d\u0430\u043d\u0438\u044f \u0432\u043a\u043b';
+    }
+}
+function calSetSearchQuery(v) {
+    calSearchQuery = (v || '').trim().toLowerCase();
+    calRender();
 }
 
 function calPrevWeek() {
@@ -2055,6 +2543,7 @@ function calInit() {
         calSelectedTZ = e.target.value;
         calRender();
     });
+    calApplyRestoredNotifyUI();
     calFetchEvents();
     if (calAutoRefreshId) clearInterval(calAutoRefreshId);
     calAutoRefreshId = setInterval(() => {
@@ -2069,6 +2558,9 @@ var CAI_STABLECOINS = ['USDT','USDC','DAI','BUSD','TUSD','FDUSD','USDD'];
 var CAI_QUOTES = ['USDT','USDC','USD','BTC','ETH','BNB','EUR','GBP'];
 var caiLastQuery = '';
 var caiRateLimitTimer = null;
+var caiCurrentPrices = {};
+var caiSearchHistory = [];
+try { caiSearchHistory = JSON.parse(localStorage.getItem('cai_history') || '[]'); } catch(e) { /* non-fatal */ }
 
 var RUSSIAN_DESCRIPTIONS = {
     'bitcoin':'Биткоин (Bitcoin) — первая в мире децентрализованная криптовалюта, созданная в 2009 году таинственным Сатоши Накамото. Она позволяет осуществлять peer-to-peer электронные денежные транзакции без посредников вроде банков или правительств, работая на блокчейне, защищённом майнингом Proof of Work и криптографическим алгоритмом SHA-256. С фиксированным ограничением supply в 21 миллион монет и программным уменьшением награды майнерам каждые четыре года (халвинг), Биткоин спроектирован как дефляционный цифровой актив, часто называемый "цифровым золотом".',
@@ -2145,6 +2637,7 @@ function caiHideAll() {
     document.getElementById('caiError').classList.remove('show');
     document.getElementById('caiStablecoin').classList.remove('show');
     document.getElementById('caiRateLimit').classList.remove('show');
+    document.getElementById('caiDisambig').classList.remove('show');
     if (caiRateLimitTimer) { clearInterval(caiRateLimitTimer); caiRateLimitTimer = null; }
 }
 function caiShowError(msg) { caiHideAll(); document.getElementById('caiError').classList.add('show'); document.getElementById('caiErrorText').textContent = msg; }
@@ -2270,6 +2763,161 @@ function caiGenerateLinks(data, coinId) {
     html += '</div></div>'; return html;
 }
 
+function caiSaveHistory() {
+    try { localStorage.setItem('cai_history', JSON.stringify(caiSearchHistory)); } catch(e) { /* non-fatal */ }
+}
+function caiAddToHistory(base) {
+    if (!base) return;
+    base = String(base).toUpperCase();
+    caiSearchHistory = caiSearchHistory.filter(function(b){ return b !== base; });
+    caiSearchHistory.unshift(base);
+    if (caiSearchHistory.length > 8) caiSearchHistory.length = 8;
+    caiSaveHistory();
+    caiRenderHistoryChips();
+}
+function caiRenderHistoryChips() {
+    var row = document.getElementById('caiHistoryRow');
+    var chips = document.getElementById('caiHistoryChips');
+    if (!row || !chips) return;
+    if (!caiSearchHistory.length) { row.style.display = 'none'; return; }
+    row.style.display = 'flex';
+    chips.innerHTML = caiSearchHistory.map(function(b) {
+        var safe = escapeHtml(b);
+        return '<span class="cai-history-chip" onclick="caiSetInput(\''+safe+'\')">'+safe+'</span>';
+    }).join('');
+}
+// Renders a 7-day price sparkline from CoinGecko's sparkline_7d.price array
+// (fetched inline via &sparkline=true — no extra request needed).
+function caiSparklineChart(prices) {
+    var w = 600, h = 64, pad = 4;
+    var min = Math.min.apply(null, prices), max = Math.max.apply(null, prices);
+    var range = (max - min) || 1;
+    var step = (w - pad*2) / (prices.length - 1);
+    var pts = prices.map(function(v,i) {
+        var x = pad + i*step;
+        var y = h - pad - ((v - min) / range) * (h - pad*2);
+        return x.toFixed(1)+','+y.toFixed(1);
+    }).join(' ');
+    var rising = prices[prices.length-1] >= prices[0];
+    var color = rising ? 'var(--green)' : 'var(--red)';
+    var areaPts = pad+','+(h-pad)+' '+pts+' '+(w-pad)+','+(h-pad);
+    return '<svg viewBox="0 0 '+w+' '+h+'" preserveAspectRatio="none" aria-hidden="true">'+
+        '<polygon points="'+areaPts+'" fill="'+color+'" opacity="0.12"></polygon>'+
+        '<polyline points="'+pts+'" fill="none" stroke="'+color+'" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></polyline>'+
+        '</svg>';
+}
+function caiConverterWidget() {
+    var hasRub = caiCurrentPrices && typeof caiCurrentPrices.rub === 'number';
+    var hasEur = caiCurrentPrices && typeof caiCurrentPrices.eur === 'number';
+    var options = '<option value="usd">USD</option>' + (hasRub?'<option value="rub">RUB</option>':'') + (hasEur?'<option value="eur">EUR</option>':'');
+    return '<div class="cai-converter">'+
+        '<label for="caiConvAmount">Конвертер:</label>'+
+        '<input type="number" id="caiConvAmount" value="1" min="0" step="any" oninput="caiConvert()">'+
+        '<span>монет =</span>'+
+        '<span class="conv-result" id="caiConvResult">—</span>'+
+        '<select id="caiConvCurrency" onchange="caiConvert()">'+options+'</select>'+
+        '</div>';
+}
+function caiConvert() {
+    var amountEl = document.getElementById('caiConvAmount');
+    var curEl = document.getElementById('caiConvCurrency');
+    var resEl = document.getElementById('caiConvResult');
+    if (!amountEl || !curEl || !resEl) return;
+    var amount = parseFloat(amountEl.value);
+    var cur = curEl.value;
+    var rate = caiCurrentPrices ? caiCurrentPrices[cur] : null;
+    if (isNaN(amount) || typeof rate !== 'number') { resEl.textContent = '—'; return; }
+    var total = amount * rate;
+    var symbol = cur === 'usd' ? '$' : cur === 'eur' ? '\u20ac' : cur === 'rub' ? '\u20bd' : '';
+    resEl.textContent = symbol + total.toLocaleString('ru-RU', {maximumFractionDigits: total < 1 ? 8 : 2});
+}
+// Shows a picker when the ticker matches several different coins on CoinGecko
+// (common with meme-coin clones) instead of silently guessing the first result.
+function caiShowDisambiguation(coins) {
+    caiHideAll();
+    var list = document.getElementById('caiDisambigList');
+    list.innerHTML = coins.slice(0, 8).map(function(c) {
+        var safeName = escapeHtml(c.name);
+        var safeId = escapeHtml(c.id);
+        var img = escapeHtml(safeUrl(c.thumb || c.large || ''));
+        var rank = c.market_cap_rank ? ('#'+c.market_cap_rank) : '';
+        return '<div class="cai-disambig-item" onclick="caiSelectDisambiguated(\''+c.id+'\')">'+
+            (img ? '<img src="'+img+'" alt="'+safeName+'" onerror="this.style.display=\'none\'">' : '') +
+            '<div><div class="di-name">'+safeName+'</div><div class="di-id">'+safeId+'</div></div>'+
+            '<div class="di-rank">'+escapeHtml(rank)+'</div></div>';
+    }).join('');
+    document.getElementById('caiDisambig').classList.add('show');
+}
+async function caiSelectDisambiguated(coinId) {
+    caiHideAll();
+    document.getElementById('caiLoading').classList.add('show');
+    document.getElementById('caiLoadingText').textContent = 'Загрузка...';
+    var btn = document.getElementById('caiBtn');
+    btn.disabled = true; btn.textContent = 'Загрузка...';
+    try {
+        await caiLoadCoinDetails(coinId, null, null, btn);
+    } catch(e) {
+        if (['RATE_LIMITED','THROTTLED','HTTP_ERROR_429'].indexOf(e.message)!==-1) {
+            caiShowRateLimit();
+        } else {
+            caiShowError(e.message || 'Произошла ошибка при загрузке данных');
+        }
+        btn.disabled = false; btn.textContent = 'Анализировать';
+    }
+}
+// Fetches full coin details and renders the result card. Shared by the normal
+// auto-picked search path and the disambiguation-picked path.
+async function caiLoadCoinDetails(coinId, coinNameHint, historyBase, btn) {
+    document.getElementById('caiLoadingText').textContent = coinNameHint ? ('Загрузка '+coinNameHint+'...') : 'Загрузка...';
+    var data = await caiSafeFetch('https://api.coingecko.com/api/v3/coins/'+coinId+'?localization=true&tickers=false&community_data=false&developer_data=false&sparkline=true');
+    if (data.categories && data.categories.some(function(c){return c.toLowerCase().indexOf('stablecoin')!==-1;})) {
+        caiShowStablecoin(data.name+' ('+data.symbol.toUpperCase()+')');
+        btn.disabled=false; btn.textContent='Анализировать';
+        return;
+    }
+    var cat = caiGetCategory(data.categories);
+    var md = data.market_data||{};
+    var price = md.current_price?md.current_price.usd:0;
+    var ch24 = md.price_change_percentage_24h||0;
+    var ch7d = md.price_change_percentage_7d||0;
+    var descResult = await caiGetDescription(data, coinId);
+    var linksHTML = caiGenerateLinks(data, coinId);
+    // data.name / data.symbol / cat.name / description all come from CoinGecko (or a
+    // translation service relaying CoinGecko text) — escape before innerHTML insertion.
+    var safeName = escapeHtml(data.name);
+    var safeSymbol = escapeHtml(data.symbol ? data.symbol.toUpperCase() : '');
+    var safeCatName = escapeHtml(cat.name);
+    var safeImgUrl = escapeHtml(safeUrl(data.image ? data.image.large : ''));
+    var safeDescription = escapeHtml(descResult.text);
+    var sparkPrices = (md.sparkline_7d && md.sparkline_7d.price) ? md.sparkline_7d.price.filter(function(v){return typeof v==='number' && !isNaN(v);}) : [];
+    var sparkHTML = sparkPrices.length > 1
+        ? '<div class="cai-sparkline-box"><div class="cai-sparkline-title">Цена за 7 дней</div>'+caiSparklineChart(sparkPrices)+'</div>'
+        : '';
+    caiCurrentPrices = md.current_price || {};
+    var converterHTML = caiConverterWidget();
+    document.getElementById('caiResult').innerHTML =
+        '<div class="cai-result-header">'+
+            '<img src="'+safeImgUrl+'" class="cai-logo" alt="'+safeName+'" onerror="this.src=\'https://via.placeholder.com/75\'">'+
+            '<div class="cai-result-title"><h2>'+safeName+'</h2><div class="cai-symbol">'+safeSymbol+'</div><span class="category-badge '+cat.cls+'">'+cat.icon+' '+safeCatName+'</span></div>'+
+        '</div>'+
+        '<div class="cai-stats">'+
+            '<div class="cai-stat"><div class="stat-label">Цена</div><div class="stat-value">'+caiFmtPrice(price)+'</div></div>'+
+            '<div class="cai-stat"><div class="stat-label">24ч</div><div class="stat-value '+(ch24>=0?'price-positive':'price-negative')+'">'+(ch24>=0?'+':'')+ch24.toFixed(2)+'%</div></div>'+
+            '<div class="cai-stat"><div class="stat-label">7д</div><div class="stat-value '+(ch7d>=0?'price-positive':'price-negative')+'">'+(ch7d>=0?'+':'')+ch7d.toFixed(2)+'%</div></div>'+
+            '<div class="cai-stat"><div class="stat-label">Капитализация</div><div class="stat-value">'+caiFmt(md.market_cap?md.market_cap.usd:0)+'</div></div>'+
+            '<div class="cai-stat"><div class="stat-label">Объём 24ч</div><div class="stat-value">'+caiFmt(md.total_volume?md.total_volume.usd:0)+'</div></div>'+
+            '<div class="cai-stat"><div class="stat-label">Рейтинг</div><div class="stat-value">#'+(md.market_cap_rank||'—')+'</div></div>'+
+        '</div>'+
+        sparkHTML +
+        converterHTML +
+        '<div class="cai-description">'+safeDescription+'</div>'+
+        linksHTML;
+    caiHideAll();
+    document.getElementById('caiResult').classList.add('show');
+    btn.disabled = false; btn.textContent = 'Анализировать';
+    caiAddToHistory(historyBase || data.symbol.toUpperCase());
+    caiConvert();
+}
 async function caiSearch() {
     var input = document.getElementById('caiInput').value.trim();
     if (!input) { caiShowError('Введите тикер криптовалюты'); return; }
@@ -2278,58 +2926,28 @@ async function caiSearch() {
     if (!ext) { caiShowStablecoin(input); return; }
     caiHideAll();
     document.getElementById('caiLoading').classList.add('show');
-    document.getElementById('caiLoadingText').textContent = 'Загрузка...';
+    document.getElementById('caiLoadingText').textContent = 'Поиск...';
     var btn = document.getElementById('caiBtn');
     btn.disabled = true; btn.textContent = 'Загрузка...';
     try {
         var d = await caiSafeFetch('https://api.coingecko.com/api/v3/search?query='+ext.base);
         if (!d.coins||!d.coins.length) throw new Error('"'+ext.base+'" — не найдено');
-        var coin = null;
-        for (var i=0;i<d.coins.length;i++) { if (d.coins[i].symbol.toUpperCase()===ext.base) { coin=d.coins[i]; break; } }
-        if (!coin) coin = d.coins[0];
-        var coinId = coin.id;
-        document.getElementById('caiLoadingText').textContent = 'Загрузка '+coin.name+'...';
-        var data = await caiSafeFetch('https://api.coingecko.com/api/v3/coins/'+coinId+'?localization=true&tickers=false&community_data=false&developer_data=false');
-        if (data.categories && data.categories.some(function(c){return c.toLowerCase().indexOf('stablecoin')!==-1;})) { caiShowStablecoin(data.name+' ('+data.symbol.toUpperCase()+')'); btn.disabled=false; btn.textContent='Анализировать'; return; }
-        var cat = caiGetCategory(data.categories);
-        var md = data.market_data||{};
-        var price = md.current_price?md.current_price.usd:0;
-        var ch24 = md.price_change_percentage_24h||0;
-        var ch7d = md.price_change_percentage_7d||0;
-        var descResult = await caiGetDescription(data, coinId);
-        var linksHTML = caiGenerateLinks(data, coinId);
-        // data.name / data.symbol / cat.name / description all come from CoinGecko (or a
-        // translation service relaying CoinGecko text) — escape before innerHTML insertion.
-        var safeName = escapeHtml(data.name);
-        var safeSymbol = escapeHtml(data.symbol ? data.symbol.toUpperCase() : '');
-        var safeCatName = escapeHtml(cat.name);
-        var safeImgUrl = escapeHtml(safeUrl(data.image ? data.image.large : ''));
-        var safeDescription = escapeHtml(descResult.text);
-        document.getElementById('caiResult').innerHTML =
-            '<div class="cai-result-header">'+
-                '<img src="'+safeImgUrl+'" class="cai-logo" alt="'+safeName+'" onerror="this.src=\'https://via.placeholder.com/75\'">'+
-                '<div class="cai-result-title"><h2>'+safeName+'</h2><div class="cai-symbol">'+safeSymbol+'</div><span class="category-badge '+cat.cls+'">'+cat.icon+' '+safeCatName+'</span></div>'+
-            '</div>'+
-            '<div class="cai-stats">'+
-                '<div class="cai-stat"><div class="stat-label">Цена</div><div class="stat-value">'+caiFmtPrice(price)+'</div></div>'+
-                '<div class="cai-stat"><div class="stat-label">24ч</div><div class="stat-value '+(ch24>=0?'price-positive':'price-negative')+'">'+(ch24>=0?'+':'')+ch24.toFixed(2)+'%</div></div>'+
-                '<div class="cai-stat"><div class="stat-label">7д</div><div class="stat-value '+(ch7d>=0?'price-positive':'price-negative')+'">'+(ch7d>=0?'+':'')+ch7d.toFixed(2)+'%</div></div>'+
-                '<div class="cai-stat"><div class="stat-label">Капитализация</div><div class="stat-value">'+caiFmt(md.market_cap?md.market_cap.usd:0)+'</div></div>'+
-                '<div class="cai-stat"><div class="stat-label">Объём 24ч</div><div class="stat-value">'+caiFmt(md.total_volume?md.total_volume.usd:0)+'</div></div>'+
-                '<div class="cai-stat"><div class="stat-label">Рейтинг</div><div class="stat-value">#'+(md.market_cap_rank||'—')+'</div></div>'+
-            '</div>'+
-            '<div class="cai-description">'+safeDescription+'</div>'+
-            linksHTML;
-        caiHideAll();
-        document.getElementById('caiResult').classList.add('show');
+        var exactMatches = d.coins.filter(function(c){ return c.symbol.toUpperCase()===ext.base; });
+        if (exactMatches.length > 1) {
+            btn.disabled = false; btn.textContent = 'Анализировать';
+            caiShowDisambiguation(exactMatches);
+            return;
+        }
+        var coin = exactMatches.length === 1 ? exactMatches[0] : d.coins[0];
+        await caiLoadCoinDetails(coin.id, coin.name, ext.base, btn);
     } catch(e) {
         if (['RATE_LIMITED','THROTTLED','HTTP_ERROR_429'].indexOf(e.message)!==-1) {
             caiShowRateLimit();
         } else {
             caiShowError(e.message || 'Произошла ошибка при загрузке данных');
         }
+        btn.disabled = false; btn.textContent = 'Анализировать';
     }
-    btn.disabled = false; btn.textContent = 'Анализировать';
 }
 
 // ============================================================
@@ -2341,7 +2959,9 @@ document.addEventListener('DOMContentLoaded', function() {
     if (saved && saved !== 'natr') {
         switchSection(saved);
     }
+    natrApplyRestoredUI();
     natrUpdateTimerDisplay();
+    caiRenderHistoryChips();
     natrStartScan();
 });
 </script>

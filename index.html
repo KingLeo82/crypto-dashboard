@@ -249,9 +249,21 @@
         .natr-spark { display: block; }
         .natr-trend-flat { color: var(--muted); font-size: 12px; }
 
+        .atype-badge {
+            display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px;
+            border-radius: 6px; font-size: 10.5px; font-weight: 700; white-space: nowrap;
+            border: 1px solid transparent;
+        }
+        .atype-crypto { background: rgba(149,165,166,0.14); color: #a9b4b6; border-color: rgba(149,165,166,0.3); }
+        .atype-stock { background: rgba(52,152,219,0.14); color: #5dade2; border-color: rgba(52,152,219,0.3); }
+        .atype-etf { background: rgba(155,89,182,0.14); color: #bb8fce; border-color: rgba(155,89,182,0.3); }
+        .atype-commodity { background: rgba(243,156,18,0.14); color: #f5b041; border-color: rgba(243,156,18,0.3); }
+        .atype-rwa { background: rgba(26,188,156,0.14); color: #48c9b0; border-color: rgba(26,188,156,0.3); }
+        .atype-index { background: rgba(231,76,60,0.14); color: #ec7063; border-color: rgba(231,76,60,0.3); }
+
         @media (max-width: 640px) {
             .natr-table-wrap { overflow-x: auto; }
-            .natr-table-wrap table { min-width: 560px; }
+            .natr-table-wrap table { min-width: 640px; }
         }
 
         .natr-stats {
@@ -264,11 +276,12 @@
         .natr-stats strong { color: var(--fg); }
         .natr-stats .mono { color: var(--accent); }
         .natr-last-update {
-            font-size: 11px; color: var(--muted); padding: 4px 10px;
-            background: rgba(255,255,255,0.03); border-radius: 6px;
             display: flex; align-items: center; gap: 6px;
+            padding: 8px 14px; background: var(--bg-card);
+            border-radius: 8px; font-size: 12px; color: var(--muted);
+            border: 1px solid var(--border);
         }
-        .natr-last-update.updating { color: var(--accent); }
+        .natr-last-update.updating { color: var(--accent); border-color: rgba(240,185,11,0.3); }
         .natr-last-update svg { display: none; }
         .natr-last-update.updating svg { display: inline-block; animation: spin 2s linear infinite; }
 
@@ -357,7 +370,6 @@
             .ticker-name { font-size: 14px; }
             .natr-table-wrap td,.natr-table-wrap th { padding: 12px 14px; }
             .natr-controls { flex-wrap: wrap; justify-content: center; }
-            .natr-last-update { display: none; }
         }
 
         /* ======================================================
@@ -902,6 +914,10 @@
                 <svg style="width:14px;height:14px" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
                 <span class="refresh-timer" id="natrRefreshTimer">--</span>с
             </div>
+            <div class="natr-last-update" id="natrLastUpdate" style="display:none;">
+                <svg style="width:14px;height:14px;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                <span id="natrUpdateTime">--:--:--</span>
+            </div>
             <button class="btn-gold" id="natrScanBtn" onclick="natrStartScan()">
                 <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                 Сканировать
@@ -911,6 +927,11 @@
     <div class="natr-cat-tabs" id="natrCatTabs">
         <span class="natr-cat-label">Категория:</span>
         <button class="natr-cat-tab active" data-cat="all" onclick="natrSwitchCategory('all')">Все</button>
+        <button class="natr-cat-tab" data-cat="TF_STOCK" onclick="natrSwitchCategory('TF_STOCK')">Акции</button>
+        <button class="natr-cat-tab" data-cat="TF_ETF" onclick="natrSwitchCategory('TF_ETF')">ETF</button>
+        <button class="natr-cat-tab" data-cat="TF_COMMODITY" onclick="natrSwitchCategory('TF_COMMODITY')">Товары</button>
+        <button class="natr-cat-tab" data-cat="TF_INDEX" onclick="natrSwitchCategory('TF_INDEX')">Индексы</button>
+        <button class="natr-cat-tab" data-cat="TF_OTHER" onclick="natrSwitchCategory('TF_OTHER')">Другие</button>
         <button class="natr-cat-tab" data-cat="TradFi" onclick="natrSwitchCategory('TradFi')">TradFi</button>
         <button class="natr-cat-tab" data-cat="Meme" onclick="natrSwitchCategory('Meme')">Meme</button>
         <button class="natr-cat-tab" data-cat="DeFi" onclick="natrSwitchCategory('DeFi')">DeFi</button>
@@ -959,15 +980,11 @@
         <div>Всего контрактов: <strong id="natrStatTotal" class="mono">--</strong></div>
         <div>Max NATR: <strong id="natrStatMax" class="mono">--%</strong></div>
         <div>Avg NATR: <strong id="natrStatAvg" class="mono">--%</strong></div>
-        <div class="natr-last-update" id="natrLastUpdate" style="display:none;">
-            <svg style="width:12px;height:12px;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-            <span id="natrUpdateTime">--:--:--</span>
-        </div>
     </div>
     <div class="natr-table-wrap" id="natrTableWrap">
         <div class="bg-update-overlay"></div>
         <table>
-            <thead><tr><th style="width:40px;">#</th><th>Тикер</th><th style="width:100px;">Цена / Объём</th><th style="width:64px;">Тренд</th><th style="width:120px;">NATR (%)</th></tr></thead>
+            <thead><tr><th style="width:40px;">#</th><th>Тикер</th><th style="width:78px;">Тип</th><th style="width:100px;">Цена / Объём</th><th style="width:64px;">Тренд</th><th style="width:120px;">NATR (%)</th></tr></thead>
             <tbody id="natrTableBody"></tbody>
         </table>
         <div id="natrSkeleton" style="display:none;"></div>
@@ -1346,6 +1363,38 @@ function natrApplyRestoredUI() {
 
 // Embedded category map — avoids CORS, works offline
 const NATR_EMBEDDED_CATEGORIES={"BTCUSDT":"PoW","ETHUSDT":"Layer-1","BCHUSDT":"Payment","XRPUSDT":"Payment","EOSUSDT":"NONE","LTCUSDT":"Payment","TRXUSDT":"Layer-1","ETCUSDT":"PoW","LINKUSDT":"Infrastructure","XLMUSDT":"Layer-2","ADAUSDT":"Layer-1","XMRUSDT":"PoW","DASHUSDT":"PoW","ZECUSDT":"PoW","XTZUSDT":"Layer-1","BNBUSDT":"Layer-1","ATOMUSDT":"Layer-1","ONTUSDT":"PoW","IOTAUSDT":"PoW","BATUSDT":"Infrastructure","VETUSDT":"Layer-1","NEOUSDT":"Layer-1","QTUMUSDT":"Layer-1","IOSTUSDT":"Layer-1","THETAUSDT":"AI","ALGOUSDT":"Layer-1","ZILUSDT":"PoW","KNCUSDT":"DeFi","ZRXUSDT":"DeFi","COMPUSDT":"DeFi","OMGUSDT":"Layer-2","DOGEUSDT":"Meme","KAVAUSDT":"DeFi","BANDUSDT":"DeFi","RLCUSDT":"AI","WAVESUSDT":"Layer-1","MKRUSDT":"DeFi","SNXUSDT":"DeFi","DOTUSDT":"Layer-1","DEFIUSDT":"Index","YFIUSDT":"DeFi","BALUSDT":"DEX","CRVUSDT":"DeFi","TRBUSDT":"Infrastructure","RUNEUSDT":"DeFi","SUSHIUSDT":"DeFi","EGLDUSDT":"Layer-1","SOLUSDT":"Layer-1","ICXUSDT":"Layer-1","STORJUSDT":"Storage","BLZUSDT":"Storage","UNIUSDT":"DeFi","AVAXUSDT":"Layer-1","FTMUSDT":"Layer-1","ENJUSDT":"Gaming","FLMUSDT":"DeFi","KSMUSDT":"Layer-1","NEARUSDT":"Layer-1","AAVEUSDT":"DeFi","FILUSDT":"Storage","RSRUSDT":"DeFi","LRCUSDT":"DeFi","OCEANUSDT":"AI","BELUSDT":"DeFi","AXSUSDT":"Metaverse","ALPHAUSDT":"DeFi","ZENUSDT":"PoW","SKLUSDT":"Layer-2","GRTUSDT":"AI","1INCHUSDT":"DeFi","CHZUSDT":"NFT","SANDUSDT":"Metaverse","ANKRUSDT":"DeFi","HOTUSDT":"Storage","DENTUSDT":"Infrastructure","CELRUSDT":"Layer-2","MTLUSDT":"Infrastructure","OGNUSDT":"DeFi","NKNUSDT":"PoW","SCUSDT":"Storage","DGBUSDT":"Payment","1000SHIBUSDT":"Meme","BAKEUSDT":"DeFi","BTCDOMUSDT":"Index","IOTXUSDT":"Infrastructure","RAYUSDT":"DEX","C98USDT":"DeFi","MASKUSDT":"Infrastructure","ATAUSDT":"Infrastructure","DYDXUSDT":"DeFi","1000XECUSDT":"Payment","GALAUSDT":"Gaming","CELOUSDT":"Layer-1","ARUSDT":"Storage","KLAYUSDT":"Layer-1","ARPAUSDT":"Infrastructure","CTSIUSDT":"Layer-2","LPTUSDT":"AI","ENSUSDT":"Infrastructure","PEOPLEUSDT":"Meme","ROSEUSDT":"Layer-1","DUSKUSDT":"Layer-1","FLOWUSDT":"Layer-1","IMXUSDT":"NFT","API3USDT":"Infrastructure","GMTUSDT":"NFT","APEUSDT":"NFT","WOOUSDT":"DeFi","JASMYUSDT":"Infrastructure","DARUSDT":"NFT","OPUSDT":"Layer-2","INJUSDT":"DeFi","STGUSDT":"DeFi","SPELLUSDT":"DeFi","1000LUNCUSDT":"DeFi","LUNA2USDT":"Layer-1","LDOUSDT":"DeFi","ICPUSDT":"Layer-1","APTUSDT":"Layer-1","QNTUSDT":"Infrastructure","FETUSDT":"AI","FXSUSDT":"DeFi","HOOKUSDT":"Infrastructure","MAGICUSDT":"Metaverse","TUSDT":"Infrastructure","RNDRUSDT":"NONE","HIGHUSDT":"Metaverse","MINAUSDT":"Layer-1","ASTRUSDT":"Layer-1","AGIXUSDT":"AI","PHBUSDT":"AI","GMXUSDT":"DeFi","CFXUSDT":"PoW","STXUSDT":"Infrastructure","CKBUSDT":"PoW","PERPUSDT":"DeFi","TRUUSDT":"DeFi","LQTYUSDT":"DeFi","IDUSDT":"Infrastructure","ARBUSDT":"Layer-2","JOEUSDT":"DeFi","TLMUSDT":"Metaverse","AMBUSDT":"Layer-1","LEVERUSDT":"DeFi","RDNTUSDT":"DeFi","HFTUSDT":"DeFi","XVSUSDT":"DeFi","BLURUSDT":"NFT","EDUUSDT":"Metaverse","IDEXUSDT":"DeFi","SUIUSDT":"Layer-1","1000PEPEUSDT":"Meme","1000FLOKIUSDT":"Meme","UMAUSDT":"DeFi","RADUSDT":"DeFi","KEYUSDT":"Infrastructure","COMBOUSDT":"Metaverse","NMRUSDT":"AI","MAVUSDT":"Infrastructure","MDTUSDT":"Infrastructure","XVGUSDT":"PoW","WLDUSDT":"AI","PENDLEUSDT":"DeFi","ARKMUSDT":"Infrastructure","AGLDUSDT":"Gaming","YGGUSDT":"Gaming","DODOXUSDT":"DeFi","BNTUSDT":"DeFi","OXTUSDT":"Infrastructure","SEIUSDT":"Layer-1","CYBERUSDT":"Infrastructure","HIFIUSDT":"DeFi","ARKUSDT":"Layer-1","GLMRUSDT":"Layer-2","BICOUSDT":"Infrastructure","STRAXUSDT":"Layer-2","LOOMUSDT":"Infrastructure","BIGTIMEUSDT":"Gaming","BONDUSDT":"DeFi","ORBSUSDT":"Infrastructure","STPTUSDT":"DeFi","WAXPUSDT":"Gaming","BSVUSDT":"PoW","RIFUSDT":"Storage","POLYXUSDT":"Infrastructure","GASUSDT":"Infrastructure","POWRUSDT":"Layer-2","TIAUSDT":"Infrastructure","SNTUSDT":"DeFi","CAKEUSDT":"DeFi","MEMEUSDT":"Meme","TWTUSDT":"Infrastructure","TOKENUSDT":"DeFi","ORDIUSDT":"Meme","STEEMUSDT":"DeFi","BADGERUSDT":"Bitcoin Eco","ILVUSDT":"Metaverse","NTRNUSDT":"Layer-1","KASUSDT":"Layer-1","BEAMXUSDT":"Gaming","1000BONKUSDT":"Meme","PYTHUSDT":"Infrastructure","SUPERUSDT":"Gaming","ONGUSDT":"Layer-1","ETHWUSDT":"PoW","JTOUSDT":"DeFi","1000SATSUSDT":"Meme","AUCTIONUSDT":"DeFi","1000RATSUSDT":"Meme","ACEUSDT":"Gaming","MOVRUSDT":"Layer-1","NFPUSDT":"AI","AIUSDT":"AI","XAIUSDT":"Gaming","WIFUSDT":"Meme","MANTAUSDT":"Layer-2","ONDOUSDT":"DeFi","LSKUSDT":"Layer-2","ALTUSDT":"Infrastructure","JUPUSDT":"DeFi","ZETAUSDT":"Layer-1","RONINUSDT":"Gaming","DYMUSDT":"Infrastructure","OMUSDT":"DeFi","PIXELUSDT":"Gaming","STRKUSDT":"Layer-1","GLMUSDT":"Infrastructure","PORTALUSDT":"Gaming","TONUSDT":"Layer-1","AXLUSDT":"Infrastructure","METISUSDT":"Layer-2","AEVOUSDT":"DeFi","VANRYUSDT":"Metaverse","BOMEUSDT":"Meme","ETHFIUSDT":"DeFi","ENAUSDT":"DeFi","WUSDT":"Infrastructure","TNSRUSDT":"NFT","SAGAUSDT":"Layer-1","TAOUSDT":"AI","OMNIUSDT":"Layer-1","REZUSDT":"DeFi","BBUSDT":"Layer-1","NOTUSDT":"Gaming","TURBOUSDT":"AI","IOUSDT":"AI","ZKUSDT":"Layer-2","MEWUSDT":"Meme","LISTAUSDT":"DeFi","ZROUSDT":"Infrastructure","RENDERUSDT":"Infrastructure","BANANAUSDT":"DeFi","RAREUSDT":"NFT","GUSDT":"Infrastructure","SYNUSDT":"DeFi","SYSUSDT":"PoW","VOXELUSDT":"Gaming","BRETTUSDT":"Meme","ALPACAUSDT":"DeFi","POPCATUSDT":"Meme","SUNUSDT":"DeFi","VIDTUSDT":"AI","NULSUSDT":"Infrastructure","DOGSUSDT":"Meme","MBOXUSDT":"Metaverse","CHESSUSDT":"DeFi","FLUXUSDT":"AI","BSWUSDT":"DeFi","QUICKUSDT":"DeFi","NEIROETHUSDT":"Meme","RPLUSDT":"DeFi","POLUSDT":"Layer-2","UXLINKUSDT":"Infrastructure","1MBABYDOGEUSDT":"Meme","NEIROUSDT":"Meme","KDAUSDT":"PoW","FIDAUSDT":"Infrastructure","FIOUSDT":"NFT","CATIUSDT":"Gaming","GHSTUSDT":"Metaverse","LOKAUSDT":"Gaming","HMSTRUSDT":"Gaming","REIUSDT":"Layer-1","EIGENUSDT":"Infrastructure","DIAUSDT":"Infrastructure","1000CATUSDT":"Meme","SCRUSDT":"Layer-1","GOATUSDT":"AI","MOODENGUSDT":"Meme","SAFEUSDT":"Infrastructure","PONKEUSDT":"Meme","COWUSDT":"DeFi","CETUSUSDT":"DeFi","1000000MOGUSDT":"Meme","GRASSUSDT":"AI","DRIFTUSDT":"DeFi","SWELLUSDT":"DeFi","ACTUSDT":"AI","PNUTUSDT":"Meme","HIPPOUSDT":"Meme","1000XUSDT":"AI","DEGENUSDT":"Meme","BANUSDT":"Meme","AKTUSDT":"AI","SLERFUSDT":"Meme","SCRTUSDT":"Layer-1","1000CHEEMSUSDT":"Meme","1000WHYUSDT":"Meme","THEUSDT":"DeFi","MORPHOUSDT":"DeFi","CHILLGUYUSDT":"Meme","KAIAUSDT":"DeFi","AEROUSDT":"DeFi","ACXUSDT":"DeFi","ORCAUSDT":"DeFi","MOVEUSDT":"Layer-1","VIRTUALUSDT":"AI","SPXUSDT":"Meme","MEUSDT":"NFT","AVAUSDT":"NONE","DEGOUSDT":"NFT","VELODROMEUSDT":"DeFi","MOCAUSDT":"Metaverse","VANAUSDT":"AI","PENGUUSDT":"Meme","LUMIAUSDT":"DeFi","USUALUSDT":"DeFi","AIXBTUSDT":"AI","FARTCOINUSDT":"Meme","KMNOUSDT":"DeFi","CGPTUSDT":"AI","HIVEUSDT":"Layer-1","DEXEUSDT":"DeFi","PHAUSDT":"AI","DFUSDT":"DeFi","GRIFFAINUSDT":"AI","AI16ZUSDT":"AI","ZEREBROUSDT":"AI","COOKIEUSDT":"AI","ALCHUSDT":"AI","SWARMSUSDT":"AI","SONICUSDT":"Gaming","DUSDT":"Metaverse","PROMUSDT":"NFT","SUSDT":"Layer-1","SOLVUSDT":"DeFi","ARCUSDT":"AI","AVAAIUSDT":"AI","TRUMPUSDT":"Meme","MELANIAUSDT":"Meme","VTHOUSDT":"Layer-1","ANIMEUSDT":"NFT","VINEUSDT":"Meme","PIPPINUSDT":"Meme","VVVUSDT":"AI","BERAUSDT":"Layer-1","TSTUSDT":"Meme","LAYERUSDT":"Infrastructure","HEIUSDT":"Infrastructure","B3USDT":"Alpha","IPUSDT":"AI","GPSUSDT":"Infrastructure","SHELLUSDT":"AI","KAITOUSDT":"Infrastructure","REDUSDT":"Infrastructure","VICUSDT":"Layer-1","EPICUSDT":"NFT","BMTUSDT":"Infrastructure","MUBARAKUSDT":"Meme","FORMUSDT":"Gaming","BIDUSDT":"AI","TUTUSDT":"Meme","BROCCOLI714USDT":"Meme","BROCCOLIF3BUSDT":"Meme","SIRENUSDT":"Alpha","BANANAS31USDT":"Meme","BRUSDT":"DeFi","PLUMEUSDT":"Layer-1","NILUSDT":"AI","PARTIUSDT":"Layer-1","JELLYJELLYUSDT":"Alpha","MAVIAUSDT":"Gaming","PAXGUSDT":"RWA","WALUSDT":"Storage","FUNUSDT":"DeFi","MLNUSDT":"DeFi","GUNUSDT":"Gaming","ATHUSDT":"AI","BABYUSDT":"DeFi","FORTHUSDT":"DeFi","PROMPTUSDT":"AI","XCNUSDT":"PoW","STOUSDT":"DeFi","FHEUSDT":"AI","KERNELUSDT":"DeFi","WCTUSDT":"Infrastructure","INITUSDT":"Layer-1","BANKUSDT":"Meme","EPTUSDT":"AI","DEEPUSDT":"DeFi","HYPERUSDT":"DeFi","MEMEFIUSDT":"Gaming","FISUSDT":"DeFi","JSTUSDT":"DeFi","SIGNUSDT":"Infrastructure","PUNDIXUSDT":"DeFi","CTKUSDT":"Infrastructure","AIOTUSDT":"AI","DOLOUSDT":"DeFi","HAEDALUSDT":"DeFi","SXTUSDT":"AI","B2USDT":"DeFi","MILKUSDT":"DeFi","SYRUPUSDT":"DeFi","OBOLUSDT":"DeFi","DOODUSDT":"Alpha","OGUSDT":"NONE","ZKJUSDT":"Layer-2","SKYAIUSDT":"AI","NXPCUSDT":"Gaming","CVCUSDT":"Infrastructure","AGTUSDT":"AI","AWEUSDT":"AI","BUSDT":"Meme","SOONUSDT":"Infrastructure","HUMAUSDT":"Payment","AUSDT":"Layer-2","SOPHUSDT":"Layer-2","MERLUSDT":"Layer-2","HYPEUSDT":"DeFi","PUFFERUSDT":"Layer-2","PORT3USDT":"AI","1000000BOBUSDT":"Meme","LAUSDT":"AI","SKATEUSDT":"Layer-1","HOMEUSDT":"DeFi","RESOLVUSDT":"DeFi","TAIKOUSDT":"Layer-2","SQDUSDT":"DeFi","PUMPBTCUSDT":"DeFi","SPKUSDT":"DeFi","MYXUSDT":"DeFi","FUSDT":"DeFi","NEWTUSDT":"Meme","DMCUSDT":"Gaming","HUSDT":"Infrastructure","OLUSDT":"Gaming","SAHARAUSDT":"AI","BULLAUSDT":"Alpha","IDOLUSDT":"AI","MUSDT":"Meme","TANSSIUSDT":"Infrastructure","PUMPUSDT":"Meme","CROSSUSDT":"Gaming","AINUSDT":"AI","CUSDT":"AI","VELVETUSDT":"DeFi","TACUSDT":"Gaming","ERAUSDT":"DeFi","TAUSDT":"AI","CVXUSDT":"DeFi","SLPUSDT":"Gaming","ZORAUSDT":"Layer-2","TAGUSDT":"AI","ZRCUSDT":"DeFi","ESPORTSUSDT":"Gaming","TREEUSDT":"DeFi","A2ZUSDT":"Gaming","PLAYUSDT":"Gaming","NAORISUSDT":"Infrastructure","PROVEUSDT":"Infrastructure","ALLUSDT":"Index","INUSDT":"Alpha","YALAUSDT":"DeFi","CARVUSDT":"Alpha","AIOUSDT":"Alpha","XNYUSDT":"Alpha","USELESSUSDT":"Meme","DAMUSDT":"DeFi","CUDISUSDT":"Alpha","SAPIENUSDT":"Alpha","XPLUSDT":"Layer-1","WLFIUSDT":"DeFi","SOMIUSDT":"DeFi","BASUSDT":"Alpha","BTRUSDT":"Layer-2","MITOUSDT":"DeFi","HEMIUSDT":"DeFi","LINEAUSDT":"Layer-2","QUSDT":"Alpha","ARIAUSDT":"Alpha","TAKEUSDT":"Gaming","PTBUSDT":"Alpha","OPENUSDT":"AI","FLOCKUSDT":"AI","SKYUSDT":"DeFi","AVNTUSDT":"DeFi","HOLOUSDT":"AI","XPINUSDT":"Alpha","UBUSDT":"Alpha","TOSHIUSDT":"Meme","STBLUSDT":"DeFi","0GUSDT":"Layer-1","BARDUSDT":"DeFi","ASTERUSDT":"DeFi","TRADOORUSDT":"Alpha","BLESSUSDT":"Alpha","FLUIDUSDT":"DeFi","COAIUSDT":"Alpha","HANAUSDT":"Alpha","MIRAUSDT":"AI","AKEUSDT":"Alpha","ORDERUSDT":"DeFi","LIGHTUSDT":"Infrastructure","XANUSDT":"DeFi","EDENUSDT":"DeFi","NOMUSDT":"DeFi","TRUTHUSDT":"Alpha","2ZUSDT":"Infrastructure","EVAAUSDT":"DeFi","LYNUSDT":"Alpha","KGENUSDT":"Alpha","4USDT":"Alpha","GIGGLEUSDT":"Meme","MONUSDT":"DeFi","YBUSDT":"DeFi","METUSDT":"DeFi","LITUSDT":"DeFi","BREVUSDT":"Infrastructure","COLLECTUSDT":"Alpha","MAGMAUSDT":"Alpha","XAUUSDT":"TradFi","USUSDT":"Alpha","CYSUSDT":"Alpha","RAVEUSDT":"Alpha","ZKPUSDT":"Alpha","GUAUSDT":"Alpha","IRUSDT":"Alpha","RECALLUSDT":"AI","ZBTUSDT":"DeFi","LABUSDT":"Alpha","RIVERUSDT":"Alpha","RVVUSDT":"Alpha","BLUAIUSDT":"Alpha","TURTLEUSDT":"DeFi","APRUSDT":"Alpha","ONUSDT":"Alpha","42USDT":"Alpha","COMMONUSDT":"Alpha","KITEUSDT":"AI","ATUSDT":"Alpha","CCUSDT":"Layer-1","MMTUSDT":"DeFi","TRUSTUSDT":"AI","UAIUSDT":"Alpha","FOLKSUSDT":"Alpha","STABLEUSDT":"Alpha","JCTUSDT":"Alpha","ALLOUSDT":"AI","CLANKERUSDT":"Alpha","BEATUSDT":"Alpha","PIEVERSEUSDT":"Alpha","SENTUSDT":"AI","BOBUSDT":"Alpha","IRYSUSDT":"Alpha","RLSUSDT":"Alpha","POWERUSDT":"Alpha","WETUSDT":"Alpha","NIGHTUSDT":"Alpha","XAGUSDT":"TradFi","ZAMAUSDT":"Infrastructure","FOGOUSDT":"Infrastructure","FRAXUSDT":"DeFi","AIAUSDT":"Alpha","ACUUSDT":"Alpha","ELSAUSDT":"Alpha","SKRUSDT":"Alpha","SPACEUSDT":"Alpha","FIGHTUSDT":"Alpha","TSLAUSDT":"TradFi","BIRBUSDT":"Alpha","GWEIUSDT":"Alpha","XPTUSDT":"TradFi","XPDUSDT":"TradFi","MEGAUSDT":"DeFi","INXUSDT":"Alpha","INTCUSDT":"TradFi","HOODUSDT":"TradFi","TRIAUSDT":"Alpha","MSTRUSDT":"TradFi","AMZNUSDT":"TradFi","CRCLUSDT":"TradFi","COINUSDT":"TradFi","PLTRUSDT":"TradFi","AZTECUSDT":"Layer-2","OPNUSDT":"DeFi","ROBOUSDT":"Alpha","KATUSDT":"Infrastructure","MANTRAUSDT":"RWA","COPPERUSDT":"TradFi","EWYUSDT":"TradFi","CFGUSDT":"RWA","EWJUSDT":"TradFi","EDGEUSDT":"DeFi","PAYPUSDT":"TradFi","METAUSDT":"TradFi","NVDAUSDT":"TradFi","GOOGLUSDT":"TradFi","XAUTUSDT":"RWA","CLUSDT":"TradFi","BZUSDT":"TradFi","NATGASUSDT":"TradFi","PRLUSDT":"Alpha","QQQUSDT":"TradFi","SPYUSDT":"TradFi","AAPLUSDT":"TradFi","TSMUSDT":"TradFi","MUUSDT":"TradFi","SNDKUSDT":"TradFi","MSFTUSDT":"TradFi","AVGOUSDT":"TradFi","BABAUSDT":"TradFi","AMDUSDT":"TradFi","QCOMUSDT":"TradFi","USARUSDT":"TradFi","LITEUSDT":"TradFi","ORCLUSDT":"TradFi","DISUSDT":"TradFi","UBERUSDT":"TradFi","CSCOUSDT":"TradFi","HDUSDT":"TradFi","SOXLUSDT":"TradFi","MRVLUSDT":"TradFi","CRWVUSDT":"TradFi","WMTUSDT":"TradFi","JPMUSDT":"TradFi","BRKBUSDT":"TradFi","FLNCUSDT":"TradFi","DRAMUSDT":"TradFi","RKLBUSDT":"TradFi","CBRSUSDT":"TradFi","SPCXUSDT":"TradFi","OPENAIUSDT":"TradFi","NBISUSDT":"TradFi","WDCUSDT":"TradFi","ARMUSDT":"TradFi","BEUSDT":"TradFi","COHRUSDT":"TradFi","QNTXUSDT":"TradFi","LLYUSDT":"TradFi","NVOUSDT":"TradFi","BBXUSDT":"TradFi","NOKUSDT":"TradFi","EWTUSDT":"TradFi","ASTSUSDT":"TradFi","DELLUSDT":"TradFi","IBMUSDT":"TradFi","NOWUSDT":"TradFi","CRMUSDT":"TradFi","IRENUSDT":"TradFi","ONDSUSDT":"TradFi","BXUSDT":"TradFi","HPEUSDT":"TradFi","AMATUSDT":"TradFi","CRWDUSDT":"TradFi","CRDOUSDT":"TradFi","AAOIUSDT":"TradFi","IWMUSDT":"TradFi","AXTIUSDT":"TradFi","NFLXUSDT":"TradFi","COSTUSDT":"TradFi","URNMUSDT":"TradFi","HIMSUSDT":"TradFi","EBAYUSDT":"TradFi","ZMUSDT":"TradFi","DKNGUSDT":"TradFi","RIVNUSDT":"TradFi","GMEUSDT":"TradFi","XLEUSDT":"TradFi","EWZUSDT":"TradFi","BMNRUSDT":"TradFi","UVXYUSDT":"TradFi","ADBEUSDT":"TradFi","GLWUSDT":"TradFi","STXXUSDT":"TradFi","ASMLUSDT":"TradFi","REUSDT":"Alpha","LRCXUSDT":"TradFi","KLACUSDT":"TradFi","ALABUSDT":"TradFi","SMCIUSDT":"TradFi","CIENUSDT":"TradFi","KORUUSDT":"TradFi","SONYUSDT":"TradFi","MVLLUSDT":"TradFi","TQQQUSDT":"TradFi","SQQQUSDT":"TradFi","STRCUSDT":"TradFi","CATUSDT":"TradFi","TXNUSDT":"TradFi","FLEXUSDT":"TradFi","TERUSDT":"TradFi","TTWOUSDT":"TradFi","KSTRUSDT":"TradFi","BSPUSDT":"TradFi","BOTUSDT":"TradFi","WENUSDT":"TradFi","INTWUSDT":"TradFi","SNXXUSDT":"TradFi","XBIUSDT":"TradFi","BNCUSDT":"TradFi","FWDIUSDT":"TradFi","GEVUSDT":"TradFi","VRTUSDT":"TradFi","SNOWUSDT":"TradFi","APPUSDT":"TradFi","MUUUSDT":"TradFi","SOXSUSDT":"TradFi","TZAUSDT":"TradFi","MINIMAXUSDT":"TradFi","ZHIPUUSDT":"TradFi","HK0700USDT":"TradFi","HK1810USDT":"TradFi","TENCENTUSDT":"TradFi","SHAZUSDT":"TradFi","SOFIUSDT":"TradFi","PANWUSDT":"TradFi","PENGUSDT":"TradFi","POPMARTUSDT":"TradFi","ANTHROPICUSDT":"TradFi","HYUNDAIUSDT":"TradFi","SAMSUNGUSDT":"TradFi","SKHYNIXUSDT":"TradFi","SKHYUSDT":"TradFi","SPCXUSD1":"TradFi"};
+
+// Asset-type classification — separate from the category tabs above. The "TradFi"
+// category on Binance perpetuals actually bundles individual stocks, ETFs and
+// commodity futures together; these two small lists split that bundle so the
+// table can show a plain, honest "what kind of asset is this" per row.
+const NATR_COMMODITY_SYMBOLS = new Set(['XAUUSDT','XAGUSDT','XPTUSDT','XPDUSDT','CLUSDT','BZUSDT','NATGASUSDT','COPPERUSDT']);
+const NATR_ETF_SYMBOLS = new Set(['QQQUSDT','SPYUSDT','IWMUSDT','TQQQUSDT','SQQQUSDT','SOXLUSDT','SOXSUSDT','UVXYUSDT','TZAUSDT','XLEUSDT','XBIUSDT','EWZUSDT','EWJUSDT','EWYUSDT','EWTUSDT','URNMUSDT']);
+const NATR_ASSET_TYPE_META = {
+    crypto:    { label: 'Крипто',  short: '🪙',  cls: 'atype-crypto' },
+    stock:     { label: 'Акция',   short: '📈',  cls: 'atype-stock' },
+    etf:       { label: 'ETF',     short: '📊',  cls: 'atype-etf' },
+    commodity: { label: 'Товар',   short: '🛢️', cls: 'atype-commodity' },
+    rwa:       { label: 'RWA',     short: '🏦',  cls: 'atype-rwa' },
+    index:     { label: 'Индекс',  short: '📉',  cls: 'atype-index' },
+};
+function natrGetAssetType(symbol) {
+    const cat = ((natrCategoryMap && natrCategoryMap[symbol]) || 'NONE').split(',')[0];
+    if (cat === 'RWA') return 'rwa';
+    if (cat === 'Index') return 'index';
+    if (cat === 'TradFi') {
+        if (NATR_COMMODITY_SYMBOLS.has(symbol)) return 'commodity';
+        if (NATR_ETF_SYMBOLS.has(symbol)) return 'etf';
+        return 'stock'; // default within TradFi — most tokenized TradFi perpetuals are single-name stocks
+    }
+    return 'crypto';
+}
+function natrAssetTypeBadge(symbol) {
+    const type = natrGetAssetType(symbol);
+    const meta = NATR_ASSET_TYPE_META[type];
+    return '<span class="atype-badge '+meta.cls+'">'+meta.short+' '+meta.label+'</span>';
+}
+
 function natrSetStatus(text, active, updating) {
     const b = document.getElementById('natrStatusBadge');
     document.getElementById('natrStatusText').textContent = text;
@@ -1422,19 +1471,28 @@ async function natrTryUpdateCategories() {
 }
 function natrUpdateCatTabCounts() {
     if (!natrCategoryMap) return;
-    // Count perpetual USDT symbols per category
+    // Count perpetual USDT symbols per category, and separately per asset-type bucket
+    // (Акции/ETF/Товары/Индексы/Другие read from the same underlying data, just grouped differently).
     const catCounts = {};
-    for (const [sym, cat] of Object.entries(natrCategoryMap)) {
+    const typeCounts = {};
+    for (const sym of Object.keys(natrCategoryMap)) {
         if (sym.endsWith('USDT') || sym.endsWith('USD1')) {
-            const c = cat.split(',')[0]; // handle "Pre-IPO,TradFi" -> "Pre-IPO"
-            catCounts[c] = (catCounts[c] || 0) + 1;
+            const cat = natrCategoryMap[sym].split(',')[0]; // handle "Pre-IPO,TradFi" -> "Pre-IPO"
+            catCounts[cat] = (catCounts[cat] || 0) + 1;
+            const type = natrGetAssetType(sym);
+            typeCounts[type] = (typeCounts[type] || 0) + 1;
         }
     }
+    const tfLabels = { TF_STOCK: 'Акции', TF_ETF: 'ETF', TF_COMMODITY: 'Товары', TF_INDEX: 'Индексы', TF_OTHER: 'Другие' };
     document.querySelectorAll('#natrCatTabs .natr-cat-tab').forEach(btn => {
         const cat = btn.dataset.cat;
         if (cat === 'all') {
             const total = Object.values(catCounts).reduce((a,b) => a+b, 0);
             btn.innerHTML = 'Все<span class="natr-cat-count">' + total + '</span>';
+        } else if (NATR_TF_TAB_TO_ASSET_TYPE[cat]) {
+            const type = NATR_TF_TAB_TO_ASSET_TYPE[cat];
+            const count = typeCounts[type] || 0;
+            btn.innerHTML = escapeHtml(tfLabels[cat]) + '<span class="natr-cat-count">' + count + '</span>';
         } else if (catCounts[cat] !== undefined) {
             // keep label, add count (category text can come from the Binance API — escape it)
             const label = escapeHtml(cat);
@@ -1458,11 +1516,20 @@ function natrFilterByCategory(symbols) {
         return cat === natrSelectedCategory;
     });
 }
+const NATR_TF_TAB_TO_ASSET_TYPE = { TF_STOCK: 'stock', TF_ETF: 'etf', TF_COMMODITY: 'commodity', TF_INDEX: 'index', TF_OTHER: 'rwa' };
 function natrReFilterAndRender() {
-    let list = natrSelectedCategory === 'all' ? [...natrAllResults] : natrAllResults.filter(r => {
-        const cat = (natrCategoryMap[r.symbol] || 'NONE').split(',')[0];
-        return cat === natrSelectedCategory;
-    });
+    let list;
+    if (natrSelectedCategory === 'all') {
+        list = [...natrAllResults];
+    } else if (NATR_TF_TAB_TO_ASSET_TYPE[natrSelectedCategory]) {
+        const wantType = NATR_TF_TAB_TO_ASSET_TYPE[natrSelectedCategory];
+        list = natrAllResults.filter(r => natrGetAssetType(r.symbol) === wantType);
+    } else {
+        list = natrAllResults.filter(r => {
+            const cat = (natrCategoryMap[r.symbol] || 'NONE').split(',')[0];
+            return cat === natrSelectedCategory;
+        });
+    }
     if (natrWatchlistOnly) list = list.filter(r => natrWatchlist.has(r.symbol));
     if (natrMinVolume > 0) list = list.filter(r => {
         const t = natrTicker24hMap.get(r.symbol);
@@ -1701,12 +1768,14 @@ function natrRenderTable(data, animate) {
             ? '<div class="p-price mono">$'+natrFmtPriceShort(t24h.price)+'</div><div class="p-vol">'+natrFmtVolShort(t24h.volume)+'</div>'
             : '<div class="p-vol">—</div>';
         const spark = natrSparklineSVG(natrHistoryMap.get(item.symbol));
+        const typeCell = natrAssetTypeBadge(item.symbol);
         return '<tr class="'+bc+' '+ra+'"><td><span class="natr-rank '+rc+' mono">'+(i+1)+'</span></td>'+
             '<td class="ticker-cell" tabindex="0" role="button" aria-label="Скопировать тикер '+displaySymbol+'" data-symbol="'+displaySymbol+'">'+
             '<span class="natr-star'+(pinned?' pinned':'')+'" tabindex="0" role="button" aria-pressed="'+pinned+'" aria-label="Избранное" data-symbol="'+item.symbol+'" onclick="event.stopPropagation(); natrToggleWatchlist(\''+item.symbol+'\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();event.stopPropagation();natrToggleWatchlist(\''+item.symbol+'\');}">'+(pinned?'★':'☆')+'</span>'+
             '<div class="ticker-name">'+displaySymbol+'</div>'+
             '<div class="ticker-sub">нажми чтобы скопировать · <span class="natr-cai-link" tabindex="0" role="button" onclick="event.stopPropagation(); natrOpenInCryptoAI(\''+item.symbol+'\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();event.stopPropagation();natrOpenInCryptoAI(\''+item.symbol+'\');}">CryptoAI →</span></div>'+
             '<svg class="copy-icon" style="width:14px;height:14px" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></td>'+
+            '<td>'+typeCell+'</td>'+
             '<td class="natr-price-cell">'+priceCell+'</td>'+
             '<td>'+spark+'</td>'+
             '<td><span class="natr-val mono '+nc+' '+na+'">'+item.natr.toFixed(3)+'<small style="font-size:0.65em;color:var(--muted)">%</small></span></td></tr>';
@@ -2455,7 +2524,7 @@ function calUpdateCountdown(evt) {
         const s = Math.floor((diff % 60000) / 1000);
         document.getElementById('calNextCountdown').textContent =
             String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
-        if (calNotifyEnabled && diff <= 5 * 60 * 1000 && !calNotifiedEvents.has(evtKey)) {
+        if (calNotifyEnabled && evt.impact === 'high' && diff <= 5 * 60 * 1000 && !calNotifiedEvents.has(evtKey)) {
             calNotifiedEvents.add(evtKey);
             calFireReminder(evt);
         }

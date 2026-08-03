@@ -181,7 +181,7 @@
         .refresh-timer { font-weight: 700; min-width: 28px; text-align: center; }
         .natr-auto-refresh.active .refresh-timer { color: var(--green); }
 
-        .natr-tabs { display: flex; gap: 8px; margin-bottom: 16px; }
+        .natr-tabs { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
         .natr-tab {
             padding: 10px 18px; border-radius: 8px; font-size: 13px; font-weight: 600;
             cursor: pointer; background: transparent; border: 1px solid transparent;
@@ -927,6 +927,7 @@
     <div class="natr-cat-tabs" id="natrCatTabs">
         <span class="natr-cat-label">Категория:</span>
         <button class="natr-cat-tab active" data-cat="all" onclick="natrSwitchCategory('all')">Все</button>
+        <button class="natr-cat-tab" data-cat="TF_CRYPTO" onclick="natrSwitchCategory('TF_CRYPTO')">Крипто</button>
         <button class="natr-cat-tab" data-cat="TF_STOCK" onclick="natrSwitchCategory('TF_STOCK')">Акции</button>
         <button class="natr-cat-tab" data-cat="TF_ETF" onclick="natrSwitchCategory('TF_ETF')">ETF</button>
         <button class="natr-cat-tab" data-cat="TF_COMMODITY" onclick="natrSwitchCategory('TF_COMMODITY')">Товары</button>
@@ -948,8 +949,12 @@
 
     </div>
     <div class="natr-tabs">
-        <button class="natr-tab active" data-mode="5_14" onclick="natrSwitchMode('5_14')">NATR 5/14 (5m x 14)</button>
-        <button class="natr-tab" data-mode="1_30" onclick="natrSwitchMode('1_30')">NATR 1/30 (1m x 30)</button>
+        <button class="natr-tab" data-mode="1m_30" onclick="natrSwitchMode('1m_30')" title="1 минута × 30 периодов">1м</button>
+        <button class="natr-tab active" data-mode="5m_14" onclick="natrSwitchMode('5m_14')" title="5 минут × 14 периодов">5м</button>
+        <button class="natr-tab" data-mode="15m_14" onclick="natrSwitchMode('15m_14')" title="15 минут × 14 периодов">15м</button>
+        <button class="natr-tab" data-mode="1h_14" onclick="natrSwitchMode('1h_14')" title="1 час × 14 периодов">1ч</button>
+        <button class="natr-tab" data-mode="4h_14" onclick="natrSwitchMode('4h_14')" title="4 часа × 14 периодов">4ч</button>
+        <button class="natr-tab" data-mode="1d_14" onclick="natrSwitchMode('1d_14')" title="1 день × 14 периодов">1д</button>
     </div>
     <div class="natr-tools" id="natrTools">
         <div class="natr-tool-group">
@@ -969,6 +974,24 @@
                 <option value="1000000">Объём 24ч &gt; $1 млн</option>
                 <option value="10000000">Объём 24ч &gt; $10 млн</option>
             </select>
+        </div>
+        <div class="natr-tool-group">
+            <label class="natr-tool-label" for="natrTradesSelect">Сделок 24ч:</label>
+            <select class="sec-select" id="natrTradesSelect" onchange="natrChangeTradesFilter(this.value)">
+                <option value="0">Любое</option>
+                <option value="1000">&gt; 1 000</option>
+                <option value="10000">&gt; 10 000</option>
+                <option value="100000">&gt; 100 000</option>
+                <option value="500000">&gt; 500 000</option>
+            </select>
+        </div>
+        <div class="natr-tool-group">
+            <label class="natr-tool-label" for="natrCompareValue">NATR:</label>
+            <select class="sec-select" id="natrCompareOp" onchange="natrChangeNatrCompare()" style="width:56px;">
+                <option value="gte">&gt;</option>
+                <option value="lte">&lt;</option>
+            </select>
+            <input type="number" class="natr-alert-input" id="natrCompareValue" placeholder="%" min="0" step="0.1" oninput="natrChangeNatrCompare()" style="width:70px;">
         </div>
         <button class="natr-tool-btn" id="natrWatchlistBtn" onclick="natrToggleWatchlistOnly()" title="Показывать только избранное">★ Избранное</button>
         <div class="natr-tool-group">
@@ -1301,7 +1324,17 @@ function fallbackCopy(text) {
 //  SECTION 1: NATR SCANNER
 // ============================================================
 const NATR_API = 'https://fapi.binance.com';
-let natrMode = '5_14';
+// Every selectable timeframe lives here — interval is the Binance kline interval,
+// period is how many candles the ATR/NATR average is taken over.
+const NATR_MODES = {
+    '1m_30':  { interval: '1m',  period: 30, label: '1м×30' },
+    '5m_14':  { interval: '5m',  period: 14, label: '5м×14' },
+    '15m_14': { interval: '15m', period: 14, label: '15м×14' },
+    '1h_14':  { interval: '1h',  period: 14, label: '1ч×14' },
+    '4h_14':  { interval: '4h',  period: 14, label: '4ч×14' },
+    '1d_14':  { interval: '1d',  period: 14, label: '1д×14' },
+};
+let natrMode = '5m_14';
 let natrAllResults = [];
 let natrIsScanning = false;
 let natrIsBgUpdating = false;
@@ -1322,7 +1355,10 @@ let natrTopN = 10;
 let natrWatchlist = new Set();
 let natrWatchlistOnly = false;
 let natrMinVolume = 0;
-let natrTicker24hMap = new Map(); // symbol -> {price, volume}
+let natrMinTrades = 0;
+let natrCompareOp = 'gte';
+let natrCompareValue = null;
+let natrTicker24hMap = new Map(); // symbol -> {price, volume, count}
 let natrHistoryMap = new Map();   // symbol -> array of recent NATR readings (session-only, resets on reload)
 let natrAlertsEnabled = false;
 let natrAlertThreshold = null;
@@ -1330,9 +1366,14 @@ let natrAlertedSymbols = new Set(); // edge-triggered so we don't re-notify ever
 try {
     natrTopN = parseInt(localStorage.getItem('natr_topn'), 10) || 10;
     natrMinVolume = parseInt(localStorage.getItem('natr_minvol'), 10) || 0;
+    natrMinTrades = parseInt(localStorage.getItem('natr_mintrades'), 10) || 0;
+    const savedOp = localStorage.getItem('natr_compare_op');
+    if (savedOp === 'gte' || savedOp === 'lte') natrCompareOp = savedOp;
+    const savedCmpVal = parseFloat(localStorage.getItem('natr_compare_value'));
+    if (!isNaN(savedCmpVal) && savedCmpVal >= 0) natrCompareValue = savedCmpVal;
     natrWatchlist = new Set(JSON.parse(localStorage.getItem('natr_watchlist') || '[]'));
     const savedMode = localStorage.getItem('natr_mode');
-    if (savedMode === '5_14' || savedMode === '1_30') natrMode = savedMode;
+    if (NATR_MODES[savedMode]) natrMode = savedMode;
     const savedCat = localStorage.getItem('natr_category');
     if (savedCat) natrSelectedCategory = savedCat;
     natrAlertsEnabled = localStorage.getItem('natr_alerts_enabled') === '1';
@@ -1350,6 +1391,12 @@ function natrApplyRestoredUI() {
     if (topSel) topSel.value = String(natrTopN);
     const liqSel = document.getElementById('natrLiqSelect');
     if (liqSel) liqSel.value = String(natrMinVolume);
+    const tradesSel = document.getElementById('natrTradesSelect');
+    if (tradesSel) tradesSel.value = String(natrMinTrades);
+    const cmpOpSel = document.getElementById('natrCompareOp');
+    if (cmpOpSel) cmpOpSel.value = natrCompareOp;
+    const cmpValInput = document.getElementById('natrCompareValue');
+    if (cmpValInput && natrCompareValue !== null) cmpValInput.value = natrCompareValue;
     document.querySelectorAll('#natrCatTabs .natr-cat-tab').forEach(t => t.classList.toggle('active', t.dataset.cat === natrSelectedCategory));
     document.querySelectorAll('.natr-tab').forEach(t => t.classList.toggle('active', t.dataset.mode === natrMode));
     const alertInput = document.getElementById('natrAlertInput');
@@ -1483,7 +1530,7 @@ function natrUpdateCatTabCounts() {
             typeCounts[type] = (typeCounts[type] || 0) + 1;
         }
     }
-    const tfLabels = { TF_STOCK: 'Акции', TF_ETF: 'ETF', TF_COMMODITY: 'Товары', TF_INDEX: 'Индексы', TF_OTHER: 'Другие' };
+    const tfLabels = { TF_CRYPTO: 'Крипто', TF_STOCK: 'Акции', TF_ETF: 'ETF', TF_COMMODITY: 'Товары', TF_INDEX: 'Индексы', TF_OTHER: 'Другие' };
     document.querySelectorAll('#natrCatTabs .natr-cat-tab').forEach(btn => {
         const cat = btn.dataset.cat;
         if (cat === 'all') {
@@ -1516,8 +1563,11 @@ function natrFilterByCategory(symbols) {
         return cat === natrSelectedCategory;
     });
 }
-const NATR_TF_TAB_TO_ASSET_TYPE = { TF_STOCK: 'stock', TF_ETF: 'etf', TF_COMMODITY: 'commodity', TF_INDEX: 'index', TF_OTHER: 'rwa' };
-function natrReFilterAndRender() {
+const NATR_TF_TAB_TO_ASSET_TYPE = { TF_CRYPTO: 'crypto', TF_STOCK: 'stock', TF_ETF: 'etf', TF_COMMODITY: 'commodity', TF_INDEX: 'index', TF_OTHER: 'rwa' };
+// Single source of truth for "what does the current filter set select" — used both
+// for rendering the table AND for deciding what the alert system watches, so alerts
+// never fire for rows the filters are currently hiding.
+function natrGetFilteredResults() {
     let list;
     if (natrSelectedCategory === 'all') {
         list = [...natrAllResults];
@@ -1535,6 +1585,17 @@ function natrReFilterAndRender() {
         const t = natrTicker24hMap.get(r.symbol);
         return t && t.volume >= natrMinVolume;
     });
+    if (natrMinTrades > 0) list = list.filter(r => {
+        const t = natrTicker24hMap.get(r.symbol);
+        return t && t.count >= natrMinTrades;
+    });
+    if (natrCompareValue !== null && !isNaN(natrCompareValue)) {
+        list = list.filter(r => natrCompareOp === 'lte' ? r.natr <= natrCompareValue : r.natr >= natrCompareValue);
+    }
+    return list;
+}
+function natrReFilterAndRender() {
+    const list = natrGetFilteredResults();
     natrRenderTable(list.sort((a,b) => b.natr - a.natr));
 }
 function natrChangeTopN(v) {
@@ -1545,6 +1606,23 @@ function natrChangeTopN(v) {
 function natrChangeLiqFilter(v) {
     natrMinVolume = parseInt(v, 10) || 0;
     try { localStorage.setItem('natr_minvol', String(natrMinVolume)); } catch(e) { /* non-fatal */ }
+    if (natrAllResults.length) natrReFilterAndRender();
+}
+function natrChangeTradesFilter(v) {
+    natrMinTrades = parseInt(v, 10) || 0;
+    try { localStorage.setItem('natr_mintrades', String(natrMinTrades)); } catch(e) { /* non-fatal */ }
+    if (natrAllResults.length) natrReFilterAndRender();
+}
+function natrChangeNatrCompare() {
+    const opSel = document.getElementById('natrCompareOp');
+    const valInput = document.getElementById('natrCompareValue');
+    natrCompareOp = opSel.value === 'lte' ? 'lte' : 'gte';
+    const v = parseFloat(valInput.value);
+    natrCompareValue = (!isNaN(v) && v >= 0) ? v : null;
+    try {
+        localStorage.setItem('natr_compare_op', natrCompareOp);
+        localStorage.setItem('natr_compare_value', natrCompareValue === null ? '' : String(natrCompareValue));
+    } catch(e) { /* non-fatal */ }
     if (natrAllResults.length) natrReFilterAndRender();
 }
 function natrSaveWatchlist() {
@@ -1611,15 +1689,16 @@ function natrOpenInCryptoAI(symbol) {
     if (input) input.value = base;
     caiSearch();
 }
-// Bulk-fetches 24h price/volume for ALL futures symbols in one request (instead of
-// one request per row) — used for the price/volume column and the liquidity filter.
+// Bulk-fetches 24h price/volume/trade-count for ALL futures symbols in one request
+// (instead of one request per row) — used for the price/volume column and the
+// liquidity/trades filters.
 async function natrFetchTicker24h() {
     try {
         const r = await fetch(NATR_API + '/fapi/v1/ticker/24hr');
         const d = await r.json();
         if (!Array.isArray(d)) return;
         const map = new Map();
-        d.forEach(t => map.set(t.symbol, { price: +t.lastPrice, volume: +t.quoteVolume }));
+        d.forEach(t => map.set(t.symbol, { price: +t.lastPrice, volume: +t.quoteVolume, count: +t.count || 0 }));
         natrTicker24hMap = map;
     } catch(e) { /* non-fatal — price/volume column just stays blank */ }
 }
@@ -1719,7 +1798,7 @@ async function natrGetKlines(symbol, interval, limit) {
         resolveP(null); return null;
     } finally { setTimeout(() => natrPendingRequests.delete(ck), 100); }
 }
-async function natrProcessMax(pairs, interval, limit, onProgress) {
+async function natrProcessMax(pairs, interval, limit, period, onProgress) {
     const results = []; const total = pairs.length; let processed = 0;
     for (let i = 0; i < total; i += NATR_SCAN_CFG.batchSize) {
         if (natrAbortCtrl?.signal.aborted) break;
@@ -1727,8 +1806,7 @@ async function natrProcessMax(pairs, interval, limit, onProgress) {
         const batchP = batch.map(async sym => {
             const klines = await natrGetKlines(sym, interval, limit);
             if (!klines) return null;
-            const ap = natrMode === '5_14' ? 14 : 30;
-            const natr = natrCalcNATR(klines, ap);
+            const natr = natrCalcNATR(klines, period);
             return natr != null && natr !== 0 && natr < 1000 ? {symbol: sym, natr} : null;
         });
         const br = await Promise.all(batchP);
@@ -1773,7 +1851,7 @@ function natrRenderTable(data, animate) {
             '<td class="ticker-cell" tabindex="0" role="button" aria-label="Скопировать тикер '+displaySymbol+'" data-symbol="'+displaySymbol+'">'+
             '<span class="natr-star'+(pinned?' pinned':'')+'" tabindex="0" role="button" aria-pressed="'+pinned+'" aria-label="Избранное" data-symbol="'+item.symbol+'" onclick="event.stopPropagation(); natrToggleWatchlist(\''+item.symbol+'\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();event.stopPropagation();natrToggleWatchlist(\''+item.symbol+'\');}">'+(pinned?'★':'☆')+'</span>'+
             '<div class="ticker-name">'+displaySymbol+'</div>'+
-            '<div class="ticker-sub">нажми чтобы скопировать · <span class="natr-cai-link" tabindex="0" role="button" onclick="event.stopPropagation(); natrOpenInCryptoAI(\''+item.symbol+'\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();event.stopPropagation();natrOpenInCryptoAI(\''+item.symbol+'\');}">CryptoAI →</span></div>'+
+            '<div class="ticker-sub"><span class="natr-cai-link" tabindex="0" role="button" onclick="event.stopPropagation(); natrOpenInCryptoAI(\''+item.symbol+'\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();event.stopPropagation();natrOpenInCryptoAI(\''+item.symbol+'\');}">CryptoAI →</span></div>'+
             '<svg class="copy-icon" style="width:14px;height:14px" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></td>'+
             '<td>'+typeCell+'</td>'+
             '<td class="natr-price-cell">'+priceCell+'</td>'+
@@ -1810,10 +1888,11 @@ async function natrStartBgUpdate() {
     natrSetTableUpdating(true); natrSetStatus('Фоновое обновление...', true, true);
     const pairs = await natrGetAllPairs();
     if (!pairs.length || natrAbortCtrl.signal.aborted) { natrFinishBgUpdate(false); return; }
-    const interval = natrMode==='5_14'?'5m':'1m';
-    const limit = (natrMode==='5_14'?14:30) + 5;
+    const modeCfg = NATR_MODES[natrMode] || NATR_MODES['5m_14'];
+    const interval = modeCfg.interval;
+    const limit = modeCfg.period + 5;
     const [results] = await Promise.all([
-        natrProcessMax(pairs, interval, limit, (p,t) => {
+        natrProcessMax(pairs, interval, limit, modeCfg.period, (p,t) => {
             if (!natrAbortCtrl.signal.aborted) natrSetStatus(p+'/'+t, true, true);
         }),
         natrFetchTicker24h()
@@ -1821,7 +1900,7 @@ async function natrStartBgUpdate() {
     if (natrAbortCtrl.signal.aborted) { natrFinishBgUpdate(false); return; }
     natrAllResults = results.sort((a,b) => b.natr - a.natr);
     natrUpdateHistory(natrAllResults);
-    natrCheckAlerts(natrAllResults);
+    natrCheckAlerts(natrGetFilteredResults());
     natrReFilterAndRender();
     natrFinishBgUpdate(true);
 }
@@ -1843,10 +1922,11 @@ async function natrStartScan() {
         natrIsScanning = false; natrAbortCtrl = null; return;
     }
     natrSetStatus('Сканирование '+pairs.length+'...', true);
-    const interval = natrMode==='5_14'?'5m':'1m';
-    const limit = (natrMode==='5_14'?14:30) + 5;
+    const modeCfg = NATR_MODES[natrMode] || NATR_MODES['5m_14'];
+    const interval = modeCfg.interval;
+    const limit = modeCfg.period + 5;
     const [results] = await Promise.all([
-        natrProcessMax(pairs, interval, limit, (p,t) => {
+        natrProcessMax(pairs, interval, limit, modeCfg.period, (p,t) => {
             if (!natrAbortCtrl.signal.aborted) natrSetStatus(p+'/'+t, true);
         }),
         natrFetchTicker24h()
@@ -1857,7 +1937,7 @@ async function natrStartScan() {
     }
     natrAllResults = results.sort((a,b) => b.natr - a.natr);
     natrUpdateHistory(natrAllResults);
-    natrCheckAlerts(natrAllResults);
+    natrCheckAlerts(natrGetFilteredResults());
     natrHideSkeleton(); natrReFilterAndRender();
     natrSetStatus('Готово: '+results.length, true);
     document.getElementById('natrScanBtn').classList.remove('loading');

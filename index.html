@@ -221,6 +221,18 @@
         }
         .natr-tool-btn:hover { color: var(--fg); background: rgba(255,255,255,0.03); }
         .natr-tool-btn.active { color: var(--accent); border-color: rgba(240,185,11,0.35); background: var(--accent-dim); }
+        .natr-sort-btn {
+            padding: 8px 14px; border-radius: 8px; font-size: 12px; font-weight: 600;
+            cursor: pointer; background: transparent; border: 1px solid var(--border);
+            color: var(--muted); transition: all 0.2s; font-family: 'Space Grotesk', sans-serif;
+            white-space: nowrap;
+        }
+        .natr-sort-btn:hover { color: var(--fg); background: rgba(255,255,255,0.03); }
+        .natr-sort-btn.active { color: var(--accent); border-color: rgba(240,185,11,0.35); background: var(--accent-dim); }
+        .vol-hi { color: var(--green) !important; }
+        .vol-lo { color: var(--red) !important; }
+        .trades-hi { color: var(--green) !important; }
+        .trades-lo { color: var(--red) !important; }
         .natr-alert-input {
             width: 80px; padding: 8px 10px; border-radius: 8px; font-size: 12px;
             background: var(--bg); border: 1px solid var(--border); color: var(--fg);
@@ -237,7 +249,7 @@
         .natr-range-sep { color: var(--muted); font-size: 12px; }
 
         .natr-star {
-            display: inline-block; cursor: pointer; font-size: 15px; color: var(--muted);
+            display: inline-block; cursor: pointer; font-size: 1.25rem; color: var(--muted);
             opacity: 0.35; margin-right: 6px; transition: all 0.2s; vertical-align: middle;
         }
         .natr-star:hover { opacity: 0.8; }
@@ -319,7 +331,7 @@
         .rank-3 { background: linear-gradient(135deg,#cd7f32,#a0522d); color: #fff; }
         .rank-n { background: rgba(255,255,255,0.06); color: var(--muted); }
 
-        .ticker-cell { cursor: pointer; user-select: none; -webkit-user-select: none; position: relative; }
+        .ticker-cell { cursor: pointer; user-select: none; -webkit-user-select: none; position: relative; display: flex; align-items: center; }
         .ticker-cell:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; border-radius: 4px; }
         .cal-event-card:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
         .ticker-name { font-weight: 600; font-size: 1.25rem; letter-spacing: -0.01em; transition: all 0.2s; display: inline-block; }
@@ -370,6 +382,7 @@
             .natr-header h1 { font-size: 1.2rem; }
             .natr-val { font-size: 1.05rem; }
             .ticker-name { font-size: 1.05rem; }
+            .natr-star { font-size: 1.05rem; }
             .natr-price-cell { font-size: 1.05rem; }
             .atype-badge { font-size: 1.05rem; }
             .natr-table-wrap td,.natr-table-wrap th { padding: 12px 14px; }
@@ -971,18 +984,6 @@
             </select>
         </div>
         <div class="natr-tool-group">
-            <label class="natr-tool-label" for="natrVolFrom">Объём 24ч:</label>
-            <input type="text" inputmode="decimal" class="natr-range-input" id="natrVolFrom" placeholder="от, напр. 10к" oninput="natrChangeVolRange()">
-            <span class="natr-range-sep">—</span>
-            <input type="text" inputmode="decimal" class="natr-range-input" id="natrVolTo" placeholder="до, напр. 1м" oninput="natrChangeVolRange()">
-        </div>
-        <div class="natr-tool-group">
-            <label class="natr-tool-label" for="natrTradesFrom">Сделок 24ч:</label>
-            <input type="text" inputmode="decimal" class="natr-range-input" id="natrTradesFrom" placeholder="от, напр. 10к" oninput="natrChangeTradesRange()">
-            <span class="natr-range-sep">—</span>
-            <input type="text" inputmode="decimal" class="natr-range-input" id="natrTradesTo" placeholder="до, напр. 100к" oninput="natrChangeTradesRange()">
-        </div>
-        <div class="natr-tool-group">
             <label class="natr-tool-label" for="natrCompareValue">NATR:</label>
             <select class="sec-select" id="natrCompareOp" onchange="natrChangeNatrCompare()" style="width:56px;">
                 <option value="gte">&gt;</option>
@@ -992,6 +993,21 @@
             <button class="natr-tool-btn" id="natrAlertBtn" onclick="natrToggleAlerts()" title="Уведомлять (звук + пуш) о новых тикерах, проходящих этот фильтр">🔔</button>
         </div>
         <button class="natr-tool-btn" id="natrWatchlistBtn" onclick="natrToggleWatchlistOnly()" title="Показывать только избранное">★ Избранное</button>
+        <div style="width:100%;height:1px;background:var(--border);margin:4px 0;"></div>
+        <div class="natr-tool-group">
+            <label class="natr-tool-label" for="natrVolFrom">Объём 24ч:</label>
+            <input type="text" inputmode="decimal" class="natr-range-input" id="natrVolFrom" placeholder="от, напр. 10к" oninput="natrChangeVolRange()">
+            <span class="natr-range-sep">—</span>
+            <input type="text" inputmode="decimal" class="natr-range-input" id="natrVolTo" placeholder="до, напр. 1м" oninput="natrChangeVolRange()">
+            <button class="natr-tool-btn" id="volHlBtn" onclick="natrToggleVolHighlight()" title="Включить фильтрацию + подсветку по объёму">Ф</button>
+        </div>
+        <div class="natr-tool-group">
+            <label class="natr-tool-label" for="natrTradesFrom">Сделок 24ч:</label>
+            <input type="text" inputmode="decimal" class="natr-range-input" id="natrTradesFrom" placeholder="от, напр. 10к" oninput="natrChangeTradesRange()">
+            <span class="natr-range-sep">—</span>
+            <input type="text" inputmode="decimal" class="natr-range-input" id="natrTradesTo" placeholder="до, напр. 100к" oninput="natrChangeTradesRange()">
+            <button class="natr-tool-btn" id="tradesHlBtn" onclick="natrToggleTradesHighlight()" title="Включить фильтрацию + подсветку по сделкам">Ф</button>
+        </div>
     </div>
     <div class="natr-stats" id="natrStatsBar" style="display:none;">
         <div>Всего контрактов: <strong id="natrStatTotal" class="mono">--</strong></div>
@@ -1348,8 +1364,10 @@ let natrCategoryLoading = false;
 let natrTopN = 10;
 let natrWatchlist = new Set();
 let natrWatchlistOnly = false;
+let natrVolHighlight = false;
 let natrVolFrom = null;
 let natrVolTo = null;
+let natrTradesHighlight = false;
 let natrTradesFrom = null;
 let natrTradesTo = null;
 let natrCompareOp = 'gte';
@@ -1363,10 +1381,12 @@ try {
     if (!isNaN(rVolFrom)) natrVolFrom = rVolFrom;
     const rVolTo = parseFloat(localStorage.getItem('natr_vol_to'));
     if (!isNaN(rVolTo)) natrVolTo = rVolTo;
+    natrVolHighlight = localStorage.getItem('natr_vol_hl') === '1';
     const rTrFrom = parseFloat(localStorage.getItem('natr_trades_from'));
     if (!isNaN(rTrFrom)) natrTradesFrom = rTrFrom;
     const rTrTo = parseFloat(localStorage.getItem('natr_trades_to'));
     if (!isNaN(rTrTo)) natrTradesTo = rTrTo;
+    natrTradesHighlight = localStorage.getItem('natr_trades_hl') === '1';
     const savedOp = localStorage.getItem('natr_compare_op');
     if (savedOp === 'gte' || savedOp === 'lte') natrCompareOp = savedOp;
     const savedCmpVal = parseFloat(localStorage.getItem('natr_compare_value'));
@@ -1395,6 +1415,10 @@ function natrApplyRestoredUI() {
     if (trFromEl && natrTradesFrom !== null) trFromEl.value = natrTradesFrom;
     const trToEl = document.getElementById('natrTradesTo');
     if (trToEl && natrTradesTo !== null) trToEl.value = natrTradesTo;
+    // Vol highlight button
+    document.getElementById('volHlBtn').classList.toggle('active', natrVolHighlight);
+    // Trades highlight button
+    document.getElementById('tradesHlBtn').classList.toggle('active', natrTradesHighlight);
     const cmpOpSel = document.getElementById('natrCompareOp');
     if (cmpOpSel) cmpOpSel.value = natrCompareOp;
     const cmpValInput = document.getElementById('natrCompareValue');
@@ -1580,10 +1604,15 @@ function natrGetFilteredResults() {
         });
     }
     if (natrWatchlistOnly) list = list.filter(r => natrWatchlist.has(r.symbol));
-    if (natrVolFrom !== null) list = list.filter(r => { const t = natrTicker24hMap.get(r.symbol); return t && t.volume >= natrVolFrom; });
-    if (natrVolTo !== null) list = list.filter(r => { const t = natrTicker24hMap.get(r.symbol); return t && t.volume <= natrVolTo; });
-    if (natrTradesFrom !== null) list = list.filter(r => { const t = natrTicker24hMap.get(r.symbol); return t && t.count >= natrTradesFrom; });
-    if (natrTradesTo !== null) list = list.filter(r => { const t = natrTicker24hMap.get(r.symbol); return t && t.count <= natrTradesTo; });
+    // Vol/trades: filter ONLY when highlight button is pressed
+    if (natrVolHighlight) {
+        if (natrVolFrom !== null) list = list.filter(r => { const t = natrTicker24hMap.get(r.symbol); return t && t.volume >= natrVolFrom; });
+        if (natrVolTo !== null) list = list.filter(r => { const t = natrTicker24hMap.get(r.symbol); return t && t.volume <= natrVolTo; });
+    }
+    if (natrTradesHighlight) {
+        if (natrTradesFrom !== null) list = list.filter(r => { const t = natrTicker24hMap.get(r.symbol); return t && t.count >= natrTradesFrom; });
+        if (natrTradesTo !== null) list = list.filter(r => { const t = natrTicker24hMap.get(r.symbol); return t && t.count <= natrTradesTo; });
+    }
     if (natrCompareValue !== null && !isNaN(natrCompareValue)) {
         list = list.filter(r => natrCompareOp === 'lte' ? r.natr <= natrCompareValue : r.natr >= natrCompareValue);
     }
@@ -1591,7 +1620,8 @@ function natrGetFilteredResults() {
 }
 function natrReFilterAndRender() {
     const list = natrGetFilteredResults();
-    natrRenderTable(list.sort((a,b) => b.natr - a.natr));
+    list.sort((a, b) => b.natr - a.natr);
+    natrRenderTable(list);
 }
 function natrChangeTopN(v) {
     natrTopN = parseInt(v, 10) || 10;
@@ -1612,6 +1642,20 @@ function natrParseShorthand(str) {
     if (suffix === 'к' || suffix === 'k' || suffix === 'тыс') val *= 1000;
     else if (suffix === 'м' || suffix === 'm' || suffix === 'млн') val *= 1000000;
     return val;
+}
+// --- Vol filter+highlight control ---
+function natrToggleVolHighlight() {
+    natrVolHighlight = !natrVolHighlight;
+    document.getElementById('volHlBtn').classList.toggle('active', natrVolHighlight);
+    try { localStorage.setItem('natr_vol_hl', natrVolHighlight ? '1' : ''); } catch(e) {}
+    if (natrAllResults.length) natrReFilterAndRender();
+}
+// --- Trades filter+highlight control ---
+function natrToggleTradesHighlight() {
+    natrTradesHighlight = !natrTradesHighlight;
+    document.getElementById('tradesHlBtn').classList.toggle('active', natrTradesHighlight);
+    try { localStorage.setItem('natr_trades_hl', natrTradesHighlight ? '1' : ''); } catch(e) {}
+    if (natrAllResults.length) natrReFilterAndRender();
 }
 function natrChangeVolRange() {
     natrVolFrom = natrParseShorthand(document.getElementById('natrVolFrom').value);
@@ -1839,6 +1883,23 @@ function natrRenderTable(data, animate) {
     const shown = data.slice(0, natrTopN);
     if (!shown.length) { body.innerHTML = ''; document.getElementById('natrEmptyState').style.display = 'block'; return; }
     document.getElementById('natrEmptyState').style.display = 'none';
+
+    // Pre-compute min/max for highlight modes
+    let volMin = Infinity, volMax = -Infinity, tradesMin = Infinity, tradesMax = -Infinity;
+    if (natrVolHighlight || natrTradesHighlight) {
+        for (const item of shown) {
+            const t24 = natrTicker24hMap.get(item.symbol);
+            if (t24) {
+                if (t24.volume < volMin) volMin = t24.volume;
+                if (t24.volume > volMax) volMax = t24.volume;
+                if (t24.count < tradesMin) tradesMin = t24.count;
+                if (t24.count > tradesMax) tradesMax = t24.count;
+            }
+        }
+    }
+    const volRange = volMax > volMin ? volMax - volMin : 1;
+    const tradesRange = tradesMax > tradesMin ? tradesMax - tradesMin : 1;
+
     const maxVal = shown[0].natr;
     const prevData = animate ? natrGetDisplayedData() : null;
     body.innerHTML = shown.map((item, i) => {
@@ -1854,6 +1915,22 @@ function natrRenderTable(data, animate) {
         const priceCell = t24h ? '$'+natrFmtPriceShort(t24h.price) : '—';
         const volCell = t24h ? natrFmtVolShort(t24h.volume) : '—';
         const tradesCell = t24h ? natrFmtCount(t24h.count) : '—';
+        // Highlight classes for vol/trades — always when values are filled
+        let volCls = '', volStyle = '', tradesCls = '', tradesStyle = '';
+        const hasVolFilter = natrVolFrom !== null || natrVolTo !== null;
+        const hasTradesFilter = natrTradesFrom !== null || natrTradesTo !== null;
+        if (hasVolFilter && t24h) {
+            let inRange = true;
+            if (natrVolFrom !== null && t24h.volume < natrVolFrom) inRange = false;
+            if (natrVolTo !== null && t24h.volume > natrVolTo) inRange = false;
+            volCls = inRange ? 'vol-hi' : 'vol-lo';
+        }
+        if (hasTradesFilter && t24h) {
+            let inRange = true;
+            if (natrTradesFrom !== null && t24h.count < natrTradesFrom) inRange = false;
+            if (natrTradesTo !== null && t24h.count > natrTradesTo) inRange = false;
+            tradesCls = inRange ? 'trades-hi' : 'trades-lo';
+        }
         const typeCell = natrAssetTypeBadge(item.symbol);
         const caiLink = '<span class="natr-cai-link" tabindex="0" role="button" onclick="event.stopPropagation(); natrOpenInCryptoAI(\''+item.symbol+'\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();event.stopPropagation();natrOpenInCryptoAI(\''+item.symbol+'\');}">CryptoAI →</span>';
         return '<tr class="'+bc+' '+ra+'"><td><span class="natr-rank '+rc+' mono">'+(i+1)+'</span></td>'+
@@ -1863,8 +1940,8 @@ function natrRenderTable(data, animate) {
             '<svg class="copy-icon" style="width:14px;height:14px" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></td>'+
             '<td>'+typeCell+'</td>'+
             '<td class="natr-price-cell mono">'+priceCell+'</td>'+
-            '<td class="natr-price-cell mono">'+volCell+'</td>'+
-            '<td class="natr-price-cell mono">'+tradesCell+'</td>'+
+            '<td class="natr-price-cell mono '+volCls+'">'+volCell+'</td>'+
+            '<td class="natr-price-cell mono '+tradesCls+'">'+tradesCell+'</td>'+
             '<td><span class="natr-val mono '+nc+' '+na+'">'+item.natr.toFixed(3)+'<small style="font-size:0.65em;color:var(--muted)">%</small></span></td></tr>';
     }).join('');
     document.querySelectorAll('#natrTableBody .ticker-cell').forEach(cell => {

@@ -1942,7 +1942,7 @@ function natrRenderTable(data, animate) {
             '<td class="natr-price-cell mono">'+priceCell+'</td>'+
             '<td class="natr-price-cell mono '+volCls+'">'+volCell+'</td>'+
             '<td class="natr-price-cell mono '+tradesCls+'">'+tradesCell+'</td>'+
-            '<td><span class="natr-val mono '+nc+' '+na+'">'+item.natr.toFixed(3)+'<small style="font-size:0.65em;color:var(--muted)">%</small></span></td></tr>';
+            '<td><span class="natr-val mono '+nc+' '+na+'">'+item.natr.toFixed(2)+'<small style="font-size:0.65em;color:var(--muted)">%</small></span></td></tr>';
     }).join('');
     document.querySelectorAll('#natrTableBody .ticker-cell').forEach(cell => {
         const activate = function() {
@@ -1957,9 +1957,9 @@ function natrRenderTable(data, animate) {
     });
     document.getElementById('natrStatsBar').style.display = 'flex';
     document.getElementById('natrStatTotal').textContent = data.length;
-    document.getElementById('natrStatMax').textContent = maxVal.toFixed(3) + '%';
+    document.getElementById('natrStatMax').textContent = maxVal.toFixed(2) + '%';
     const avg = data.reduce((s,d) => s + d.natr, 0) / data.length;
-    document.getElementById('natrStatAvg').textContent = avg.toFixed(3) + '%';
+    document.getElementById('natrStatAvg').textContent = avg.toFixed(2) + '%';
     natrUpdateLastTime();
 }
 function natrSwitchMode(m) {

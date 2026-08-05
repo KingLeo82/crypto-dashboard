@@ -244,34 +244,28 @@
         .natr-star.pinned { color: var(--accent); opacity: 1; }
         .natr-star:focus-visible { outline: 2px solid var(--accent); border-radius: 4px; }
 
-        .natr-price-cell { font-size: 12px; line-height: 1.5; }
-        .natr-price-cell .p-price { font-family: 'JetBrains Mono', monospace; color: var(--fg); }
-        .natr-price-cell .p-vol { color: var(--muted); font-size: 11px; }
+        .natr-price-cell { font-size: 1.25rem; color: var(--fg); }
 
         .natr-cai-link {
             color: var(--accent); cursor: pointer; text-decoration: none; font-weight: 600;
+            font-size: 11px; vertical-align: middle; margin-left: 4px; white-space: nowrap;
         }
         .natr-cai-link:hover { text-decoration: underline; }
         .natr-cai-link:focus-visible { outline: 2px solid var(--accent); }
 
-        .natr-spark { display: block; }
-        .natr-trend-flat { color: var(--muted); font-size: 12px; }
-
         .atype-badge {
-            display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px;
-            border-radius: 6px; font-size: 10.5px; font-weight: 700; white-space: nowrap;
-            border: 1px solid transparent;
+            font-size: 1.25rem; font-weight: 700; white-space: nowrap;
         }
-        .atype-crypto { background: rgba(149,165,166,0.14); color: #a9b4b6; border-color: rgba(149,165,166,0.3); }
-        .atype-stock { background: rgba(52,152,219,0.14); color: #5dade2; border-color: rgba(52,152,219,0.3); }
-        .atype-etf { background: rgba(155,89,182,0.14); color: #bb8fce; border-color: rgba(155,89,182,0.3); }
-        .atype-commodity { background: rgba(243,156,18,0.14); color: #f5b041; border-color: rgba(243,156,18,0.3); }
-        .atype-rwa { background: rgba(26,188,156,0.14); color: #48c9b0; border-color: rgba(26,188,156,0.3); }
-        .atype-index { background: rgba(231,76,60,0.14); color: #ec7063; border-color: rgba(231,76,60,0.3); }
+        .atype-crypto { color: #a9b4b6; }
+        .atype-stock { color: #5dade2; }
+        .atype-etf { color: #bb8fce; }
+        .atype-commodity { color: #f5b041; }
+        .atype-rwa { color: #48c9b0; }
+        .atype-index { color: #ec7063; }
 
         @media (max-width: 640px) {
             .natr-table-wrap { overflow-x: auto; }
-            .natr-table-wrap table { min-width: 640px; }
+            .natr-table-wrap table { min-width: 720px; }
         }
 
         .natr-stats {
@@ -301,7 +295,7 @@
         .natr-table-wrap thead th {
             text-align: left; padding: 14px 18px; font-size: 11px; font-weight: 600;
             text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted);
-            border-bottom: 1px solid var(--border);
+            border-bottom: 1px solid var(--border); white-space: nowrap;
         }
         .natr-table-wrap thead th:last-child { text-align: right; }
         .natr-table-wrap tbody tr {
@@ -328,7 +322,7 @@
         .ticker-cell { cursor: pointer; user-select: none; -webkit-user-select: none; position: relative; }
         .ticker-cell:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; border-radius: 4px; }
         .cal-event-card:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
-        .ticker-name { font-weight: 600; font-size: 1.75rem; letter-spacing: -0.01em; transition: all 0.2s; display: inline-block; }
+        .ticker-name { font-weight: 600; font-size: 1.25rem; letter-spacing: -0.01em; transition: all 0.2s; display: inline-block; }
         .ticker-cell:hover .ticker-name { color: var(--accent); transform: translateX(2px); }
         .ticker-sub { font-size: 11px; color: var(--muted); margin-top: 2px; transition: all 0.2s; }
         .ticker-cell:hover .ticker-sub { color: var(--green); }
@@ -375,7 +369,9 @@
             .natr-wrap { padding: 12px; }
             .natr-header h1 { font-size: 1.2rem; }
             .natr-val { font-size: 1.35rem; }
-            .ticker-name { font-size: 1.35rem; }
+            .ticker-name { font-size: 1.05rem; }
+            .natr-price-cell { font-size: 1.05rem; }
+            .atype-badge { font-size: 1.05rem; }
             .natr-table-wrap td,.natr-table-wrap th { padding: 12px 14px; }
             .natr-controls { flex-wrap: wrap; justify-content: center; }
         }
@@ -1005,7 +1001,7 @@
     <div class="natr-table-wrap" id="natrTableWrap">
         <div class="bg-update-overlay"></div>
         <table>
-            <thead><tr><th style="width:40px;">#</th><th>Тикер</th><th style="width:78px;">Тип</th><th style="width:100px;">Цена / Объём</th><th style="width:64px;">Тренд</th><th style="width:120px;">NATR (%)</th></tr></thead>
+            <thead><tr><th style="width:40px;">#</th><th>Тикер</th><th style="width:78px;">Тип</th><th style="width:90px;">Цена</th><th style="width:90px;">Объём 24ч</th><th style="width:90px;">Сделки 24ч</th><th style="width:120px;">NATR (%)</th></tr></thead>
             <tbody id="natrTableBody"></tbody>
         </table>
         <div id="natrSkeleton" style="display:none;"></div>
@@ -1359,7 +1355,6 @@ let natrTradesTo = null;
 let natrCompareOp = 'gte';
 let natrCompareValue = null;
 let natrTicker24hMap = new Map(); // symbol -> {price, volume, count}
-let natrHistoryMap = new Map();   // symbol -> array of recent NATR readings (session-only, resets on reload)
 let natrAlertsEnabled = false;
 let natrAlertedSymbols = new Set(); // tracks who we've already notified about, so re-entering the filter re-alerts
 try {
@@ -1422,12 +1417,12 @@ const NATR_EMBEDDED_CATEGORIES={"BTCUSDT":"PoW","ETHUSDT":"Layer-1","BCHUSDT":"P
 const NATR_COMMODITY_SYMBOLS = new Set(['XAUUSDT','XAGUSDT','XPTUSDT','XPDUSDT','CLUSDT','BZUSDT','NATGASUSDT','COPPERUSDT']);
 const NATR_ETF_SYMBOLS = new Set(['QQQUSDT','SPYUSDT','IWMUSDT','TQQQUSDT','SQQQUSDT','SOXLUSDT','SOXSUSDT','UVXYUSDT','TZAUSDT','XLEUSDT','XBIUSDT','EWZUSDT','EWJUSDT','EWYUSDT','EWTUSDT','URNMUSDT']);
 const NATR_ASSET_TYPE_META = {
-    crypto:    { label: 'Крипто',  short: '🪙',  cls: 'atype-crypto' },
-    stock:     { label: 'Акция',   short: '📈',  cls: 'atype-stock' },
-    etf:       { label: 'ETF',     short: '📊',  cls: 'atype-etf' },
-    commodity: { label: 'Товар',   short: '🛢️', cls: 'atype-commodity' },
-    rwa:       { label: 'RWA',     short: '🏦',  cls: 'atype-rwa' },
-    index:     { label: 'Индекс',  short: '📉',  cls: 'atype-index' },
+    crypto:    { label: 'Крипто',  cls: 'atype-crypto' },
+    stock:     { label: 'Акция',   cls: 'atype-stock' },
+    etf:       { label: 'ETF',     cls: 'atype-etf' },
+    commodity: { label: 'Товар',   cls: 'atype-commodity' },
+    rwa:       { label: 'RWA',     cls: 'atype-rwa' },
+    index:     { label: 'Индекс',  cls: 'atype-index' },
 };
 function natrGetAssetType(symbol) {
     const cat = ((natrCategoryMap && natrCategoryMap[symbol]) || 'NONE').split(',')[0];
@@ -1443,7 +1438,7 @@ function natrGetAssetType(symbol) {
 function natrAssetTypeBadge(symbol) {
     const type = natrGetAssetType(symbol);
     const meta = NATR_ASSET_TYPE_META[type];
-    return '<span class="atype-badge '+meta.cls+'">'+meta.short+' '+meta.label+'</span>';
+    return '<span class="atype-badge '+meta.cls+'">'+meta.label+'</span>';
 }
 
 function natrSetStatus(text, active, updating) {
@@ -1749,30 +1744,11 @@ function natrFmtPriceShort(p) {
     if (p >= 0.01) return p.toFixed(4);
     return p.toFixed(8);
 }
-// Tiny inline sparkline from this session's accumulated NATR history for a symbol
-// (history starts empty on each page load — there is no persisted long-term time series).
-function natrSparklineSVG(history) {
-    if (!history || history.length < 2) return '<span class="natr-trend-flat">—</span>';
-    const w = 54, h = 22, pad = 3;
-    const min = Math.min(...history), max = Math.max(...history);
-    const range = (max - min) || 1;
-    const step = (w - pad*2) / (history.length - 1);
-    const pts = history.map((v,i) => {
-        const x = pad + i*step;
-        const y = h - pad - ((v - min) / range) * (h - pad*2);
-        return x.toFixed(1) + ',' + y.toFixed(1);
-    }).join(' ');
-    const last = history[history.length-1], prev = history[history.length-2];
-    const color = last > prev ? 'var(--accent)' : last < prev ? 'var(--muted)' : 'var(--muted)';
-    return '<svg width="'+w+'" height="'+h+'" viewBox="0 0 '+w+' '+h+'" class="natr-spark" aria-hidden="true"><polyline points="'+pts+'" fill="none" stroke="'+color+'" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-}
-function natrUpdateHistory(results) {
-    results.forEach(r => {
-        let h = natrHistoryMap.get(r.symbol);
-        if (!h) { h = []; natrHistoryMap.set(r.symbol, h); }
-        h.push(r.natr);
-        if (h.length > 8) h.shift();
-    });
+function natrFmtCount(c) {
+    if (!c && c !== 0) return '—';
+    if (c >= 1e6) return (c/1e6).toFixed(2) + 'M';
+    if (c >= 1e3) return (c/1e3).toFixed(1) + 'K';
+    return String(c);
 }
 async function natrGetAllPairs() {
     try {
@@ -1875,20 +1851,20 @@ function natrRenderTable(data, animate) {
         const na = changed?'natr-changed':'';
         const pinned = natrWatchlist.has(item.symbol);
         const t24h = natrTicker24hMap.get(item.symbol);
-        const priceCell = t24h
-            ? '<div class="p-price mono">$'+natrFmtPriceShort(t24h.price)+'</div><div class="p-vol">'+natrFmtVolShort(t24h.volume)+'</div>'
-            : '<div class="p-vol">—</div>';
-        const spark = natrSparklineSVG(natrHistoryMap.get(item.symbol));
+        const priceCell = t24h ? '$'+natrFmtPriceShort(t24h.price) : '—';
+        const volCell = t24h ? natrFmtVolShort(t24h.volume) : '—';
+        const tradesCell = t24h ? natrFmtCount(t24h.count) : '—';
         const typeCell = natrAssetTypeBadge(item.symbol);
+        const caiLink = '<span class="natr-cai-link" tabindex="0" role="button" onclick="event.stopPropagation(); natrOpenInCryptoAI(\''+item.symbol+'\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();event.stopPropagation();natrOpenInCryptoAI(\''+item.symbol+'\');}">CryptoAI →</span>';
         return '<tr class="'+bc+' '+ra+'"><td><span class="natr-rank '+rc+' mono">'+(i+1)+'</span></td>'+
             '<td class="ticker-cell" tabindex="0" role="button" aria-label="Скопировать тикер '+displaySymbol+'" data-symbol="'+displaySymbol+'">'+
             '<span class="natr-star'+(pinned?' pinned':'')+'" tabindex="0" role="button" aria-pressed="'+pinned+'" aria-label="Избранное" data-symbol="'+item.symbol+'" onclick="event.stopPropagation(); natrToggleWatchlist(\''+item.symbol+'\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();event.stopPropagation();natrToggleWatchlist(\''+item.symbol+'\');}">'+(pinned?'★':'☆')+'</span>'+
-            '<div class="ticker-name '+nc+'">'+displaySymbol+'</div>'+
-            '<div class="ticker-sub"><span class="natr-cai-link" tabindex="0" role="button" onclick="event.stopPropagation(); natrOpenInCryptoAI(\''+item.symbol+'\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();event.stopPropagation();natrOpenInCryptoAI(\''+item.symbol+'\');}">CryptoAI →</span></div>'+
+            '<div class="ticker-name '+nc+'">'+displaySymbol+' '+caiLink+'</div>'+
             '<svg class="copy-icon" style="width:14px;height:14px" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></td>'+
             '<td>'+typeCell+'</td>'+
-            '<td class="natr-price-cell">'+priceCell+'</td>'+
-            '<td>'+spark+'</td>'+
+            '<td class="natr-price-cell mono">'+priceCell+'</td>'+
+            '<td class="natr-price-cell mono">'+volCell+'</td>'+
+            '<td class="natr-price-cell mono">'+tradesCell+'</td>'+
             '<td><span class="natr-val mono '+nc+' '+na+'">'+item.natr.toFixed(3)+'<small style="font-size:0.65em;color:var(--muted)">%</small></span></td></tr>';
     }).join('');
     document.querySelectorAll('#natrTableBody .ticker-cell').forEach(cell => {
@@ -1932,7 +1908,6 @@ async function natrStartBgUpdate() {
     ]);
     if (natrAbortCtrl.signal.aborted) { natrFinishBgUpdate(false); return; }
     natrAllResults = results.sort((a,b) => b.natr - a.natr);
-    natrUpdateHistory(natrAllResults);
     natrCheckAlerts(natrGetFilteredResults());
     natrReFilterAndRender();
     natrFinishBgUpdate(true);
@@ -1969,7 +1944,6 @@ async function natrStartScan() {
         natrIsScanning = false; natrAbortCtrl = null; return;
     }
     natrAllResults = results.sort((a,b) => b.natr - a.natr);
-    natrUpdateHistory(natrAllResults);
     natrCheckAlerts(natrGetFilteredResults());
     natrHideSkeleton(); natrReFilterAndRender();
     natrSetStatus('Готово: '+results.length, true);

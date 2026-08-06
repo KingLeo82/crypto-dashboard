@@ -221,18 +221,6 @@
         }
         .natr-tool-btn:hover { color: var(--fg); background: rgba(255,255,255,0.03); }
         .natr-tool-btn.active { color: var(--accent); border-color: rgba(240,185,11,0.35); background: var(--accent-dim); }
-        .natr-sort-btn {
-            padding: 8px 14px; border-radius: 8px; font-size: 12px; font-weight: 600;
-            cursor: pointer; background: transparent; border: 1px solid var(--border);
-            color: var(--muted); transition: all 0.2s; font-family: 'Space Grotesk', sans-serif;
-            white-space: nowrap;
-        }
-        .natr-sort-btn:hover { color: var(--fg); background: rgba(255,255,255,0.03); }
-        .natr-sort-btn.active { color: var(--accent); border-color: rgba(240,185,11,0.35); background: var(--accent-dim); }
-        .vol-hi { color: var(--green) !important; }
-        .vol-lo { color: var(--red) !important; }
-        .trades-hi { color: var(--green) !important; }
-        .trades-lo { color: var(--red) !important; }
         .natr-alert-input {
             width: 80px; padding: 8px 10px; border-radius: 8px; font-size: 12px;
             background: var(--bg); border: 1px solid var(--border); color: var(--fg);
@@ -250,13 +238,14 @@
 
         .natr-star {
             display: inline-block; cursor: pointer; font-size: 1.25rem; color: var(--muted);
-            opacity: 0.35; margin-right: 6px; transition: all 0.2s; vertical-align: middle;
+            opacity: 0.35; margin-right: 6px; transition: all 0.2s; line-height: 1;
         }
         .natr-star:hover { opacity: 0.8; }
         .natr-star.pinned { color: var(--accent); opacity: 1; }
         .natr-star:focus-visible { outline: 2px solid var(--accent); border-radius: 4px; }
 
         .natr-price-cell { font-size: 1.25rem; color: var(--fg); }
+        .natr-range-hit { color: var(--accent); font-weight: 700; }
 
         .natr-cai-link {
             color: var(--accent); cursor: pointer; text-decoration: none; font-weight: 600;
@@ -382,9 +371,9 @@
             .natr-header h1 { font-size: 1.2rem; }
             .natr-val { font-size: 1.05rem; }
             .ticker-name { font-size: 1.05rem; }
-            .natr-star { font-size: 1.05rem; }
             .natr-price-cell { font-size: 1.05rem; }
             .atype-badge { font-size: 1.05rem; }
+            .natr-star { font-size: 1.05rem; }
             .natr-table-wrap td,.natr-table-wrap th { padding: 12px 14px; }
             .natr-controls { flex-wrap: wrap; justify-content: center; }
         }
@@ -993,20 +982,21 @@
             <button class="natr-tool-btn" id="natrAlertBtn" onclick="natrToggleAlerts()" title="Уведомлять (звук + пуш) о новых тикерах, проходящих этот фильтр">🔔</button>
         </div>
         <button class="natr-tool-btn" id="natrWatchlistBtn" onclick="natrToggleWatchlistOnly()" title="Показывать только избранное">★ Избранное</button>
-        <div style="width:100%;height:1px;background:var(--border);margin:4px 0;"></div>
+    </div>
+    <div class="natr-tools" id="natrToolsRow2">
         <div class="natr-tool-group">
             <label class="natr-tool-label" for="natrVolFrom">Объём 24ч:</label>
             <input type="text" inputmode="decimal" class="natr-range-input" id="natrVolFrom" placeholder="от, напр. 10к" oninput="natrChangeVolRange()">
             <span class="natr-range-sep">—</span>
             <input type="text" inputmode="decimal" class="natr-range-input" id="natrVolTo" placeholder="до, напр. 1м" oninput="natrChangeVolRange()">
-            <button class="natr-tool-btn" id="volHlBtn" onclick="natrToggleVolHighlight()" title="Включить фильтрацию + подсветку по объёму">Ф</button>
+            <button class="natr-tool-btn" id="natrVolFilterBtn" onclick="natrToggleVolFilter()" title="Включить фильтр (иначе значения в диапазоне просто подсвечиваются)">Фильтр</button>
         </div>
         <div class="natr-tool-group">
             <label class="natr-tool-label" for="natrTradesFrom">Сделок 24ч:</label>
             <input type="text" inputmode="decimal" class="natr-range-input" id="natrTradesFrom" placeholder="от, напр. 10к" oninput="natrChangeTradesRange()">
             <span class="natr-range-sep">—</span>
             <input type="text" inputmode="decimal" class="natr-range-input" id="natrTradesTo" placeholder="до, напр. 100к" oninput="natrChangeTradesRange()">
-            <button class="natr-tool-btn" id="tradesHlBtn" onclick="natrToggleTradesHighlight()" title="Включить фильтрацию + подсветку по сделкам">Ф</button>
+            <button class="natr-tool-btn" id="natrTradesFilterBtn" onclick="natrToggleTradesFilter()" title="Включить фильтр (иначе значения в диапазоне просто подсвечиваются)">Фильтр</button>
         </div>
     </div>
     <div class="natr-stats" id="natrStatsBar" style="display:none;">
@@ -1364,12 +1354,12 @@ let natrCategoryLoading = false;
 let natrTopN = 10;
 let natrWatchlist = new Set();
 let natrWatchlistOnly = false;
-let natrVolHighlight = false;
 let natrVolFrom = null;
 let natrVolTo = null;
-let natrTradesHighlight = false;
+let natrVolFilterActive = false;
 let natrTradesFrom = null;
 let natrTradesTo = null;
+let natrTradesFilterActive = false;
 let natrCompareOp = 'gte';
 let natrCompareValue = null;
 let natrTicker24hMap = new Map(); // symbol -> {price, volume, count}
@@ -1381,12 +1371,12 @@ try {
     if (!isNaN(rVolFrom)) natrVolFrom = rVolFrom;
     const rVolTo = parseFloat(localStorage.getItem('natr_vol_to'));
     if (!isNaN(rVolTo)) natrVolTo = rVolTo;
-    natrVolHighlight = localStorage.getItem('natr_vol_hl') === '1';
+    natrVolFilterActive = localStorage.getItem('natr_vol_filter_active') === '1';
     const rTrFrom = parseFloat(localStorage.getItem('natr_trades_from'));
     if (!isNaN(rTrFrom)) natrTradesFrom = rTrFrom;
     const rTrTo = parseFloat(localStorage.getItem('natr_trades_to'));
     if (!isNaN(rTrTo)) natrTradesTo = rTrTo;
-    natrTradesHighlight = localStorage.getItem('natr_trades_hl') === '1';
+    natrTradesFilterActive = localStorage.getItem('natr_trades_filter_active') === '1';
     const savedOp = localStorage.getItem('natr_compare_op');
     if (savedOp === 'gte' || savedOp === 'lte') natrCompareOp = savedOp;
     const savedCmpVal = parseFloat(localStorage.getItem('natr_compare_value'));
@@ -1411,14 +1401,14 @@ function natrApplyRestoredUI() {
     if (volFromEl && natrVolFrom !== null) volFromEl.value = natrVolFrom;
     const volToEl = document.getElementById('natrVolTo');
     if (volToEl && natrVolTo !== null) volToEl.value = natrVolTo;
+    const volBtn = document.getElementById('natrVolFilterBtn');
+    if (volBtn) volBtn.classList.toggle('active', natrVolFilterActive);
     const trFromEl = document.getElementById('natrTradesFrom');
     if (trFromEl && natrTradesFrom !== null) trFromEl.value = natrTradesFrom;
     const trToEl = document.getElementById('natrTradesTo');
     if (trToEl && natrTradesTo !== null) trToEl.value = natrTradesTo;
-    // Vol highlight button
-    document.getElementById('volHlBtn').classList.toggle('active', natrVolHighlight);
-    // Trades highlight button
-    document.getElementById('tradesHlBtn').classList.toggle('active', natrTradesHighlight);
+    const trBtn = document.getElementById('natrTradesFilterBtn');
+    if (trBtn) trBtn.classList.toggle('active', natrTradesFilterActive);
     const cmpOpSel = document.getElementById('natrCompareOp');
     if (cmpOpSel) cmpOpSel.value = natrCompareOp;
     const cmpValInput = document.getElementById('natrCompareValue');
@@ -1604,12 +1594,11 @@ function natrGetFilteredResults() {
         });
     }
     if (natrWatchlistOnly) list = list.filter(r => natrWatchlist.has(r.symbol));
-    // Vol/trades: filter ONLY when highlight button is pressed
-    if (natrVolHighlight) {
+    if (natrVolFilterActive) {
         if (natrVolFrom !== null) list = list.filter(r => { const t = natrTicker24hMap.get(r.symbol); return t && t.volume >= natrVolFrom; });
         if (natrVolTo !== null) list = list.filter(r => { const t = natrTicker24hMap.get(r.symbol); return t && t.volume <= natrVolTo; });
     }
-    if (natrTradesHighlight) {
+    if (natrTradesFilterActive) {
         if (natrTradesFrom !== null) list = list.filter(r => { const t = natrTicker24hMap.get(r.symbol); return t && t.count >= natrTradesFrom; });
         if (natrTradesTo !== null) list = list.filter(r => { const t = natrTicker24hMap.get(r.symbol); return t && t.count <= natrTradesTo; });
     }
@@ -1620,8 +1609,7 @@ function natrGetFilteredResults() {
 }
 function natrReFilterAndRender() {
     const list = natrGetFilteredResults();
-    list.sort((a, b) => b.natr - a.natr);
-    natrRenderTable(list);
+    natrRenderTable(list.sort((a,b) => b.natr - a.natr));
 }
 function natrChangeTopN(v) {
     natrTopN = parseInt(v, 10) || 10;
@@ -1643,20 +1631,6 @@ function natrParseShorthand(str) {
     else if (suffix === 'м' || suffix === 'm' || suffix === 'млн') val *= 1000000;
     return val;
 }
-// --- Vol filter+highlight control ---
-function natrToggleVolHighlight() {
-    natrVolHighlight = !natrVolHighlight;
-    document.getElementById('volHlBtn').classList.toggle('active', natrVolHighlight);
-    try { localStorage.setItem('natr_vol_hl', natrVolHighlight ? '1' : ''); } catch(e) {}
-    if (natrAllResults.length) natrReFilterAndRender();
-}
-// --- Trades filter+highlight control ---
-function natrToggleTradesHighlight() {
-    natrTradesHighlight = !natrTradesHighlight;
-    document.getElementById('tradesHlBtn').classList.toggle('active', natrTradesHighlight);
-    try { localStorage.setItem('natr_trades_hl', natrTradesHighlight ? '1' : ''); } catch(e) {}
-    if (natrAllResults.length) natrReFilterAndRender();
-}
 function natrChangeVolRange() {
     natrVolFrom = natrParseShorthand(document.getElementById('natrVolFrom').value);
     natrVolTo = natrParseShorthand(document.getElementById('natrVolTo').value);
@@ -1664,6 +1638,15 @@ function natrChangeVolRange() {
         localStorage.setItem('natr_vol_from', natrVolFrom === null ? '' : String(natrVolFrom));
         localStorage.setItem('natr_vol_to', natrVolTo === null ? '' : String(natrVolTo));
     } catch(e) { /* non-fatal */ }
+    // typing alone only re-colors matching values (see natrInRange in natrRenderTable) —
+    // it does not hide rows unless the Фильтр button is toggled on
+    if (natrAllResults.length) natrReFilterAndRender();
+}
+function natrToggleVolFilter() {
+    natrVolFilterActive = !natrVolFilterActive;
+    const btn = document.getElementById('natrVolFilterBtn');
+    if (btn) btn.classList.toggle('active', natrVolFilterActive);
+    try { localStorage.setItem('natr_vol_filter_active', natrVolFilterActive ? '1' : '0'); } catch(e) { /* non-fatal */ }
     if (natrAllResults.length) natrReFilterAndRender();
 }
 function natrChangeTradesRange() {
@@ -1674,6 +1657,20 @@ function natrChangeTradesRange() {
         localStorage.setItem('natr_trades_to', natrTradesTo === null ? '' : String(natrTradesTo));
     } catch(e) { /* non-fatal */ }
     if (natrAllResults.length) natrReFilterAndRender();
+}
+function natrToggleTradesFilter() {
+    natrTradesFilterActive = !natrTradesFilterActive;
+    const btn = document.getElementById('natrTradesFilterBtn');
+    if (btn) btn.classList.toggle('active', natrTradesFilterActive);
+    try { localStorage.setItem('natr_trades_filter_active', natrTradesFilterActive ? '1' : '0'); } catch(e) { /* non-fatal */ }
+    if (natrAllResults.length) natrReFilterAndRender();
+}
+// Shared "is this value within the typed from/to bounds" check — used to color matching
+// cells even when the filter button hasn't been turned on yet (preview mode).
+function natrInRange(value, from, to) {
+    if (from !== null && value < from) return false;
+    if (to !== null && value > to) return false;
+    return true;
 }
 function natrChangeNatrCompare() {
     const opSel = document.getElementById('natrCompareOp');
@@ -1883,23 +1880,6 @@ function natrRenderTable(data, animate) {
     const shown = data.slice(0, natrTopN);
     if (!shown.length) { body.innerHTML = ''; document.getElementById('natrEmptyState').style.display = 'block'; return; }
     document.getElementById('natrEmptyState').style.display = 'none';
-
-    // Pre-compute min/max for highlight modes
-    let volMin = Infinity, volMax = -Infinity, tradesMin = Infinity, tradesMax = -Infinity;
-    if (natrVolHighlight || natrTradesHighlight) {
-        for (const item of shown) {
-            const t24 = natrTicker24hMap.get(item.symbol);
-            if (t24) {
-                if (t24.volume < volMin) volMin = t24.volume;
-                if (t24.volume > volMax) volMax = t24.volume;
-                if (t24.count < tradesMin) tradesMin = t24.count;
-                if (t24.count > tradesMax) tradesMax = t24.count;
-            }
-        }
-    }
-    const volRange = volMax > volMin ? volMax - volMin : 1;
-    const tradesRange = tradesMax > tradesMin ? tradesMax - tradesMin : 1;
-
     const maxVal = shown[0].natr;
     const prevData = animate ? natrGetDisplayedData() : null;
     body.innerHTML = shown.map((item, i) => {
@@ -1912,25 +1892,11 @@ function natrRenderTable(data, animate) {
         const na = changed?'natr-changed':'';
         const pinned = natrWatchlist.has(item.symbol);
         const t24h = natrTicker24hMap.get(item.symbol);
+        const volHit = t24h && (natrVolFrom !== null || natrVolTo !== null) && natrInRange(t24h.volume, natrVolFrom, natrVolTo);
+        const tradesHit = t24h && (natrTradesFrom !== null || natrTradesTo !== null) && natrInRange(t24h.count, natrTradesFrom, natrTradesTo);
         const priceCell = t24h ? '$'+natrFmtPriceShort(t24h.price) : '—';
         const volCell = t24h ? natrFmtVolShort(t24h.volume) : '—';
         const tradesCell = t24h ? natrFmtCount(t24h.count) : '—';
-        // Highlight classes for vol/trades — always when values are filled
-        let volCls = '', volStyle = '', tradesCls = '', tradesStyle = '';
-        const hasVolFilter = natrVolFrom !== null || natrVolTo !== null;
-        const hasTradesFilter = natrTradesFrom !== null || natrTradesTo !== null;
-        if (hasVolFilter && t24h) {
-            let inRange = true;
-            if (natrVolFrom !== null && t24h.volume < natrVolFrom) inRange = false;
-            if (natrVolTo !== null && t24h.volume > natrVolTo) inRange = false;
-            volCls = inRange ? 'vol-hi' : 'vol-lo';
-        }
-        if (hasTradesFilter && t24h) {
-            let inRange = true;
-            if (natrTradesFrom !== null && t24h.count < natrTradesFrom) inRange = false;
-            if (natrTradesTo !== null && t24h.count > natrTradesTo) inRange = false;
-            tradesCls = inRange ? 'trades-hi' : 'trades-lo';
-        }
         const typeCell = natrAssetTypeBadge(item.symbol);
         const caiLink = '<span class="natr-cai-link" tabindex="0" role="button" onclick="event.stopPropagation(); natrOpenInCryptoAI(\''+item.symbol+'\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();event.stopPropagation();natrOpenInCryptoAI(\''+item.symbol+'\');}">CryptoAI →</span>';
         return '<tr class="'+bc+' '+ra+'"><td><span class="natr-rank '+rc+' mono">'+(i+1)+'</span></td>'+
@@ -1940,9 +1906,9 @@ function natrRenderTable(data, animate) {
             '<svg class="copy-icon" style="width:14px;height:14px" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></td>'+
             '<td>'+typeCell+'</td>'+
             '<td class="natr-price-cell mono">'+priceCell+'</td>'+
-            '<td class="natr-price-cell mono '+volCls+'">'+volCell+'</td>'+
-            '<td class="natr-price-cell mono '+tradesCls+'">'+tradesCell+'</td>'+
-            '<td><span class="natr-val mono '+nc+' '+na+'">'+item.natr.toFixed(2)+'<small style="font-size:0.65em;color:var(--muted)">%</small></span></td></tr>';
+            '<td class="natr-price-cell mono'+(volHit?' natr-range-hit':'')+'">'+volCell+'</td>'+
+            '<td class="natr-price-cell mono'+(tradesHit?' natr-range-hit':'')+'">'+tradesCell+'</td>'+
+            '<td><span class="natr-val mono '+nc+' '+na+'">'+item.natr.toFixed(3)+'<small style="font-size:0.65em;color:var(--muted)">%</small></span></td></tr>';
     }).join('');
     document.querySelectorAll('#natrTableBody .ticker-cell').forEach(cell => {
         const activate = function() {
@@ -1957,9 +1923,9 @@ function natrRenderTable(data, animate) {
     });
     document.getElementById('natrStatsBar').style.display = 'flex';
     document.getElementById('natrStatTotal').textContent = data.length;
-    document.getElementById('natrStatMax').textContent = maxVal.toFixed(2) + '%';
+    document.getElementById('natrStatMax').textContent = maxVal.toFixed(3) + '%';
     const avg = data.reduce((s,d) => s + d.natr, 0) / data.length;
-    document.getElementById('natrStatAvg').textContent = avg.toFixed(2) + '%';
+    document.getElementById('natrStatAvg').textContent = avg.toFixed(3) + '%';
     natrUpdateLastTime();
 }
 function natrSwitchMode(m) {

@@ -1062,8 +1062,16 @@
     </div>
     <div class="natr-tools" id="contTools">
         <div class="natr-tool-group">
-            <label class="natr-tool-label" for="contYestThreshold">Вчера, % (мин.):</label>
+            <label class="natr-tool-label" for="contYestThreshold">Дневной порог, %:</label>
             <input type="number" class="natr-alert-input" id="contYestThreshold" value="40" min="1" step="1" style="width:64px;">
+        </div>
+        <div class="natr-tool-group">
+            <label class="natr-tool-label" for="contLookbackDays">Дней назад:</label>
+            <input type="number" class="natr-alert-input" id="contLookbackDays" value="5" min="1" max="30" step="1" style="width:56px;" title="Сколько последних дней проверять на памп/слив — учитывает проторговку между пампами">
+        </div>
+        <div class="natr-tool-group">
+            <label class="natr-tool-label" for="contMinPumpDays">Памповых дней (мин.):</label>
+            <input type="number" class="natr-alert-input" id="contMinPumpDays" value="1" min="1" step="1" style="width:56px;" title="Минимум дней из окна 'Дней назад', превысивших дневной порог в ту же сторону">
         </div>
         <div class="natr-tool-group">
             <label class="natr-tool-label" for="contRvolThreshold">RVOL, x (мин.):</label>
@@ -1092,6 +1100,7 @@
                 <th style="width:40px;">#</th>
                 <th>Тикер</th>
                 <th style="width:100px;">Вчера, %</th>
+                <th style="width:90px;">Памп. дней</th>
                 <th style="width:80px;">RVOL</th>
                 <th style="width:100px;">Сегодня, %</th>
                 <th style="width:90px;">ΔOI, %</th>
@@ -1998,7 +2007,7 @@ function natrRenderTable(data, animate) {
             '<td class="natr-price-cell mono">'+priceCell+'</td>'+
             '<td class="natr-price-cell mono'+(volHit?' natr-range-hit':'')+'">'+volCell+'</td>'+
             '<td class="natr-price-cell mono'+(tradesHit?' natr-range-hit':'')+'">'+tradesCell+'</td>'+
-            '<td><span class="natr-val mono '+nc+' '+na+'">'+item.natr.toFixed(3)+'<small style="font-size:0.65em;color:var(--muted)">%</small></span></td></tr>';
+            '<td><span class="natr-val mono '+nc+' '+na+'">'+item.natr.toFixed(2)+'<small style="font-size:0.65em;color:var(--muted)">%</small></span></td></tr>';
     }).join('');
     document.querySelectorAll('#natrTableBody .ticker-cell').forEach(cell => {
         const activate = function() {
@@ -2013,9 +2022,9 @@ function natrRenderTable(data, animate) {
     });
     document.getElementById('natrStatsBar').style.display = 'flex';
     document.getElementById('natrStatTotal').textContent = data.length;
-    document.getElementById('natrStatMax').textContent = maxVal.toFixed(3) + '%';
+    document.getElementById('natrStatMax').textContent = maxVal.toFixed(2) + '%';
     const avg = data.reduce((s,d) => s + d.natr, 0) / data.length;
-    document.getElementById('natrStatAvg').textContent = avg.toFixed(3) + '%';
+    document.getElementById('natrStatAvg').textContent = avg.toFixed(2) + '%';
     natrUpdateLastTime();
 }
 function natrSwitchMode(m) {
@@ -2123,6 +2132,10 @@ function contApplyRestoredUI() {
         if (rv) document.getElementById('contRvolThreshold').value = rv;
         const oim = localStorage.getItem('cont_oi_min');
         if (oim) document.getElementById('contOiMin').value = oim;
+        const lb = localStorage.getItem('cont_lookback_days');
+        if (lb) document.getElementById('contLookbackDays').value = lb;
+        const mpd = localStorage.getItem('cont_min_pump_days');
+        if (mpd) document.getElementById('contMinPumpDays').value = mpd;
     } catch(e) { /* non-fatal */ }
 }
 function contSetDirection(dir) {
@@ -2165,18 +2178,21 @@ async function contFetchKlines(symbol, interval, limit) {
     } catch(e) { return null; }
 }
 // RVOL = average volume of the most recent `shortN` candles divided by the average
-// volume of the `baseN` candles right before that — a simple "is volume unusually
-// high right now compared to its recent baseline" measure.
+// volume of the candles right before that. The baseline window shrinks to whatever
+// history is actually available (down to a small minimum) so freshly-listed pairs
+// still get a reading instead of being dropped for lacking a full baseN history.
 function contCalcRVOL(klines, shortN, baseN) {
-    if (!klines || klines.length < shortN + baseN) return null;
+    if (!klines || klines.length <= shortN) return null;
     const len = klines.length;
+    const effectiveBaseN = Math.min(baseN, len - shortN);
+    if (effectiveBaseN < 5) return null; // too little history to call it a baseline at all
     const avgVol = (start, end) => {
         let sum = 0;
         for (let i = start; i < end; i++) sum += parseFloat(klines[i][5]) || 0;
         return sum / (end - start);
     };
     const shortAvg = avgVol(len - shortN, len);
-    const baseAvg = avgVol(len - shortN - baseN, len - shortN);
+    const baseAvg = avgVol(len - shortN - effectiveBaseN, len - shortN);
     if (!baseAvg) return null;
     return shortAvg / baseAvg;
 }
@@ -2198,13 +2214,18 @@ async function contFetchOI(symbol) {
         return { oiChangePct: (last - first) / first * 100, oiValue: last };
     } catch(e) { return null; }
 }
-async function contFetchAndCalc(symbol, cfg) {
+// lookbackDays controls how far back we look at daily candles to count "pump days" —
+// this lets the screener recognize a trend that developed with pauses/consolidation
+// in between (проторговки), not just a single isolated day. Pairs with LESS history
+// than lookbackDays (recent listings) are still included — dailyChanges just ends up
+// shorter, using whatever days actually exist instead of being dropped entirely.
+async function contFetchAndCalc(symbol, cfg, lookbackDays) {
     const [daily, intra, oi] = await Promise.all([
-        contFetchKlines(symbol, '1d', 3),
+        contFetchKlines(symbol, '1d', lookbackDays + 2),
         contFetchKlines(symbol, cfg.interval, cfg.limit),
         contFetchOI(symbol)
     ]);
-    if (!daily || daily.length < 2 || !intra || intra.length < cfg.shortN + cfg.baseN) return null;
+    if (!daily || daily.length < 2 || !intra) return null;
     const yestCandle = daily[daily.length - 2];   // last FULLY closed UTC day
     const todayCandle = daily[daily.length - 1];  // today's still-forming UTC day
     const yestOpen = parseFloat(yestCandle[1]), yestClose = parseFloat(yestCandle[4]);
@@ -2217,14 +2238,22 @@ async function contFetchAndCalc(symbol, cfg) {
     if (rvol == null) return null;
     const oiChangePct = oi ? oi.oiChangePct : null;
     const oiValue = oi ? oi.oiValue : null;
-    return { symbol, yestChange, todayChange, rvol, oiChangePct, oiValue };
+    // Daily % change for each of the most recently CLOSED days, oldest to newest,
+    // capped to lookbackDays but shrinking gracefully for pairs with shorter history.
+    const availableDays = Math.min(lookbackDays, daily.length - 1);
+    const dailyChanges = [];
+    for (let i = daily.length - 1 - availableDays; i <= daily.length - 2; i++) {
+        const o = parseFloat(daily[i][1]), c = parseFloat(daily[i][4]);
+        if (o) dailyChanges.push((c - o) / o * 100);
+    }
+    return { symbol, yestChange, todayChange, rvol, oiChangePct, oiValue, dailyChanges };
 }
-async function contProcessMax(pairs, cfg, onProgress) {
+async function contProcessMax(pairs, cfg, lookbackDays, onProgress) {
     const results = []; const total = pairs.length; let processed = 0;
     for (let i = 0; i < total; i += NATR_SCAN_CFG.batchSize) {
         if (contAbortCtrl?.signal.aborted) break;
         const batch = pairs.slice(i, Math.min(i + NATR_SCAN_CFG.batchSize, total));
-        const batchResults = await Promise.all(batch.map(sym => contFetchAndCalc(sym, cfg)));
+        const batchResults = await Promise.all(batch.map(sym => contFetchAndCalc(sym, cfg, lookbackDays)));
         batchResults.forEach(r => { if (r) results.push(r); });
         processed += batch.length;
         if (onProgress) onProgress(processed, total);
@@ -2249,8 +2278,9 @@ async function contStartScan() {
         contIsScanning = false; contAbortCtrl = null; return;
     }
     const cfg = CONT_MODES[contMode] || CONT_MODES['5m'];
+    const lookbackDays = Math.max(1, parseInt(document.getElementById('contLookbackDays').value) || 5);
     contSetStatus('Сканирование 0/'+pairs.length+'...', true, true);
-    const raw = await contProcessMax(pairs, cfg, (p,t) => {
+    const raw = await contProcessMax(pairs, cfg, lookbackDays, (p,t) => {
         if (!contAbortCtrl.signal.aborted) contSetStatus('Сканирование '+p+'/'+t+'...', true, true);
     });
     if (contAbortCtrl.signal.aborted) {
@@ -2260,14 +2290,23 @@ async function contStartScan() {
     const yestThr = Math.abs(parseFloat(document.getElementById('contYestThreshold').value)) || 40;
     const rvolThr = parseFloat(document.getElementById('contRvolThreshold').value) || 2;
     const oiMinThr = natrParseShorthand(document.getElementById('contOiMin').value);
+    const minPumpDays = Math.max(1, parseInt(document.getElementById('contMinPumpDays').value) || 1);
     try {
         localStorage.setItem('cont_yest_threshold', String(yestThr));
         localStorage.setItem('cont_rvol_threshold', String(rvolThr));
         localStorage.setItem('cont_oi_min', oiMinThr === null ? '' : String(oiMinThr));
+        localStorage.setItem('cont_lookback_days', String(lookbackDays));
+        localStorage.setItem('cont_min_pump_days', String(minPumpDays));
     } catch(e) { /* non-fatal */ }
     contAllResults = raw.filter(r => {
         if (Math.abs(r.yestChange) < yestThr || r.rvol < rvolThr) return false;
         if (oiMinThr !== null && r.oiValue !== null && r.oiValue < oiMinThr) return false; // missing OI data isn't held against a row
+        // Count how many days in the lookback window moved >= threshold in the SAME
+        // direction as yesterday — catches a trend that paused/consolidated (проторговка)
+        // instead of requiring one single day, while still including short-history listings.
+        r.pumpDays = r.dailyChanges.filter(dc => Math.sign(dc) === Math.sign(r.yestChange) && Math.abs(dc) >= yestThr).length;
+        r.pumpDaysTotal = r.dailyChanges.length;
+        if (r.pumpDays < minPumpDays) return false;
         return true;
     });
     document.getElementById('contStatFound').textContent = contAllResults.length;
@@ -2323,6 +2362,7 @@ function contRenderTable(data) {
             '<div class="ticker-name">'+displaySymbol+' <span class="natr-cai-link" tabindex="0" role="button" onclick="event.stopPropagation(); natrOpenInCryptoAI(\''+r.symbol+'\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();event.stopPropagation();natrOpenInCryptoAI(\''+r.symbol+'\');}">CryptoAI →</span></div>'+
             '<svg class="copy-icon" style="width:14px;height:14px" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></td>'+
             '<td class="mono '+yestCls+'">'+(r.yestChange>=0?'+':'')+r.yestChange.toFixed(1)+'%</td>'+
+            '<td class="mono'+(r.pumpDays>=2?' cont-rvol-hot':'')+'">'+r.pumpDays+'/'+r.pumpDaysTotal+'</td>'+
             '<td class="mono cont-rvol-hot">'+r.rvol.toFixed(2)+'x</td>'+
             '<td class="mono '+todayCls+'">'+(r.todayChange>=0?'+':'')+r.todayChange.toFixed(1)+'%</td>'+
             '<td>'+oiCell+'</td>'+

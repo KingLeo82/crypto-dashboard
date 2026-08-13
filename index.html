@@ -1071,19 +1071,27 @@
         </div>
         <div class="natr-tool-group">
             <label class="natr-tool-label" for="contLookbackDays">Дней назад:</label>
-            <input type="number" class="natr-alert-input" id="contLookbackDays" value="5" min="1" max="30" step="1" style="width:56px;" title="Сколько последних дней проверять на памп/слив — учитывает проторговку между пампами. Требует нового сканирования.">
+            <input type="number" class="natr-alert-input" id="contLookbackDays" value="5" min="0" max="30" step="1" placeholder="0" style="width:56px;" title="0 или пусто — анализировать только текущий (ещё не закрытый) день, без истории. Требует нового сканирования.">
         </div>
         <div class="natr-tool-group">
             <label class="natr-tool-label" for="contMinPumpDays">Памповых дней (мин.):</label>
-            <input type="number" class="natr-alert-input" id="contMinPumpDays" value="1" min="1" step="1" style="width:56px;" title="Минимум дней из окна 'Дней назад', прошедших дневной порог в ту же сторону" oninput="contChangeFilters()">
+            <input type="number" class="natr-alert-input" id="contMinPumpDays" value="1" min="0" step="1" placeholder="0" style="width:56px;" title="0 или пусто — без минимума (фильтр выключен)" oninput="contChangeFilters()">
         </div>
         <div class="natr-tool-group">
-            <label class="natr-tool-label" for="contRvolThreshold">RVOL, x (мин.):</label>
-            <input type="number" class="natr-alert-input" id="contRvolThreshold" value="2" min="1" step="0.1" style="width:64px;" oninput="contChangeFilters()">
+            <label class="natr-tool-label" for="contRvolThreshold">RVOL, x:</label>
+            <select class="sec-select" id="contRvolOp" onchange="contChangeFilters()" style="width:56px;">
+                <option value="gte">&gt;</option>
+                <option value="lte">&lt;</option>
+            </select>
+            <input type="number" class="natr-alert-input" id="contRvolThreshold" value="2" min="0" step="0.1" placeholder="0" style="width:64px;" title="0 или пусто — фильтр выключен" oninput="contChangeFilters()">
         </div>
         <div class="natr-tool-group">
-            <label class="natr-tool-label" for="contOiMin">OI, $ (мин.):</label>
-            <input type="text" inputmode="decimal" class="natr-range-input" id="contOiMin" placeholder="напр. 1м" style="width:90px;" oninput="contChangeFilters()">
+            <label class="natr-tool-label" for="contOiMin">ΔOI, %:</label>
+            <select class="sec-select" id="contOiOp" onchange="contChangeFilters()" style="width:56px;">
+                <option value="gte">&gt;</option>
+                <option value="lte">&lt;</option>
+            </select>
+            <input type="number" class="natr-alert-input" id="contOiMin" min="0" step="1" placeholder="0" style="width:64px;" title="0 или пусто — фильтр выключен" oninput="contChangeFilters()">
         </div>
         <div class="natr-tool-group">
             <label class="natr-tool-label">Показывать:</label>
@@ -1092,6 +1100,7 @@
             <button class="natr-tool-btn" id="contDirDownBtn" onclick="contSetDirection('down')">🩸 Падение</button>
         </div>
         <button class="natr-tool-btn active" id="contDirBtn" onclick="contToggleDirFilter()" title="Показывать только пары, где сегодняшнее движение совпадает по направлению со вчерашним">Только совпадение направления</button>
+        <button class="natr-tool-btn" id="contWatchlistBtn" onclick="contToggleWatchlistOnly()" title="Показывать только избранное (общий список с NATR Scanner)">★ Избранное</button>
         <button class="natr-tool-btn" id="contRescanHint" style="pointer-events:none;opacity:0.6;font-weight:400;" title="Дней назад и таймфрейм (1м/5м) меняют то, что запрашивается у Binance — после их изменения нажмите «Сканировать» ещё раз">ⓘ Все фильтры кроме «Дней назад» и таймфрейма применяются сразу</button>
     </div>
     <div class="natr-stats" id="contStatsBar" style="display:none;">
@@ -2113,6 +2122,9 @@ let contMode = '5m';
 let contDirFilterOnly = true;
 let contDirection = 'all'; // 'all' | 'up' (yesterday's pumps) | 'down' (yesterday's dumps)
 let contYestOp = 'gte'; // 'gte' = найти движения БОЛЬШЕ порога, 'lte' = МЕНЬШЕ порога
+let contRvolOp = 'gte';
+let contOiOp = 'gte';
+let contWatchlistOnly = false; // reuses the SAME natrWatchlist as the NATR scanner — one shared favorites list
 let contIsScanning = false;
 let contAbortCtrl = null;
 let contRawResults = []; // everything the last scan fetched, unfiltered — filters below re-slice this live, no rescan needed
@@ -2125,6 +2137,11 @@ try {
     if (savedDirection === 'up' || savedDirection === 'down') contDirection = savedDirection;
     const savedYestOp = localStorage.getItem('cont_yest_op');
     if (savedYestOp === 'gte' || savedYestOp === 'lte') contYestOp = savedYestOp;
+    const savedRvolOp = localStorage.getItem('cont_rvol_op');
+    if (savedRvolOp === 'gte' || savedRvolOp === 'lte') contRvolOp = savedRvolOp;
+    const savedOiOp = localStorage.getItem('cont_oi_op');
+    if (savedOiOp === 'gte' || savedOiOp === 'lte') contOiOp = savedOiOp;
+    contWatchlistOnly = localStorage.getItem('cont_watchlist_only') === '1';
 } catch(e) { /* storage unavailable — defaults are fine */ }
 function contApplyRestoredUI() {
     document.querySelectorAll('#section-cont .natr-tab').forEach(t => t.classList.toggle('active', t.dataset.mode === contMode));
@@ -2133,8 +2150,10 @@ function contApplyRestoredUI() {
     document.getElementById('contDirAllBtn').classList.toggle('active', contDirection === 'all');
     document.getElementById('contDirUpBtn').classList.toggle('active', contDirection === 'up');
     document.getElementById('contDirDownBtn').classList.toggle('active', contDirection === 'down');
-    const yestOpSel = document.getElementById('contYestOp');
-    if (yestOpSel) yestOpSel.value = contYestOp;
+    document.getElementById('contYestOp').value = contYestOp;
+    document.getElementById('contRvolOp').value = contRvolOp;
+    document.getElementById('contOiOp').value = contOiOp;
+    document.getElementById('contWatchlistBtn').classList.toggle('active', contWatchlistOnly);
     try {
         const y = localStorage.getItem('cont_yest_threshold');
         if (y) document.getElementById('contYestThreshold').value = y;
@@ -2169,18 +2188,27 @@ function contToggleDirFilter() {
     try { localStorage.setItem('cont_dir_only', contDirFilterOnly ? '1' : '0'); } catch(e) { /* non-fatal */ }
     if (contRawResults.length) contReFilterAndRender();
 }
+function contToggleWatchlistOnly() {
+    contWatchlistOnly = !contWatchlistOnly;
+    document.getElementById('contWatchlistBtn').classList.toggle('active', contWatchlistOnly);
+    try { localStorage.setItem('cont_watchlist_only', contWatchlistOnly ? '1' : '0'); } catch(e) { /* non-fatal */ }
+    if (contRawResults.length) contReFilterAndRender();
+}
 // Every filter input below calls this — it re-slices the already-fetched contRawResults
 // live, no network request needed. Only the timeframe tabs and "Дней назад" actually
 // change what gets fetched, so those still require pressing Сканировать again.
 function contChangeFilters() {
     contYestOp = document.getElementById('contYestOp').value === 'lte' ? 'lte' : 'gte';
+    contRvolOp = document.getElementById('contRvolOp').value === 'lte' ? 'lte' : 'gte';
+    contOiOp = document.getElementById('contOiOp').value === 'lte' ? 'lte' : 'gte';
     try {
         localStorage.setItem('cont_yest_op', contYestOp);
+        localStorage.setItem('cont_rvol_op', contRvolOp);
+        localStorage.setItem('cont_oi_op', contOiOp);
         localStorage.setItem('cont_yest_threshold', document.getElementById('contYestThreshold').value || '40');
-        localStorage.setItem('cont_rvol_threshold', document.getElementById('contRvolThreshold').value || '2');
-        const oiMinThr = natrParseShorthand(document.getElementById('contOiMin').value);
-        localStorage.setItem('cont_oi_min', oiMinThr === null ? '' : String(oiMinThr));
-        localStorage.setItem('cont_min_pump_days', document.getElementById('contMinPumpDays').value || '1');
+        localStorage.setItem('cont_rvol_threshold', document.getElementById('contRvolThreshold').value);
+        localStorage.setItem('cont_oi_min', document.getElementById('contOiMin').value);
+        localStorage.setItem('cont_min_pump_days', document.getElementById('contMinPumpDays').value);
     } catch(e) { /* non-fatal */ }
     if (contRawResults.length) contReFilterAndRender();
 }
@@ -2246,7 +2274,7 @@ async function contFetchOI(symbol) {
 // shorter, using whatever days actually exist instead of being dropped entirely.
 async function contFetchAndCalc(symbol, cfg, lookbackDays) {
     const [daily, intra, oi] = await Promise.all([
-        contFetchKlines(symbol, '1d', lookbackDays + 2),
+        contFetchKlines(symbol, '1d', Math.max(lookbackDays, 0) + 2),
         contFetchKlines(symbol, cfg.interval, cfg.limit),
         contFetchOI(symbol)
     ]);
@@ -2263,15 +2291,26 @@ async function contFetchAndCalc(symbol, cfg, lookbackDays) {
     if (rvol == null) return null;
     const oiChangePct = oi ? oi.oiChangePct : null;
     const oiValue = oi ? oi.oiValue : null;
-    // Daily % change for each of the most recently CLOSED days, oldest to newest,
-    // capped to lookbackDays but shrinking gracefully for pairs with shorter history.
-    const availableDays = Math.min(lookbackDays, daily.length - 1);
-    const dailyChanges = [];
-    for (let i = daily.length - 1 - availableDays; i <= daily.length - 2; i++) {
-        const o = parseFloat(daily[i][1]), c = parseFloat(daily[i][4]);
-        if (o) dailyChanges.push((c - o) / o * 100);
+    // "Дней назад" = 0 (or left empty) → skip history entirely and analyze TODAY'S own
+    // move so far, instead of yesterday's. refChange is what every threshold/direction
+    // check below runs against, so this one flag switches the whole screener's frame
+    // of reference from "yesterday vs today" to "just today, right now".
+    const todayOnly = lookbackDays <= 0;
+    let dailyChanges;
+    if (todayOnly) {
+        dailyChanges = [todayChange];
+    } else {
+        // Daily % change for each of the most recently CLOSED days, oldest to newest,
+        // capped to lookbackDays but shrinking gracefully for pairs with shorter history.
+        const availableDays = Math.min(lookbackDays, daily.length - 1);
+        dailyChanges = [];
+        for (let i = daily.length - 1 - availableDays; i <= daily.length - 2; i++) {
+            const o = parseFloat(daily[i][1]), c = parseFloat(daily[i][4]);
+            if (o) dailyChanges.push((c - o) / o * 100);
+        }
     }
-    return { symbol, yestChange, todayChange, rvol, oiChangePct, oiValue, dailyChanges };
+    const refChange = todayOnly ? todayChange : yestChange;
+    return { symbol, yestChange, todayChange, refChange, todayOnly, rvol, oiChangePct, oiValue, dailyChanges };
 }
 async function contProcessMax(pairs, cfg, lookbackDays, onProgress) {
     const results = []; const total = pairs.length; let processed = 0;
@@ -2303,7 +2342,8 @@ async function contStartScan() {
         contIsScanning = false; contAbortCtrl = null; return;
     }
     const cfg = CONT_MODES[contMode] || CONT_MODES['5m'];
-    const lookbackDays = Math.max(1, parseInt(document.getElementById('contLookbackDays').value) || 5);
+    const lbRaw = document.getElementById('contLookbackDays').value.trim();
+    const lookbackDays = lbRaw === '' ? 0 : Math.max(0, parseInt(lbRaw) || 0);
     try { localStorage.setItem('cont_lookback_days', String(lookbackDays)); } catch(e) { /* non-fatal */ }
     contSetStatus('Сканирование 0/'+pairs.length+'...', true, true);
     const raw = await contProcessMax(pairs, cfg, lookbackDays, (p,t) => {
@@ -2327,27 +2367,43 @@ async function contStartScan() {
 // never requires hitting Сканировать again.
 function contGetFilteredResults() {
     const yestThr = Math.abs(parseFloat(document.getElementById('contYestThreshold').value)) || 40;
-    const rvolThr = parseFloat(document.getElementById('contRvolThreshold').value) || 2;
-    const oiMinThr = natrParseShorthand(document.getElementById('contOiMin').value);
-    const minPumpDays = Math.max(1, parseInt(document.getElementById('contMinPumpDays').value) || 1);
     const passThr = v => contYestOp === 'lte' ? Math.abs(v) <= yestThr : Math.abs(v) >= yestThr;
+
+    const rvolRaw = document.getElementById('contRvolThreshold').value.trim();
+    const rvolThr = rvolRaw === '' ? 0 : (parseFloat(rvolRaw) || 0);
+    const rvolActive = rvolThr > 0;
+    const passRvol = v => contRvolOp === 'lte' ? v <= rvolThr : v >= rvolThr;
+
+    const oiRaw = document.getElementById('contOiMin').value.trim();
+    const oiThr = oiRaw === '' ? 0 : (parseFloat(oiRaw) || 0);
+    const oiActive = oiThr > 0;
+    const passOi = v => contOiOp === 'lte' ? Math.abs(v) <= oiThr : Math.abs(v) >= oiThr;
+
+    const pumpRaw = document.getElementById('contMinPumpDays').value.trim();
+    const minPumpDays = pumpRaw === '' ? 0 : Math.max(0, parseInt(pumpRaw) || 0);
+    const pumpActive = minPumpDays > 0;
+
     let list = contRawResults.filter(r => {
-        if (!passThr(r.yestChange)) return false;
-        if (r.rvol < rvolThr) return false;
-        if (oiMinThr !== null && r.oiValue !== null && r.oiValue < oiMinThr) return false; // missing OI data isn't held against a row
+        if (!passThr(r.refChange)) return false;
+        if (rvolActive && !passRvol(r.rvol)) return false;
+        // OI filter is opt-in (0/empty = off). When it's on, a row with no OI data
+        // can't be confirmed either way, so it's excluded rather than let through blind.
+        if (oiActive && (r.oiChangePct === null || !passOi(r.oiChangePct))) return false;
         // Count how many days in the lookback window moved past the threshold in the SAME
-        // direction as yesterday — catches a trend that paused/consolidated (проторговка)
-        // instead of requiring one single day, while still including short-history listings.
-        r.pumpDays = r.dailyChanges.filter(dc => Math.sign(dc) === Math.sign(r.yestChange) && passThr(dc)).length;
+        // direction as the reference day — catches a trend that paused/consolidated
+        // (проторговка) instead of requiring one single day. In "today only" mode
+        // (Дней назад = 0) this is always 1/1 or 0/1 since there's just today to check.
+        r.pumpDays = r.dailyChanges.filter(dc => Math.sign(dc) === Math.sign(r.refChange) && passThr(dc)).length;
         r.pumpDaysTotal = r.dailyChanges.length;
-        if (r.pumpDays < minPumpDays) return false;
+        if (pumpActive && r.pumpDays < minPumpDays) return false;
         return true;
     });
-    if (contDirection === 'up') list = list.filter(r => r.yestChange >= 0);
-    else if (contDirection === 'down') list = list.filter(r => r.yestChange < 0);
+    if (contDirection === 'up') list = list.filter(r => r.refChange >= 0);
+    else if (contDirection === 'down') list = list.filter(r => r.refChange < 0);
     if (contDirFilterOnly) {
-        list = list.filter(r => Math.sign(r.yestChange) === Math.sign(r.todayChange) && r.todayChange !== 0);
+        list = list.filter(r => Math.sign(r.refChange) === Math.sign(r.todayChange) && r.todayChange !== 0);
     }
+    if (contWatchlistOnly) list = list.filter(r => natrWatchlist.has(r.symbol));
     list.sort((a,b) => b.rvol - a.rvol);
     return list;
 }
@@ -2371,25 +2427,31 @@ function contRenderTable(data) {
     document.getElementById('contEmptyState').style.display = 'none';
     body.innerHTML = data.map((r, i) => {
         const displaySymbol = escapeHtml(r.symbol.replace(/USDT$|USD1$/, ''));
-        const yestCls = r.yestChange >= 0 ? 'cont-yest-up' : 'cont-yest-down';
+        const refCls = r.refChange >= 0 ? 'cont-yest-up' : 'cont-yest-down';
         const todayCls = r.todayChange >= 0 ? 'cont-yest-up' : 'cont-yest-down';
-        const sameDir = Math.sign(r.yestChange) === Math.sign(r.todayChange) && r.todayChange !== 0;
-        const oiConfirms = r.oiChangePct !== null && Math.sign(r.oiChangePct) === Math.sign(r.yestChange) && r.oiChangePct !== 0;
+        const sameDir = Math.sign(r.refChange) === Math.sign(r.todayChange) && r.todayChange !== 0;
+        const oiConfirms = r.oiChangePct !== null && Math.sign(r.oiChangePct) === Math.sign(r.refChange) && r.oiChangePct !== 0;
         const oiCell = r.oiChangePct !== null
             ? '<span class="mono '+(r.oiChangePct>=0?'cont-yest-up':'cont-yest-down')+'">'+(r.oiChangePct>=0?'+':'')+r.oiChangePct.toFixed(1)+'%</span>'
             : '<span style="color:var(--muted)">—</span>';
+        const pinned = natrWatchlist.has(r.symbol);
         let badge;
-        if (sameDir && oiConfirms && r.yestChange >= 0) badge = '<span class="cont-badge cont-hype">🔥✅ Хайп + OI подтверждён</span>';
-        else if (sameDir && oiConfirms && r.yestChange < 0) badge = '<span class="cont-badge cont-dump">🩸✅ Слив + OI подтверждён</span>';
-        else if (sameDir && r.yestChange >= 0) badge = '<span class="cont-badge cont-hype">🔥 Хайп продолжается</span>';
-        else if (sameDir && r.yestChange < 0) badge = '<span class="cont-badge cont-dump">🩸 Слив продолжается</span>';
+        if (r.todayOnly) {
+            if (r.refChange >= 0) badge = oiConfirms ? '<span class="cont-badge cont-hype">🔥✅ Памп сегодня + OI</span>' : '<span class="cont-badge cont-hype">🔥 Памп сегодня</span>';
+            else if (r.refChange < 0) badge = oiConfirms ? '<span class="cont-badge cont-dump">🩸✅ Слив сегодня + OI</span>' : '<span class="cont-badge cont-dump">🩸 Слив сегодня</span>';
+            else badge = '<span class="cont-badge cont-watch">Наблюдение</span>';
+        } else if (sameDir && oiConfirms && r.refChange >= 0) badge = '<span class="cont-badge cont-hype">🔥✅ Хайп + OI подтверждён</span>';
+        else if (sameDir && oiConfirms && r.refChange < 0) badge = '<span class="cont-badge cont-dump">🩸✅ Слив + OI подтверждён</span>';
+        else if (sameDir && r.refChange >= 0) badge = '<span class="cont-badge cont-hype">🔥 Хайп продолжается</span>';
+        else if (sameDir && r.refChange < 0) badge = '<span class="cont-badge cont-dump">🩸 Слив продолжается</span>';
         else if (!sameDir && r.todayChange !== 0) badge = '<span class="cont-badge cont-reversal">⚠️ Возможен разворот</span>';
         else badge = '<span class="cont-badge cont-watch">Наблюдение</span>';
         return '<tr><td><span class="natr-rank mono">'+(i+1)+'</span></td>'+
             '<td class="ticker-cell" tabindex="0" role="button" aria-label="Скопировать тикер '+displaySymbol+'" data-symbol="'+displaySymbol+'">'+
+            '<span class="natr-star'+(pinned?' pinned':'')+'" tabindex="0" role="button" aria-pressed="'+pinned+'" aria-label="Избранное" data-symbol="'+r.symbol+'" onclick="event.stopPropagation(); natrToggleWatchlist(\''+r.symbol+'\'); contReFilterAndRender();" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();event.stopPropagation();natrToggleWatchlist(\''+r.symbol+'\');contReFilterAndRender();}">'+(pinned?'★':'☆')+'</span>'+
             '<div class="ticker-name">'+displaySymbol+' <span class="natr-cai-link" tabindex="0" role="button" onclick="event.stopPropagation(); natrOpenInCryptoAI(\''+r.symbol+'\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();event.stopPropagation();natrOpenInCryptoAI(\''+r.symbol+'\');}">CryptoAI →</span></div>'+
             '<svg class="copy-icon" style="width:14px;height:14px" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></td>'+
-            '<td class="mono '+yestCls+'">'+(r.yestChange>=0?'+':'')+r.yestChange.toFixed(1)+'%</td>'+
+            '<td class="mono '+refCls+'" title="'+(r.todayOnly?'Сегодня (режим «только сегодня»)':'Последний закрытый день')+'">'+(r.refChange>=0?'+':'')+r.refChange.toFixed(1)+'%</td>'+
             '<td class="mono'+(r.pumpDays>=2?' cont-rvol-hot':'')+'">'+r.pumpDays+'/'+r.pumpDaysTotal+'</td>'+
             '<td class="mono cont-rvol-hot">'+r.rvol.toFixed(2)+'x</td>'+
             '<td class="mono '+todayCls+'">'+(r.todayChange>=0?'+':'')+r.todayChange.toFixed(1)+'%</td>'+

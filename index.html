@@ -206,10 +206,13 @@
             border-radius: 50%; animation: spin 1s linear infinite;
         }
 
-        .natr-tools {
-            display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+        .natr-tools-card {
+            display: flex; flex-direction: column; gap: 10px;
             margin-bottom: 16px; padding: 10px 14px; background: var(--bg-card);
             border-radius: 12px; border: 1px solid var(--border);
+        }
+        .natr-tools {
+            display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
         }
         .natr-tool-group { display: flex; align-items: center; gap: 6px; }
         .natr-tool-label { font-size: 11px; color: var(--muted); font-weight: 600; white-space: nowrap; }
@@ -246,6 +249,9 @@
 
         .natr-price-cell { font-size: 1.25rem; color: var(--fg); }
         .natr-range-hit { color: var(--accent); font-weight: 700; }
+        .natr-below-threshold { color: var(--red); font-weight: 700; }
+        .natr-above-threshold { color: var(--green); font-weight: 700; }
+        tr.natr-pinned-row { background: rgba(240,185,11,0.06); }
 
         .natr-cai-link {
             color: var(--accent); cursor: pointer; text-decoration: none; font-weight: 600;
@@ -253,6 +259,22 @@
         }
         .natr-cai-link:hover { text-decoration: underline; }
         .natr-cai-link:focus-visible { outline: 2px solid var(--accent); }
+        .natr-icon-btn {
+            display: inline-flex; align-items: center; justify-content: center;
+            height: auto; padding: 2px 10px; margin: 0; vertical-align: middle;
+            border-radius: 7px; border: 1px solid var(--border); background: transparent;
+            cursor: pointer; font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.25rem; font-weight: 600; line-height: 1.3; white-space: nowrap;
+            color: var(--fg); transition: all 0.15s; flex-shrink: 0;
+        }
+        .natr-actions-cell { display: flex; align-items: center; justify-content: space-between; gap: 8px; white-space: nowrap; }
+
+        .natr-icon-btn:hover { background: rgba(255,255,255,0.05); border-color: var(--accent); color: var(--accent); transform: translateY(-1px); }
+        .natr-icon-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+        @media (max-width: 720px) {
+            .natr-icon-btn { font-size: 1.05rem; }
+        }
 
         .atype-badge {
             font-size: 1.25rem; font-weight: 700; white-space: nowrap;
@@ -976,6 +998,7 @@
         <button class="natr-tab" data-mode="4h_14" onclick="natrSwitchMode('4h_14')" title="4 часа × 14 периодов">4ч</button>
         <button class="natr-tab" data-mode="1d_14" onclick="natrSwitchMode('1d_14')" title="1 день × 14 периодов">1д</button>
     </div>
+    <div class="natr-tools-card">
     <div class="natr-tools" id="natrTools">
         <div class="natr-tool-group">
             <label class="natr-tool-label" for="natrTopNSelect">Показать:</label>
@@ -1013,6 +1036,7 @@
             <button class="natr-tool-btn" id="natrTradesFilterBtn" onclick="natrToggleTradesFilter()" title="Включить фильтр (иначе значения в диапазоне просто подсвечиваются)">Фильтр</button>
         </div>
     </div>
+    </div>
     <div class="natr-stats" id="natrStatsBar" style="display:none;">
         <div>Всего контрактов: <strong id="natrStatTotal" class="mono">--</strong></div>
         <div>Max NATR: <strong id="natrStatMax" class="mono">--%</strong></div>
@@ -1021,7 +1045,7 @@
     <div class="natr-table-wrap" id="natrTableWrap">
         <div class="bg-update-overlay"></div>
         <table>
-            <thead><tr><th style="width:40px;">#</th><th>Тикер</th><th style="width:78px;">Тип</th><th style="width:90px;">Цена</th><th style="width:90px;">Объём 24ч</th><th style="width:90px;">Сделки 24ч</th><th style="width:120px;">NATR (%)</th></tr></thead>
+            <thead><tr><th style="width:40px;">#</th><th>Тикер</th><th style="width:78px;">Тип</th><th style="width:90px;">Цена</th><th style="width:90px;">Объём 24ч</th><th style="width:90px;">Сделки 24ч</th><th style="width:110px;text-align:right;">NATR (%)</th><th style="width:190px;text-align:center;">Действия</th></tr></thead>
             <tbody id="natrTableBody"></tbody>
         </table>
         <div id="natrSkeleton" style="display:none;"></div>
@@ -1720,9 +1744,22 @@ function natrGetFilteredResults() {
     }
     return list;
 }
+// Pinned (★ избранное) rows always stay visible at the top of the table, unaffected by
+// category/объём/сделки/NATR filters or Top N — only their values refresh. This mirrors
+// how "закреп" (pin) works in most terminals: pin = always on top, filters just don't apply.
 function natrReFilterAndRender() {
-    const list = natrGetFilteredResults();
-    natrRenderTable(list.sort((a,b) => b.natr - a.natr));
+    const filtered = natrGetFilteredResults().sort((a,b) => b.natr - a.natr);
+    if (natrWatchlistOnly || natrWatchlist.size === 0) {
+        // "Только избранное" already restricts to pinned symbols — no separate pinned block needed.
+        natrRenderTable(filtered, false, 0);
+        return;
+    }
+    const pinnedRows = natrAllResults
+        .filter(r => natrWatchlist.has(r.symbol))
+        .sort((a,b) => b.natr - a.natr);
+    const pinnedSet = new Set(pinnedRows.map(r => r.symbol));
+    const rest = filtered.filter(r => !pinnedSet.has(r.symbol));
+    natrRenderTable(pinnedRows.concat(rest), false, pinnedRows.length);
 }
 function natrChangeTopN(v) {
     natrTopN = parseInt(v, 10) || 10;
@@ -1871,6 +1908,45 @@ function natrOpenInCryptoAI(symbol) {
     if (input) input.value = base;
     caiSearch();
 }
+// ---- Tiger.com Terminal integration (local Tiger API — Settings -> Local Signal Server) ----
+// This is NOT the Tiger Open Platform trading API. It's a local WebSocket server built into
+// the Tiger.com desktop terminal (default ws://localhost:7819) that only accepts a single
+// command, setLinkSymbol, to switch the active ticker inside an already-running terminal.
+// It provides no market data back — it's purely "push this symbol into my open Tiger window".
+let natrTigerWS = null;
+let natrTigerLinkGroup = 'A';
+try { const savedGroup = localStorage.getItem('natr_tiger_link_group'); if (savedGroup) natrTigerLinkGroup = savedGroup; } catch(e) { /* non-fatal */ }
+function natrGetTigerSocket() {
+    return new Promise((resolve, reject) => {
+        if (natrTigerWS && natrTigerWS.readyState === WebSocket.OPEN) { resolve(natrTigerWS); return; }
+        let ws;
+        try { ws = new WebSocket('ws://localhost:7819'); } catch(e) { reject(e); return; }
+        const timer = setTimeout(() => { try { ws.close(); } catch(e){} reject(new Error('timeout')); }, 3000);
+        ws.onopen = () => { clearTimeout(timer); natrTigerWS = ws; resolve(ws); };
+        ws.onerror = () => { clearTimeout(timer); reject(new Error('connect_error')); };
+        ws.onclose = () => { if (natrTigerWS === ws) natrTigerWS = null; };
+    });
+}
+// Symbols here come from Binance USDT-M futures (fapi.binance.com), so they map to
+// Tiger's "BINANCE-FUT" exchange / "FUTURES" market type.
+function natrOpenInTiger(symbol) {
+    natrGetTigerSocket().then(ws => {
+        const onMsg = (ev) => {
+            ws.removeEventListener('message', onMsg);
+            let data = null;
+            try { data = JSON.parse(ev.data); } catch(e) { /* non-JSON, ignore */ }
+            if (data && data.response && data.response.type === 'successfully') {
+                showToast('Открыто в Tiger.com: ' + symbol.replace(/USDT$|USD1$/, ''));
+            } else {
+                showToast((data && data.message) || ('Tiger.com не распознал тикер ' + symbol));
+            }
+        };
+        ws.addEventListener('message', onMsg);
+        ws.send(JSON.stringify({ type: 'setLinkSymbol', e: 'BINANCE-FUT', m: 'FUTURES', symbol: symbol, linkGroup: natrTigerLinkGroup }));
+    }).catch(() => {
+        showToast('Нет связи с Tiger.com Terminal — включите Settings → Local Signal Server (порт 7819)');
+    });
+}
 // Bulk-fetches 24h price/volume/trade-count for ALL futures symbols in one request
 // (instead of one request per row) — used for the price/volume column and the
 // liquidity/trades filters.
@@ -1988,14 +2064,20 @@ function natrGetDisplayedData() {
         return {symbol: sym, natr: parseFloat(nt.replace('%','').trim())};
     }).filter(d => d.symbol);
 }
-function natrRenderTable(data, animate) {
+// pinnedCount = how many rows at the START of `data` are pinned (★) rows. Those bypass
+// Top N entirely (always shown); Top N only caps the remaining, non-pinned rows.
+function natrRenderTable(data, animate, pinnedCount) {
     const body = document.getElementById('natrTableBody');
-    const shown = data.slice(0, natrTopN);
+    pinnedCount = pinnedCount || 0;
+    const pinnedRows = data.slice(0, pinnedCount);
+    const restRows = data.slice(pinnedCount).slice(0, natrTopN);
+    const shown = pinnedRows.concat(restRows);
     if (!shown.length) { body.innerHTML = ''; document.getElementById('natrEmptyState').style.display = 'block'; return; }
     document.getElementById('natrEmptyState').style.display = 'none';
-    const maxVal = shown[0].natr;
+    const maxVal = Math.max(...shown.map(s => s.natr));
     const prevData = animate ? natrGetDisplayedData() : null;
     body.innerHTML = shown.map((item, i) => {
+        const isPinnedRow = i < pinnedCount;
         const rc = i===0?'rank-1':i===1?'rank-2':i===2?'rank-3':'rank-n';
         const nc = item.natr > maxVal*0.7?'natr-hi':item.natr > maxVal*0.4?'natr-mid':'natr-lo';
         const bc = i===shown.length-1?'border-after':'';
@@ -2005,23 +2087,37 @@ function natrRenderTable(data, animate) {
         const na = changed?'natr-changed':'';
         const pinned = natrWatchlist.has(item.symbol);
         const t24h = natrTicker24hMap.get(item.symbol);
-        const volHit = t24h && (natrVolFrom !== null || natrVolTo !== null) && natrInRange(t24h.volume, natrVolFrom, natrVolTo);
-        const tradesHit = t24h && (natrTradesFrom !== null || natrTradesTo !== null) && natrInRange(t24h.count, natrTradesFrom, natrTradesTo);
+        // Volume/trades cell coloring: below the lower threshold -> red, above the upper
+        // threshold -> green, inside the [from, to] range -> the existing gold highlight.
+        let volClass = '';
+        if (t24h && (natrVolFrom !== null || natrVolTo !== null)) {
+            if (natrVolFrom !== null && t24h.volume < natrVolFrom) volClass = ' natr-below-threshold';
+            else if (natrVolTo !== null && t24h.volume > natrVolTo) volClass = ' natr-above-threshold';
+            else if (natrInRange(t24h.volume, natrVolFrom, natrVolTo)) volClass = ' natr-range-hit';
+        }
+        let tradesClass = '';
+        if (t24h && (natrTradesFrom !== null || natrTradesTo !== null)) {
+            if (natrTradesFrom !== null && t24h.count < natrTradesFrom) tradesClass = ' natr-below-threshold';
+            else if (natrTradesTo !== null && t24h.count > natrTradesTo) tradesClass = ' natr-above-threshold';
+            else if (natrInRange(t24h.count, natrTradesFrom, natrTradesTo)) tradesClass = ' natr-range-hit';
+        }
         const priceCell = t24h ? '$'+natrFmtPriceShort(t24h.price) : '—';
         const volCell = t24h ? natrFmtVolShort(t24h.volume) : '—';
         const tradesCell = t24h ? natrFmtCount(t24h.count) : '—';
         const typeCell = natrAssetTypeBadge(item.symbol);
-        const caiLink = '<span class="natr-cai-link" tabindex="0" role="button" onclick="event.stopPropagation(); natrOpenInCryptoAI(\''+item.symbol+'\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();event.stopPropagation();natrOpenInCryptoAI(\''+item.symbol+'\');}">CryptoAI →</span>';
-        return '<tr class="'+bc+' '+ra+'"><td><span class="natr-rank '+rc+' mono">'+(i+1)+'</span></td>'+
+        const caiLink = '<button type="button" class="natr-icon-btn" title="Открыть в CryptoAI" onclick="event.stopPropagation(); natrOpenInCryptoAI(\''+item.symbol+'\')">CryptoAI</button>';
+        const tigerLink = '<button type="button" class="natr-icon-btn natr-tiger-btn" title="Открыть в Tiger.com Terminal (локальный сервер, порт 7819)" onclick="event.stopPropagation(); natrOpenInTiger(\''+item.symbol+'\')">Tiger</button>';
+        return '<tr class="'+bc+' '+ra+(isPinnedRow?' natr-pinned-row':'')+'"><td><span class="natr-rank '+rc+' mono">'+(i+1)+'</span></td>'+
             '<td class="ticker-cell" tabindex="0" role="button" aria-label="Скопировать тикер '+displaySymbol+'" data-symbol="'+displaySymbol+'">'+
             '<span class="natr-star'+(pinned?' pinned':'')+'" tabindex="0" role="button" aria-pressed="'+pinned+'" aria-label="Избранное" data-symbol="'+item.symbol+'" onclick="event.stopPropagation(); natrToggleWatchlist(\''+item.symbol+'\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();event.stopPropagation();natrToggleWatchlist(\''+item.symbol+'\');}">'+(pinned?'★':'☆')+'</span>'+
-            '<div class="ticker-name '+nc+'">'+displaySymbol+' '+caiLink+'</div>'+
+            '<div class="ticker-name '+nc+'">'+displaySymbol+'</div>'+
             '<svg class="copy-icon" style="width:14px;height:14px" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></td>'+
             '<td>'+typeCell+'</td>'+
             '<td class="natr-price-cell mono">'+priceCell+'</td>'+
-            '<td class="natr-price-cell mono'+(volHit?' natr-range-hit':'')+'">'+volCell+'</td>'+
-            '<td class="natr-price-cell mono'+(tradesHit?' natr-range-hit':'')+'">'+tradesCell+'</td>'+
-            '<td><span class="natr-val mono '+nc+' '+na+'">'+item.natr.toFixed(2)+'<small style="font-size:0.65em;color:var(--muted)">%</small></span></td></tr>';
+            '<td class="natr-price-cell mono'+volClass+'">'+volCell+'</td>'+
+            '<td class="natr-price-cell mono'+tradesClass+'">'+tradesCell+'</td>'+
+            '<td style="text-align:right;"><span class="natr-val mono '+nc+' '+na+'">'+item.natr.toFixed(2)+'<small style="font-size:0.65em;color:var(--muted)">%</small></span></td>'+
+            '<td style="text-align:center;"><div class="natr-actions-cell">'+caiLink+tigerLink+'</div></td></tr>';
     }).join('');
     document.querySelectorAll('#natrTableBody .ticker-cell').forEach(cell => {
         const activate = function() {

@@ -224,6 +224,10 @@
         }
         .natr-tool-btn:hover { color: var(--fg); background: rgba(255,255,255,0.03); }
         .natr-tool-btn.active { color: var(--accent); border-color: rgba(240,185,11,0.35); background: var(--accent-dim); }
+        .natr-tool-hint {
+            font-size: 11px; color: var(--muted); opacity: 0.7; font-weight: 400;
+            white-space: normal; line-height: 1.4;
+        }
         .natr-alert-input {
             width: 80px; padding: 8px 10px; border-radius: 8px; font-size: 12px;
             background: var(--bg); border: 1px solid var(--border); color: var(--fg);
@@ -239,13 +243,24 @@
         .natr-range-input::placeholder { color: var(--muted); opacity: 0.6; font-size: 11px; }
         .natr-range-sep { color: var(--muted); font-size: 12px; }
 
-        .natr-star {
-            display: inline-block; cursor: pointer; font-size: 1.25rem; color: var(--muted);
-            opacity: 0.35; margin-right: 6px; transition: all 0.2s; line-height: 1;
+        /* Закреп (pin-to-top) и избранное (favorite) live together in one column, same
+           pattern as the CryptoAI/Tiger action buttons: two small controls side by side.
+           Two separate concepts though — pin only affects sort order/visibility bypass
+           within a single table, favorite only affects the "★ Избранное" filter — and
+           each screener keeps its own independent set of both. */
+        .natr-pinfav-cell { display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+        .natr-pin-cell, .natr-fav-cell {
+            width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center;
+            border-radius: 8px; background: rgba(255,255,255,0.06); cursor: pointer;
+            transition: all 0.2s; color: var(--muted); border: none; padding: 0; flex-shrink: 0;
         }
-        .natr-star:hover { opacity: 0.8; }
-        .natr-star.pinned { color: var(--accent); opacity: 1; }
-        .natr-star:focus-visible { outline: 2px solid var(--accent); border-radius: 4px; }
+        .natr-pin-cell:hover, .natr-fav-cell:hover { background: rgba(255,255,255,0.12); color: var(--fg); }
+        .natr-pin-cell:focus-visible, .natr-fav-cell:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+        .natr-pin-cell svg { width: 19px; height: 19px; }
+        .natr-pin-cell.pinned { background: var(--accent-dim); color: var(--accent); }
+        .natr-pin-cell.pinned svg { fill: currentColor; }
+        .natr-fav-cell { font-size: 1.55rem; line-height: 1; }
+        .natr-fav-cell.favorited { background: var(--accent-dim); color: var(--accent); }
 
         .natr-price-cell { font-size: 1.25rem; color: var(--fg); }
         .natr-range-hit { color: var(--accent); font-weight: 700; }
@@ -345,16 +360,6 @@
         .natr-table-wrap tbody td { padding: 16px 18px; vertical-align: middle; }
         .natr-table-wrap tbody td:last-child { text-align: right; }
 
-        .natr-rank {
-            width: 32px; height: 32px; display: inline-flex;
-            align-items: center; justify-content: center;
-            border-radius: 8px; font-weight: 700; font-size: 13px;
-        }
-        .rank-1 { background: linear-gradient(135deg,#ffd700,#ffaa00); color: #000; }
-        .rank-2 { background: linear-gradient(135deg,#c0c0c0,#999); color: #000; }
-        .rank-3 { background: linear-gradient(135deg,#cd7f32,#a0522d); color: #fff; }
-        .rank-n { background: rgba(255,255,255,0.06); color: var(--muted); }
-
         .ticker-cell { cursor: pointer; user-select: none; -webkit-user-select: none; position: relative; display: flex; align-items: center; }
         .ticker-cell:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; border-radius: 4px; }
         .cal-event-card:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
@@ -408,7 +413,7 @@
             .ticker-name { font-size: 1.05rem; }
             .natr-price-cell { font-size: 1.05rem; }
             .atype-badge { font-size: 1.05rem; }
-            .natr-star { font-size: 1.05rem; }
+            .natr-fav-cell { font-size: 1.3rem; }
             .natr-table-wrap td,.natr-table-wrap th { padding: 12px 14px; }
             .natr-controls { flex-wrap: wrap; justify-content: center; }
         }
@@ -1018,7 +1023,7 @@
             <input type="number" class="natr-alert-input" id="natrCompareValue" placeholder="%" min="0" step="0.1" oninput="natrChangeNatrCompare()" style="width:70px;">
             <button class="natr-tool-btn" id="natrAlertBtn" onclick="natrToggleAlerts()" title="Уведомлять (звук + пуш) о новых тикерах, проходящих этот фильтр">🔔</button>
         </div>
-        <button class="natr-tool-btn" id="natrWatchlistBtn" onclick="natrToggleWatchlistOnly()" title="Показывать только избранное">★ Избранное</button>
+        <button class="natr-tool-btn" id="natrWatchlistBtn" onclick="natrToggleWatchlistOnly()" title="Показывать только избранное (своё для NATR Scanner)">★ Избранное</button>
     </div>
     <div class="natr-tools" id="natrToolsRow2">
         <div class="natr-tool-group">
@@ -1045,7 +1050,7 @@
     <div class="natr-table-wrap" id="natrTableWrap">
         <div class="bg-update-overlay"></div>
         <table>
-            <thead><tr><th style="width:40px;">#</th><th>Тикер</th><th style="width:78px;">Тип</th><th style="width:90px;">Цена</th><th style="width:90px;">Объём 24ч</th><th style="width:90px;">Сделки 24ч</th><th style="width:110px;text-align:right;">NATR (%)</th><th style="width:190px;text-align:center;">Действия</th></tr></thead>
+            <thead><tr><th style="width:78px;text-align:center;" title="Закреп и избранное">📌 ★</th><th>Тикер</th><th style="width:78px;">Тип</th><th style="width:90px;">Цена</th><th style="width:90px;">Объём 24ч</th><th style="width:90px;">Сделки 24ч</th><th style="width:110px;text-align:right;">NATR (%)</th><th style="width:190px;text-align:center;">Действия</th></tr></thead>
             <tbody id="natrTableBody"></tbody>
         </table>
         <div id="natrSkeleton" style="display:none;"></div>
@@ -1084,6 +1089,7 @@
         <button class="natr-tab active" data-mode="5m" onclick="contSwitchMode('5m')" title="RVOL и цена по 5-минуткам">5м</button>
         <button class="natr-tab" data-mode="1m" onclick="contSwitchMode('1m')" title="RVOL и цена по 1-минуткам">1м</button>
     </div>
+    <div class="natr-tools-card">
     <div class="natr-tools" id="contTools">
         <div class="natr-tool-group">
             <label class="natr-tool-label" for="contYestThreshold">Дневной порог, %:</label>
@@ -1124,8 +1130,11 @@
             <button class="natr-tool-btn" id="contDirDownBtn" onclick="contSetDirection('down')">🩸 Падение</button>
         </div>
         <button class="natr-tool-btn active" id="contDirBtn" onclick="contToggleDirFilter()" title="Показывать только пары, где сегодняшнее движение совпадает по направлению со вчерашним">Только совпадение направления</button>
-        <button class="natr-tool-btn" id="contWatchlistBtn" onclick="contToggleWatchlistOnly()" title="Показывать только избранное (общий список с NATR Scanner)">★ Избранное</button>
-        <button class="natr-tool-btn" id="contRescanHint" style="pointer-events:none;opacity:0.6;font-weight:400;" title="Дней назад и таймфрейм (1м/5м) меняют то, что запрашивается у Binance — после их изменения нажмите «Сканировать» ещё раз">ⓘ Все фильтры кроме «Дней назад» и таймфрейма применяются сразу</button>
+        <button class="natr-tool-btn" id="contWatchlistBtn" onclick="contToggleWatchlistOnly()" title="Показывать только избранное (своё для Продолжения тренда)">★ Избранное</button>
+    </div>
+    <div class="natr-tools" id="contToolsRow2">
+        <span class="natr-tool-hint" id="contRescanHint" title="Дней назад и таймфрейм (1м/5м) меняют то, что запрашивается у Binance — после их изменения нажмите «Сканировать» ещё раз">ⓘ Все фильтры кроме «Дней назад» и таймфрейма применяются сразу</span>
+    </div>
     </div>
     <div class="natr-stats" id="contStatsBar" style="display:none;">
         <div>Найдено: <strong id="contStatFound" class="mono">--</strong></div>
@@ -1135,7 +1144,7 @@
         <div class="bg-update-overlay"></div>
         <table>
             <thead><tr>
-                <th style="width:40px;">#</th>
+                <th style="width:78px;text-align:center;" title="Закреп и избранное">📌 ★</th>
                 <th>Тикер</th>
                 <th style="width:100px;">Вчера, %</th>
                 <th style="width:90px;">Памп. дней</th>
@@ -1487,10 +1496,13 @@ let natrSelectedCategory = 'all';
 let natrCategoryMap = null; // will be set to NATR_EMBEDDED_CATEGORIES on init
 let natrCategoryLoading = false;
 
-// --- Top-N / watchlist / liquidity filter / alerts state ---
+// --- Top-N / pin / favorites / liquidity filter / alerts state ---
+// Закреп (pin) and избранное (favorite) are separate concepts, each with its own
+// set for THIS screener only (Продолжение тренда keeps its own contPinned/contFavorites).
 let natrTopN = 10;
-let natrWatchlist = new Set();
-let natrWatchlistOnly = false;
+let natrPinned = new Set();
+let natrFavorites = new Set();
+let natrWatchlistOnly = false; // "show favorites only" toggle
 let natrVolFrom = null;
 let natrVolTo = null;
 let natrVolFilterActive = false;
@@ -1502,6 +1514,24 @@ let natrCompareValue = null;
 let natrTicker24hMap = new Map(); // symbol -> {price, volume, count}
 let natrAlertsEnabled = false;
 let natrAlertedSymbols = new Set(); // tracks who we've already notified about, so re-entering the filter re-alerts
+// Shared thumbtack icon markup for the "закреп" (pin) column, used by both screener tables.
+const NATR_PIN_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"/></svg>';
+// Shared markup for the combined "закреп + избранное" cell used by both screener tables
+// (NATR Scanner and Продолжение тренда) — same two-buttons-in-one-column pattern as the
+// CryptoAI/Tiger action links. Each caller passes its own toggle function names since the
+// two tables keep fully independent pin/favorite sets.
+function natrPinFavCellHtml(symbol, isPinned, isFav, pinFn, favFn) {
+    const esc = s => s.replace(/'/g, "\\'");
+    const sym = esc(symbol);
+    return '<td style="text-align:center;"><div class="natr-pinfav-cell">' +
+        '<span class="natr-pin-cell' + (isPinned ? ' pinned' : '') + '" tabindex="0" role="button" aria-pressed="' + isPinned + '" aria-label="Закреп" data-symbol="' + symbol + '" ' +
+        'onclick="event.stopPropagation(); ' + pinFn + '(\'' + sym + '\')" ' +
+        'onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();event.stopPropagation();' + pinFn + '(\'' + sym + '\');}">' + NATR_PIN_SVG + '</span>' +
+        '<span class="natr-fav-cell' + (isFav ? ' favorited' : '') + '" tabindex="0" role="button" aria-pressed="' + isFav + '" aria-label="Избранное" data-symbol="' + symbol + '" ' +
+        'onclick="event.stopPropagation(); ' + favFn + '(\'' + sym + '\')" ' +
+        'onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();event.stopPropagation();' + favFn + '(\'' + sym + '\');}">' + (isFav ? '★' : '☆') + '</span>' +
+        '</div></td>';
+}
 try {
     natrTopN = parseInt(localStorage.getItem('natr_topn'), 10) || 10;
     const rVolFrom = parseFloat(localStorage.getItem('natr_vol_from'));
@@ -1518,7 +1548,18 @@ try {
     if (savedOp === 'gte' || savedOp === 'lte') natrCompareOp = savedOp;
     const savedCmpVal = parseFloat(localStorage.getItem('natr_compare_value'));
     if (!isNaN(savedCmpVal) && savedCmpVal >= 0) natrCompareValue = savedCmpVal;
-    natrWatchlist = new Set(JSON.parse(localStorage.getItem('natr_watchlist') || '[]'));
+    // Migrate the old shared "natr_watchlist" (used as both pin AND favorite, shared
+    // between both screeners) into the new separate, per-screener keys — but only if
+    // those new keys have never been written before, so we don't clobber real data.
+    const legacyWatchlist = localStorage.getItem('natr_watchlist');
+    if (legacyWatchlist !== null && localStorage.getItem('natr_pinned') === null && localStorage.getItem('natr_favorites') === null) {
+        localStorage.setItem('natr_pinned', legacyWatchlist);
+        localStorage.setItem('natr_favorites', legacyWatchlist);
+        if (localStorage.getItem('cont_pinned') === null) localStorage.setItem('cont_pinned', legacyWatchlist);
+        if (localStorage.getItem('cont_favorites') === null) localStorage.setItem('cont_favorites', legacyWatchlist);
+    }
+    natrPinned = new Set(JSON.parse(localStorage.getItem('natr_pinned') || '[]'));
+    natrFavorites = new Set(JSON.parse(localStorage.getItem('natr_favorites') || '[]'));
     const savedMode = localStorage.getItem('natr_mode');
     if (NATR_MODES[savedMode]) natrMode = savedMode;
     const savedCat = localStorage.getItem('natr_category');
@@ -1730,7 +1771,7 @@ function natrGetFilteredResults() {
             return cat === natrSelectedCategory;
         });
     }
-    if (natrWatchlistOnly) list = list.filter(r => natrWatchlist.has(r.symbol));
+    if (natrWatchlistOnly) list = list.filter(r => natrFavorites.has(r.symbol));
     if (natrVolFilterActive) {
         if (natrVolFrom !== null) list = list.filter(r => { const t = natrTicker24hMap.get(r.symbol); return t && t.volume >= natrVolFrom; });
         if (natrVolTo !== null) list = list.filter(r => { const t = natrTicker24hMap.get(r.symbol); return t && t.volume <= natrVolTo; });
@@ -1744,18 +1785,17 @@ function natrGetFilteredResults() {
     }
     return list;
 }
-// Pinned (★ избранное) rows always stay visible at the top of the table, unaffected by
-// category/объём/сделки/NATR filters or Top N — only their values refresh. This mirrors
-// how "закреп" (pin) works in most terminals: pin = always on top, filters just don't apply.
+// Pinned (📌 закреп) rows always stay visible at the top of the table, unaffected by
+// category/объём/сделки/NATR filters or Top N — only their values refresh. Separate from
+// избранное (favorite): favorites only control the "★ Избранное" show-only-favorites filter.
 function natrReFilterAndRender() {
     const filtered = natrGetFilteredResults().sort((a,b) => b.natr - a.natr);
-    if (natrWatchlistOnly || natrWatchlist.size === 0) {
-        // "Только избранное" already restricts to pinned symbols — no separate pinned block needed.
+    if (natrPinned.size === 0) {
         natrRenderTable(filtered, false, 0);
         return;
     }
     const pinnedRows = natrAllResults
-        .filter(r => natrWatchlist.has(r.symbol))
+        .filter(r => natrPinned.has(r.symbol))
         .sort((a,b) => b.natr - a.natr);
     const pinnedSet = new Set(pinnedRows.map(r => r.symbol));
     const rest = filtered.filter(r => !pinnedSet.has(r.symbol));
@@ -1841,12 +1881,20 @@ function natrChangeNatrCompare() {
     } catch(e) { /* non-fatal */ }
     if (natrAllResults.length) natrReFilterAndRender();
 }
-function natrSaveWatchlist() {
-    try { localStorage.setItem('natr_watchlist', JSON.stringify([...natrWatchlist])); } catch(e) { /* non-fatal */ }
+function natrSavePinned() {
+    try { localStorage.setItem('natr_pinned', JSON.stringify([...natrPinned])); } catch(e) { /* non-fatal */ }
 }
-function natrToggleWatchlist(symbol) {
-    if (natrWatchlist.has(symbol)) natrWatchlist.delete(symbol); else natrWatchlist.add(symbol);
-    natrSaveWatchlist();
+function natrSaveFavorites() {
+    try { localStorage.setItem('natr_favorites', JSON.stringify([...natrFavorites])); } catch(e) { /* non-fatal */ }
+}
+function natrTogglePinned(symbol) {
+    if (natrPinned.has(symbol)) natrPinned.delete(symbol); else natrPinned.add(symbol);
+    natrSavePinned();
+    natrReFilterAndRender();
+}
+function natrToggleFavorite(symbol) {
+    if (natrFavorites.has(symbol)) natrFavorites.delete(symbol); else natrFavorites.add(symbol);
+    natrSaveFavorites();
     natrReFilterAndRender();
 }
 function natrToggleWatchlistOnly() {
@@ -2078,14 +2126,14 @@ function natrRenderTable(data, animate, pinnedCount) {
     const prevData = animate ? natrGetDisplayedData() : null;
     body.innerHTML = shown.map((item, i) => {
         const isPinnedRow = i < pinnedCount;
-        const rc = i===0?'rank-1':i===1?'rank-2':i===2?'rank-3':'rank-n';
         const nc = item.natr > maxVal*0.7?'natr-hi':item.natr > maxVal*0.4?'natr-mid':'natr-lo';
         const bc = i===shown.length-1?'border-after':'';
         const displaySymbol = escapeHtml(item.symbol.replace(/USDT$|USD1$/, ''));
         const changed = prevData && prevData[i] && prevData[i].natr !== item.natr;
         const ra = changed?'row-updated':'';
         const na = changed?'natr-changed':'';
-        const pinned = natrWatchlist.has(item.symbol);
+        const isPinned = natrPinned.has(item.symbol);
+        const isFav = natrFavorites.has(item.symbol);
         const t24h = natrTicker24hMap.get(item.symbol);
         // Volume/trades cell coloring: below the lower threshold -> red, above the upper
         // threshold -> green, inside the [from, to] range -> the existing gold highlight.
@@ -2107,9 +2155,9 @@ function natrRenderTable(data, animate, pinnedCount) {
         const typeCell = natrAssetTypeBadge(item.symbol);
         const caiLink = '<button type="button" class="natr-icon-btn" title="Открыть в CryptoAI" onclick="event.stopPropagation(); natrOpenInCryptoAI(\''+item.symbol+'\')">CryptoAI</button>';
         const tigerLink = '<button type="button" class="natr-icon-btn natr-tiger-btn" title="Открыть в Tiger.com Terminal (локальный сервер, порт 7819)" onclick="event.stopPropagation(); natrOpenInTiger(\''+item.symbol+'\')">Tiger</button>';
-        return '<tr class="'+bc+' '+ra+(isPinnedRow?' natr-pinned-row':'')+'"><td><span class="natr-rank '+rc+' mono">'+(i+1)+'</span></td>'+
+        return '<tr class="'+bc+' '+ra+(isPinnedRow?' natr-pinned-row':'')+'">'+
+            natrPinFavCellHtml(item.symbol, isPinned, isFav, 'natrTogglePinned', 'natrToggleFavorite')+
             '<td class="ticker-cell" tabindex="0" role="button" aria-label="Скопировать тикер '+displaySymbol+'" data-symbol="'+displaySymbol+'">'+
-            '<span class="natr-star'+(pinned?' pinned':'')+'" tabindex="0" role="button" aria-pressed="'+pinned+'" aria-label="Избранное" data-symbol="'+item.symbol+'" onclick="event.stopPropagation(); natrToggleWatchlist(\''+item.symbol+'\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();event.stopPropagation();natrToggleWatchlist(\''+item.symbol+'\');}">'+(pinned?'★':'☆')+'</span>'+
             '<div class="ticker-name '+nc+'">'+displaySymbol+'</div>'+
             '<svg class="copy-icon" style="width:14px;height:14px" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></td>'+
             '<td>'+typeCell+'</td>'+
@@ -2220,7 +2268,9 @@ let contDirection = 'all'; // 'all' | 'up' (yesterday's pumps) | 'down' (yesterd
 let contYestOp = 'gte'; // 'gte' = найти движения БОЛЬШЕ порога, 'lte' = МЕНЬШЕ порога
 let contRvolOp = 'gte';
 let contOiOp = 'gte';
-let contWatchlistOnly = false; // reuses the SAME natrWatchlist as the NATR scanner — one shared favorites list
+let contPinned = new Set(); // own закреп set for this screener, separate from NATR Scanner's
+let contFavorites = new Set(); // own избранное set for this screener, separate from NATR Scanner's
+let contWatchlistOnly = false; // "show favorites only" toggle (uses contFavorites, not shared)
 let contIsScanning = false;
 let contAbortCtrl = null;
 let contRawResults = []; // everything the last scan fetched, unfiltered — filters below re-slice this live, no rescan needed
@@ -2238,6 +2288,8 @@ try {
     const savedOiOp = localStorage.getItem('cont_oi_op');
     if (savedOiOp === 'gte' || savedOiOp === 'lte') contOiOp = savedOiOp;
     contWatchlistOnly = localStorage.getItem('cont_watchlist_only') === '1';
+    contPinned = new Set(JSON.parse(localStorage.getItem('cont_pinned') || '[]'));
+    contFavorites = new Set(JSON.parse(localStorage.getItem('cont_favorites') || '[]'));
 } catch(e) { /* storage unavailable — defaults are fine */ }
 function contApplyRestoredUI() {
     document.querySelectorAll('#section-cont .natr-tab').forEach(t => t.classList.toggle('active', t.dataset.mode === contMode));
@@ -2289,6 +2341,22 @@ function contToggleWatchlistOnly() {
     document.getElementById('contWatchlistBtn').classList.toggle('active', contWatchlistOnly);
     try { localStorage.setItem('cont_watchlist_only', contWatchlistOnly ? '1' : '0'); } catch(e) { /* non-fatal */ }
     if (contRawResults.length) contReFilterAndRender();
+}
+function contSavePinned() {
+    try { localStorage.setItem('cont_pinned', JSON.stringify([...contPinned])); } catch(e) { /* non-fatal */ }
+}
+function contSaveFavorites() {
+    try { localStorage.setItem('cont_favorites', JSON.stringify([...contFavorites])); } catch(e) { /* non-fatal */ }
+}
+function contTogglePinned(symbol) {
+    if (contPinned.has(symbol)) contPinned.delete(symbol); else contPinned.add(symbol);
+    contSavePinned();
+    contReFilterAndRender();
+}
+function contToggleFavorite(symbol) {
+    if (contFavorites.has(symbol)) contFavorites.delete(symbol); else contFavorites.add(symbol);
+    contSaveFavorites();
+    contReFilterAndRender();
 }
 // Every filter input below calls this — it re-slices the already-fetched contRawResults
 // live, no network request needed. Only the timeframe tabs and "Дней назад" actually
@@ -2479,18 +2547,23 @@ function contGetFilteredResults() {
     const minPumpDays = pumpRaw === '' ? 0 : Math.max(0, parseInt(pumpRaw) || 0);
     const pumpActive = minPumpDays > 0;
 
+    // Count how many days in the lookback window moved past the threshold in the SAME
+    // direction as the reference day — catches a trend that paused/consolidated
+    // (проторговка) instead of requiring one single day. In "today only" mode
+    // (Дней назад = 0) this is always 1/1 or 0/1 since there's just today to check.
+    // Computed for EVERY raw result up front (not just ones passing the filters below) so
+    // that a pinned (📌) row still has valid pumpDays/pumpDaysTotal even if it currently
+    // fails one of the other filters — pins bypass filters, same as in NATR Scanner.
+    contRawResults.forEach(r => {
+        r.pumpDays = r.dailyChanges.filter(dc => Math.sign(dc) === Math.sign(r.refChange) && passThr(dc)).length;
+        r.pumpDaysTotal = r.dailyChanges.length;
+    });
     let list = contRawResults.filter(r => {
         if (!passThr(r.refChange)) return false;
         if (rvolActive && !passRvol(r.rvol)) return false;
         // OI filter is opt-in (0/empty = off). When it's on, a row with no OI data
         // can't be confirmed either way, so it's excluded rather than let through blind.
         if (oiActive && (r.oiChangePct === null || !passOi(r.oiChangePct))) return false;
-        // Count how many days in the lookback window moved past the threshold in the SAME
-        // direction as the reference day — catches a trend that paused/consolidated
-        // (проторговка) instead of requiring one single day. In "today only" mode
-        // (Дней назад = 0) this is always 1/1 or 0/1 since there's just today to check.
-        r.pumpDays = r.dailyChanges.filter(dc => Math.sign(dc) === Math.sign(r.refChange) && passThr(dc)).length;
-        r.pumpDaysTotal = r.dailyChanges.length;
         if (pumpActive && r.pumpDays < minPumpDays) return false;
         return true;
     });
@@ -2499,18 +2572,30 @@ function contGetFilteredResults() {
     if (contDirFilterOnly) {
         list = list.filter(r => Math.sign(r.refChange) === Math.sign(r.todayChange) && r.todayChange !== 0);
     }
-    if (contWatchlistOnly) list = list.filter(r => natrWatchlist.has(r.symbol));
+    if (contWatchlistOnly) list = list.filter(r => contFavorites.has(r.symbol));
     list.sort((a,b) => b.rvol - a.rvol);
     return list;
 }
+// Pinned (📌 закреп) rows always stay visible at the top, same bypass behaviour as in
+// NATR Scanner — but this screener keeps its own contPinned set, independent of natrPinned.
 function contReFilterAndRender() {
-    const list = contGetFilteredResults();
-    document.getElementById('contStatFound').textContent = list.length;
+    const filtered = contGetFilteredResults();
+    document.getElementById('contStatFound').textContent = filtered.length;
     document.getElementById('contStatTotal').textContent = contRawResults.length;
     document.getElementById('contStatsBar').style.display = 'flex';
-    contRenderTable(list);
+    if (contPinned.size === 0) {
+        contRenderTable(filtered, 0);
+        return;
+    }
+    const pinnedRows = contRawResults
+        .filter(r => contPinned.has(r.symbol))
+        .sort((a,b) => b.rvol - a.rvol);
+    const pinnedSet = new Set(pinnedRows.map(r => r.symbol));
+    const rest = filtered.filter(r => !pinnedSet.has(r.symbol));
+    contRenderTable(pinnedRows.concat(rest), pinnedRows.length);
 }
-function contRenderTable(data) {
+function contRenderTable(data, pinnedCount) {
+    pinnedCount = pinnedCount || 0;
     const body = document.getElementById('contTableBody');
     if (!data.length) {
         body.innerHTML = '';
@@ -2522,6 +2607,7 @@ function contRenderTable(data) {
     }
     document.getElementById('contEmptyState').style.display = 'none';
     body.innerHTML = data.map((r, i) => {
+        const isPinnedRow = i < pinnedCount;
         const displaySymbol = escapeHtml(r.symbol.replace(/USDT$|USD1$/, ''));
         const refCls = r.refChange >= 0 ? 'cont-yest-up' : 'cont-yest-down';
         const todayCls = r.todayChange >= 0 ? 'cont-yest-up' : 'cont-yest-down';
@@ -2530,7 +2616,8 @@ function contRenderTable(data) {
         const oiCell = r.oiChangePct !== null
             ? '<span class="mono '+(r.oiChangePct>=0?'cont-yest-up':'cont-yest-down')+'">'+(r.oiChangePct>=0?'+':'')+r.oiChangePct.toFixed(1)+'%</span>'
             : '<span style="color:var(--muted)">—</span>';
-        const pinned = natrWatchlist.has(r.symbol);
+        const isPinned = contPinned.has(r.symbol);
+        const isFav = contFavorites.has(r.symbol);
         let badge;
         if (r.todayOnly) {
             if (r.refChange >= 0) badge = oiConfirms ? '<span class="cont-badge cont-hype">🔥✅ Памп сегодня + OI</span>' : '<span class="cont-badge cont-hype">🔥 Памп сегодня</span>';
@@ -2542,9 +2629,9 @@ function contRenderTable(data) {
         else if (sameDir && r.refChange < 0) badge = '<span class="cont-badge cont-dump">🩸 Слив продолжается</span>';
         else if (!sameDir && r.todayChange !== 0) badge = '<span class="cont-badge cont-reversal">⚠️ Возможен разворот</span>';
         else badge = '<span class="cont-badge cont-watch">Наблюдение</span>';
-        return '<tr><td><span class="natr-rank mono">'+(i+1)+'</span></td>'+
+        return '<tr class="'+(isPinnedRow?'natr-pinned-row':'')+'">'+
+            natrPinFavCellHtml(r.symbol, isPinned, isFav, 'contTogglePinned', 'contToggleFavorite')+
             '<td class="ticker-cell" tabindex="0" role="button" aria-label="Скопировать тикер '+displaySymbol+'" data-symbol="'+displaySymbol+'">'+
-            '<span class="natr-star'+(pinned?' pinned':'')+'" tabindex="0" role="button" aria-pressed="'+pinned+'" aria-label="Избранное" data-symbol="'+r.symbol+'" onclick="event.stopPropagation(); natrToggleWatchlist(\''+r.symbol+'\'); contReFilterAndRender();" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();event.stopPropagation();natrToggleWatchlist(\''+r.symbol+'\');contReFilterAndRender();}">'+(pinned?'★':'☆')+'</span>'+
             '<div class="ticker-name">'+displaySymbol+' <span class="natr-cai-link" tabindex="0" role="button" onclick="event.stopPropagation(); natrOpenInCryptoAI(\''+r.symbol+'\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();event.stopPropagation();natrOpenInCryptoAI(\''+r.symbol+'\');}">CryptoAI →</span></div>'+
             '<svg class="copy-icon" style="width:14px;height:14px" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></td>'+
             '<td class="mono '+refCls+'" title="'+(r.todayOnly?'Сегодня (режим «только сегодня»)':'Последний закрытый день')+'">'+(r.refChange>=0?'+':'')+r.refChange.toFixed(1)+'%</td>'+

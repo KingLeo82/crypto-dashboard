@@ -176,7 +176,7 @@
             content: ''; position: absolute; bottom: 0; left: 0;
             height: 2px; background: var(--green); width: 0%; transition: width 0.3s ease-out;
         }
-        .natr-auto-refresh.updating::after { animation: natrProgress 60s linear forwards; }
+        .natr-auto-refresh.updating::after { animation: natrProgress var(--refresh-dur, 60s) linear forwards; }
         @keyframes natrProgress { from{width:100%} to{width:0%} }
         .refresh-timer { font-weight: 700; min-width: 28px; text-align: center; }
         .natr-auto-refresh.active .refresh-timer { color: var(--green); }
@@ -301,15 +301,6 @@
         .atype-rwa { color: #48c9b0; }
         .atype-index { color: #ec7063; }
 
-        .cont-badge {
-            display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px;
-            border-radius: 6px; font-size: 12px; font-weight: 700; white-space: nowrap;
-            border: 1px solid transparent;
-        }
-        .cont-hype { background: rgba(46,204,113,0.14); color: var(--green); border-color: rgba(46,204,113,0.3); }
-        .cont-dump { background: rgba(246,70,93,0.14); color: var(--red); border-color: rgba(246,70,93,0.3); }
-        .cont-reversal { background: rgba(240,185,11,0.14); color: var(--accent); border-color: rgba(240,185,11,0.3); }
-        .cont-watch { background: rgba(255,255,255,0.05); color: var(--muted); border-color: var(--border); }
         .cont-yest-up { color: var(--green); }
         .cont-yest-down { color: var(--red); }
         .cont-rvol-hot { color: var(--accent); font-weight: 700; }
@@ -1072,6 +1063,10 @@
                 <span class="status-dot"></span>
                 <span id="contStatusText">Ожидание</span>
             </div>
+            <div class="natr-auto-refresh" id="contAutoRefresh" title="Автообновление (для алертов) — интервал выбирается ниже">
+                <svg style="width:14px;height:14px" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                <span class="refresh-timer" id="contRefreshTimer">--</span>с
+            </div>
             <div class="natr-last-update" id="contLastUpdate" style="display:none;">
                 <svg style="width:14px;height:14px;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
                 <span id="contUpdateTime">--:--:--</span>
@@ -1131,8 +1126,23 @@
         </div>
         <button class="natr-tool-btn active" id="contDirBtn" onclick="contToggleDirFilter()" title="Показывать только пары, где сегодняшнее движение совпадает по направлению со вчерашним">Только совпадение направления</button>
         <button class="natr-tool-btn" id="contWatchlistBtn" onclick="contToggleWatchlistOnly()" title="Показывать только избранное (своё для Продолжения тренда)">★ Избранное</button>
+        <div class="natr-tool-group">
+            <button class="natr-tool-btn" id="contAlertBtn" onclick="contToggleAlerts()" title="Уведомлять (звук + пуш) о новых тикерах, проходящих текущие фильтры">🔔</button>
+            <label class="natr-tool-label" for="contRefreshSelect">Автообновление:</label>
+            <select class="sec-select" id="contRefreshSelect" onchange="contChangeRefreshInterval(this.value)" style="width:88px;">
+                <option value="60">Раз в 1 мин</option>
+                <option value="300" selected>Раз в 5 мин</option>
+            </select>
+        </div>
     </div>
     <div class="natr-tools" id="contToolsRow2">
+        <div class="natr-tool-group">
+            <label class="natr-tool-label" for="contVolFrom">Объём 24ч:</label>
+            <input type="text" inputmode="decimal" class="natr-range-input" id="contVolFrom" placeholder="от, напр. 10к" oninput="contChangeVolRange()">
+            <span class="natr-range-sep">—</span>
+            <input type="text" inputmode="decimal" class="natr-range-input" id="contVolTo" placeholder="до, напр. 1м" oninput="contChangeVolRange()">
+            <button class="natr-tool-btn" id="contVolFilterBtn" onclick="contToggleVolFilter()" title="Включить фильтр (иначе значения просто не проверяются)">Фильтр</button>
+        </div>
         <span class="natr-tool-hint" id="contRescanHint" title="Дней назад и таймфрейм (1м/5м) меняют то, что запрашивается у Binance — после их изменения нажмите «Сканировать» ещё раз">ⓘ Все фильтры кроме «Дней назад» и таймфрейма применяются сразу</span>
     </div>
     </div>
@@ -1151,7 +1161,10 @@
                 <th style="width:80px;">RVOL</th>
                 <th style="width:100px;">Сегодня, %</th>
                 <th style="width:90px;">ΔOI, %</th>
-                <th style="width:190px;">Статус</th>
+                <th style="width:100px;">VWAP откл.</th>
+                <th style="width:90px;">В дне, %</th>
+                <th style="width:90px;">vs BTC</th>
+                <th style="width:150px;text-align:center;">Действия</th>
             </tr></thead>
             <tbody id="contTableBody"></tbody>
         </table>
@@ -1376,7 +1389,7 @@ function switchSection(name) {
     document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
     document.getElementById('section-' + name).classList.add('active');
     document.querySelector('.nav-tab[data-section="' + name + '"]').classList.add('active');
-    try { localStorage.setItem('ct_active_section', name); } catch(e) { /* storage unavailable (private mode / restricted context) — non-fatal */ }
+    try { ctSafeSetItem('ct_active_section', name); } catch(e) { /* storage unavailable (private mode / restricted context) — non-fatal */ }
     if (name === 'tw' && !twInitialized) { twInit(); twInitialized = true; }
     if (name === 'cai' && !caiInitialized) { caiInitialized = true; }
     if (name === 'cal' && !calInitialized) { calInit(); calInitialized = true; }
@@ -1464,6 +1477,30 @@ function fallbackCopy(text) {
     ta.value = text; ta.focus(); ta.select();
     try { if (document.execCommand('copy')) showToast(text + ' скопирован'); else showToast('Ошибка'); } catch(e) { showToast('Ошибка'); }
     ta.value = '';
+}
+// Thin localStorage wrappers used everywhere settings/favorites/pins are persisted.
+// Two things this buys us over calling localStorage directly: (1) a write failure
+// (private browsing, storage disabled, quota full) surfaces ONE visible warning to the
+// user instead of silently vanishing into a swallowed try/catch, and (2) JSON reads are
+// isolated per-key — a single corrupted value (e.g. from an older app version) can't take
+// down every other setting that happens to be parsed in the same try block.
+let ctStorageWarned = false;
+function ctSafeSetItem(key, value) {
+    try { localStorage.setItem(key, value); return true; }
+    catch(e) {
+        if (!ctStorageWarned) {
+            ctStorageWarned = true;
+            showToast('⚠️ Хранилище браузера недоступно — избранное/закреп/настройки не сохранятся (приватный режим?)');
+        }
+        return false;
+    }
+}
+function ctSafeGetJSON(key, fallback) {
+    try {
+        const raw = localStorage.getItem(key);
+        if (raw === null) return fallback;
+        return JSON.parse(raw);
+    } catch(e) { return fallback; }
 }
 
 // ============================================================
@@ -1553,13 +1590,13 @@ try {
     // those new keys have never been written before, so we don't clobber real data.
     const legacyWatchlist = localStorage.getItem('natr_watchlist');
     if (legacyWatchlist !== null && localStorage.getItem('natr_pinned') === null && localStorage.getItem('natr_favorites') === null) {
-        localStorage.setItem('natr_pinned', legacyWatchlist);
-        localStorage.setItem('natr_favorites', legacyWatchlist);
-        if (localStorage.getItem('cont_pinned') === null) localStorage.setItem('cont_pinned', legacyWatchlist);
-        if (localStorage.getItem('cont_favorites') === null) localStorage.setItem('cont_favorites', legacyWatchlist);
+        ctSafeSetItem('natr_pinned', legacyWatchlist);
+        ctSafeSetItem('natr_favorites', legacyWatchlist);
+        if (localStorage.getItem('cont_pinned') === null) ctSafeSetItem('cont_pinned', legacyWatchlist);
+        if (localStorage.getItem('cont_favorites') === null) ctSafeSetItem('cont_favorites', legacyWatchlist);
     }
-    natrPinned = new Set(JSON.parse(localStorage.getItem('natr_pinned') || '[]'));
-    natrFavorites = new Set(JSON.parse(localStorage.getItem('natr_favorites') || '[]'));
+    natrPinned = new Set(ctSafeGetJSON('natr_pinned', []));
+    natrFavorites = new Set(ctSafeGetJSON('natr_favorites', []));
     const savedMode = localStorage.getItem('natr_mode');
     if (NATR_MODES[savedMode]) natrMode = savedMode;
     const savedCat = localStorage.getItem('natr_category');
@@ -1741,7 +1778,7 @@ function natrUpdateCatTabCounts() {
 function natrSwitchCategory(cat) {
     natrSelectedCategory = cat;
     document.querySelectorAll('#natrCatTabs .natr-cat-tab').forEach(t => t.classList.toggle('active', t.dataset.cat === cat));
-    try { localStorage.setItem('natr_category', cat); } catch(e) { /* non-fatal */ }
+    try { ctSafeSetItem('natr_category', cat); } catch(e) { /* non-fatal */ }
     // If we have results, re-filter and re-render
     if (natrAllResults.length > 0) {
         natrReFilterAndRender();
@@ -1803,7 +1840,7 @@ function natrReFilterAndRender() {
 }
 function natrChangeTopN(v) {
     natrTopN = parseInt(v, 10) || 10;
-    try { localStorage.setItem('natr_topn', String(natrTopN)); } catch(e) { /* non-fatal */ }
+    try { ctSafeSetItem('natr_topn', String(natrTopN)); } catch(e) { /* non-fatal */ }
     if (natrAllResults.length) natrReFilterAndRender();
 }
 // Accepts plain numbers and shorthand like "10к"/"10k" (thousands) or "1м"/"1m" (millions),
@@ -1825,8 +1862,8 @@ function natrChangeVolRange() {
     natrVolFrom = natrParseShorthand(document.getElementById('natrVolFrom').value);
     natrVolTo = natrParseShorthand(document.getElementById('natrVolTo').value);
     try {
-        localStorage.setItem('natr_vol_from', natrVolFrom === null ? '' : String(natrVolFrom));
-        localStorage.setItem('natr_vol_to', natrVolTo === null ? '' : String(natrVolTo));
+        ctSafeSetItem('natr_vol_from', natrVolFrom === null ? '' : String(natrVolFrom));
+        ctSafeSetItem('natr_vol_to', natrVolTo === null ? '' : String(natrVolTo));
     } catch(e) { /* non-fatal */ }
     // typing alone only re-colors matching values (see natrInRange in natrRenderTable) —
     // it does not hide rows unless the Фильтр button is toggled on
@@ -1836,15 +1873,15 @@ function natrToggleVolFilter() {
     natrVolFilterActive = !natrVolFilterActive;
     const btn = document.getElementById('natrVolFilterBtn');
     if (btn) btn.classList.toggle('active', natrVolFilterActive);
-    try { localStorage.setItem('natr_vol_filter_active', natrVolFilterActive ? '1' : '0'); } catch(e) { /* non-fatal */ }
+    try { ctSafeSetItem('natr_vol_filter_active', natrVolFilterActive ? '1' : '0'); } catch(e) { /* non-fatal */ }
     if (natrAllResults.length) natrReFilterAndRender();
 }
 function natrChangeTradesRange() {
     natrTradesFrom = natrParseShorthand(document.getElementById('natrTradesFrom').value);
     natrTradesTo = natrParseShorthand(document.getElementById('natrTradesTo').value);
     try {
-        localStorage.setItem('natr_trades_from', natrTradesFrom === null ? '' : String(natrTradesFrom));
-        localStorage.setItem('natr_trades_to', natrTradesTo === null ? '' : String(natrTradesTo));
+        ctSafeSetItem('natr_trades_from', natrTradesFrom === null ? '' : String(natrTradesFrom));
+        ctSafeSetItem('natr_trades_to', natrTradesTo === null ? '' : String(natrTradesTo));
     } catch(e) { /* non-fatal */ }
     if (natrAllResults.length) natrReFilterAndRender();
 }
@@ -1852,7 +1889,7 @@ function natrToggleTradesFilter() {
     natrTradesFilterActive = !natrTradesFilterActive;
     const btn = document.getElementById('natrTradesFilterBtn');
     if (btn) btn.classList.toggle('active', natrTradesFilterActive);
-    try { localStorage.setItem('natr_trades_filter_active', natrTradesFilterActive ? '1' : '0'); } catch(e) { /* non-fatal */ }
+    try { ctSafeSetItem('natr_trades_filter_active', natrTradesFilterActive ? '1' : '0'); } catch(e) { /* non-fatal */ }
     if (natrAllResults.length) natrReFilterAndRender();
 }
 // Shared "is this value within the typed from/to bounds" check — used to color matching
@@ -1875,17 +1912,17 @@ function natrChangeNatrCompare() {
         if (btn) btn.classList.remove('active');
     }
     try {
-        localStorage.setItem('natr_compare_op', natrCompareOp);
-        localStorage.setItem('natr_compare_value', natrCompareValue === null ? '' : String(natrCompareValue));
-        localStorage.setItem('natr_alerts_enabled', natrAlertsEnabled ? '1' : '0');
+        ctSafeSetItem('natr_compare_op', natrCompareOp);
+        ctSafeSetItem('natr_compare_value', natrCompareValue === null ? '' : String(natrCompareValue));
+        ctSafeSetItem('natr_alerts_enabled', natrAlertsEnabled ? '1' : '0');
     } catch(e) { /* non-fatal */ }
     if (natrAllResults.length) natrReFilterAndRender();
 }
 function natrSavePinned() {
-    try { localStorage.setItem('natr_pinned', JSON.stringify([...natrPinned])); } catch(e) { /* non-fatal */ }
+    try { ctSafeSetItem('natr_pinned', JSON.stringify([...natrPinned])); } catch(e) { /* non-fatal */ }
 }
 function natrSaveFavorites() {
-    try { localStorage.setItem('natr_favorites', JSON.stringify([...natrFavorites])); } catch(e) { /* non-fatal */ }
+    try { ctSafeSetItem('natr_favorites', JSON.stringify([...natrFavorites])); } catch(e) { /* non-fatal */ }
 }
 function natrTogglePinned(symbol) {
     if (natrPinned.has(symbol)) natrPinned.delete(symbol); else natrPinned.add(symbol);
@@ -1921,7 +1958,7 @@ async function natrToggleAlerts() {
         natrAlertsEnabled = false;
         btn.classList.remove('active');
     }
-    try { localStorage.setItem('natr_alerts_enabled', natrAlertsEnabled ? '1' : '0'); } catch(e) { /* non-fatal */ }
+    try { ctSafeSetItem('natr_alerts_enabled', natrAlertsEnabled ? '1' : '0'); } catch(e) { /* non-fatal */ }
 }
 function natrFireAlert(symbol, natr) {
     const sign = natrCompareOp === 'lte' ? '≤' : '≥';
@@ -2188,7 +2225,7 @@ function natrRenderTable(data, animate, pinnedCount) {
 function natrSwitchMode(m) {
     natrMode = m;
     document.querySelectorAll('.natr-tab').forEach(t => t.classList.toggle('active', t.dataset.mode === m));
-    try { localStorage.setItem('natr_mode', m); } catch(e) { /* non-fatal */ }
+    try { ctSafeSetItem('natr_mode', m); } catch(e) { /* non-fatal */ }
     if (natrAllResults.length) natrReFilterAndRender();
 }
 async function natrStartBgUpdate() {
@@ -2271,6 +2308,18 @@ let contOiOp = 'gte';
 let contPinned = new Set(); // own закреп set for this screener, separate from NATR Scanner's
 let contFavorites = new Set(); // own избранное set for this screener, separate from NATR Scanner's
 let contWatchlistOnly = false; // "show favorites only" toggle (uses contFavorites, not shared)
+let contVolFrom = null;
+let contVolTo = null;
+let contVolFilterActive = false;
+let contBtcToday = null; // BTCUSDT's own todayChange from the same scan — "market" reference for relative strength, at zero extra API cost since BTCUSDT is already one of the scanned pairs
+let contBtcRef = null;
+let contAlertsEnabled = false;
+let contAlertedSymbols = new Set(); // tracks who we've already notified about, mirrors natrAlertedSymbols
+let contIsBgUpdating = false;
+const CONT_REFRESH_OPTIONS = [60, 300]; // seconds: 1 мин / 5 мин
+let contRefreshInterval = 300;
+let contRefreshCountdown = contRefreshInterval;
+let contRefreshTimerId = null;
 let contIsScanning = false;
 let contAbortCtrl = null;
 let contRawResults = []; // everything the last scan fetched, unfiltered — filters below re-slice this live, no rescan needed
@@ -2288,8 +2337,17 @@ try {
     const savedOiOp = localStorage.getItem('cont_oi_op');
     if (savedOiOp === 'gte' || savedOiOp === 'lte') contOiOp = savedOiOp;
     contWatchlistOnly = localStorage.getItem('cont_watchlist_only') === '1';
-    contPinned = new Set(JSON.parse(localStorage.getItem('cont_pinned') || '[]'));
-    contFavorites = new Set(JSON.parse(localStorage.getItem('cont_favorites') || '[]'));
+    contPinned = new Set(ctSafeGetJSON('cont_pinned', []));
+    contFavorites = new Set(ctSafeGetJSON('cont_favorites', []));
+    const cVolFrom = parseFloat(localStorage.getItem('cont_vol_from'));
+    if (!isNaN(cVolFrom)) contVolFrom = cVolFrom;
+    const cVolTo = parseFloat(localStorage.getItem('cont_vol_to'));
+    if (!isNaN(cVolTo)) contVolTo = cVolTo;
+    contVolFilterActive = localStorage.getItem('cont_vol_filter_active') === '1';
+    contAlertsEnabled = localStorage.getItem('cont_alerts_enabled') === '1';
+    const savedRefresh = parseInt(localStorage.getItem('cont_refresh_interval'), 10);
+    if (CONT_REFRESH_OPTIONS.includes(savedRefresh)) contRefreshInterval = savedRefresh;
+    contRefreshCountdown = contRefreshInterval;
 } catch(e) { /* storage unavailable — defaults are fine */ }
 function contApplyRestoredUI() {
     document.querySelectorAll('#section-cont .natr-tab').forEach(t => t.classList.toggle('active', t.dataset.mode === contMode));
@@ -2302,6 +2360,16 @@ function contApplyRestoredUI() {
     document.getElementById('contRvolOp').value = contRvolOp;
     document.getElementById('contOiOp').value = contOiOp;
     document.getElementById('contWatchlistBtn').classList.toggle('active', contWatchlistOnly);
+    const volFromEl = document.getElementById('contVolFrom');
+    if (volFromEl && contVolFrom !== null) volFromEl.value = contVolFrom;
+    const volToEl = document.getElementById('contVolTo');
+    if (volToEl && contVolTo !== null) volToEl.value = contVolTo;
+    const volBtn = document.getElementById('contVolFilterBtn');
+    if (volBtn) volBtn.classList.toggle('active', contVolFilterActive);
+    const alertBtn = document.getElementById('contAlertBtn');
+    if (alertBtn && contAlertsEnabled) alertBtn.classList.add('active');
+    const refreshSel = document.getElementById('contRefreshSelect');
+    if (refreshSel) refreshSel.value = String(contRefreshInterval);
     try {
         const y = localStorage.getItem('cont_yest_threshold');
         if (y) document.getElementById('contYestThreshold').value = y;
@@ -2320,7 +2388,7 @@ function contSetDirection(dir) {
     document.getElementById('contDirAllBtn').classList.toggle('active', dir === 'all');
     document.getElementById('contDirUpBtn').classList.toggle('active', dir === 'up');
     document.getElementById('contDirDownBtn').classList.toggle('active', dir === 'down');
-    try { localStorage.setItem('cont_direction', dir); } catch(e) { /* non-fatal */ }
+    try { ctSafeSetItem('cont_direction', dir); } catch(e) { /* non-fatal */ }
     if (contRawResults.length) contReFilterAndRender();
 }
 
@@ -2328,25 +2396,25 @@ function contSwitchMode(m) {
     if (!CONT_MODES[m] || contIsScanning) return;
     contMode = m;
     document.querySelectorAll('#section-cont .natr-tab').forEach(t => t.classList.toggle('active', t.dataset.mode === m));
-    try { localStorage.setItem('cont_mode', m); } catch(e) { /* non-fatal */ }
+    try { ctSafeSetItem('cont_mode', m); } catch(e) { /* non-fatal */ }
 }
 function contToggleDirFilter() {
     contDirFilterOnly = !contDirFilterOnly;
     document.getElementById('contDirBtn').classList.toggle('active', contDirFilterOnly);
-    try { localStorage.setItem('cont_dir_only', contDirFilterOnly ? '1' : '0'); } catch(e) { /* non-fatal */ }
+    try { ctSafeSetItem('cont_dir_only', contDirFilterOnly ? '1' : '0'); } catch(e) { /* non-fatal */ }
     if (contRawResults.length) contReFilterAndRender();
 }
 function contToggleWatchlistOnly() {
     contWatchlistOnly = !contWatchlistOnly;
     document.getElementById('contWatchlistBtn').classList.toggle('active', contWatchlistOnly);
-    try { localStorage.setItem('cont_watchlist_only', contWatchlistOnly ? '1' : '0'); } catch(e) { /* non-fatal */ }
+    try { ctSafeSetItem('cont_watchlist_only', contWatchlistOnly ? '1' : '0'); } catch(e) { /* non-fatal */ }
     if (contRawResults.length) contReFilterAndRender();
 }
 function contSavePinned() {
-    try { localStorage.setItem('cont_pinned', JSON.stringify([...contPinned])); } catch(e) { /* non-fatal */ }
+    try { ctSafeSetItem('cont_pinned', JSON.stringify([...contPinned])); } catch(e) { /* non-fatal */ }
 }
 function contSaveFavorites() {
-    try { localStorage.setItem('cont_favorites', JSON.stringify([...contFavorites])); } catch(e) { /* non-fatal */ }
+    try { ctSafeSetItem('cont_favorites', JSON.stringify([...contFavorites])); } catch(e) { /* non-fatal */ }
 }
 function contTogglePinned(symbol) {
     if (contPinned.has(symbol)) contPinned.delete(symbol); else contPinned.add(symbol);
@@ -2358,6 +2426,100 @@ function contToggleFavorite(symbol) {
     contSaveFavorites();
     contReFilterAndRender();
 }
+// Volume 24ч filter — same shorthand parser and same underlying data (natrTicker24hMap)
+// as NATR Scanner's; contStartScan fetches that map too, so no extra endpoint needed here.
+function contChangeVolRange() {
+    contVolFrom = natrParseShorthand(document.getElementById('contVolFrom').value);
+    contVolTo = natrParseShorthand(document.getElementById('contVolTo').value);
+    ctSafeSetItem('cont_vol_from', contVolFrom === null ? '' : String(contVolFrom));
+    ctSafeSetItem('cont_vol_to', contVolTo === null ? '' : String(contVolTo));
+    if (contRawResults.length) contReFilterAndRender();
+}
+function contToggleVolFilter() {
+    contVolFilterActive = !contVolFilterActive;
+    const btn = document.getElementById('contVolFilterBtn');
+    if (btn) btn.classList.toggle('active', contVolFilterActive);
+    ctSafeSetItem('cont_vol_filter_active', contVolFilterActive ? '1' : '0');
+    if (contRawResults.length) contReFilterAndRender();
+}
+// Alert bell — mirrors natrToggleAlerts/natrCheckAlerts: fires once when a symbol NEWLY
+// starts passing the currently active filter set (not on every refresh it still passes).
+async function contToggleAlerts() {
+    const btn = document.getElementById('contAlertBtn');
+    if (!contAlertsEnabled) {
+        if ('Notification' in window && Notification.permission === 'default') {
+            try { await Notification.requestPermission(); } catch(e) { /* ignore */ }
+        }
+        contAlertsEnabled = true;
+        // seed with what's already passing so enabling the bell doesn't immediately spam
+        // notifications for pairs that were already past the filters
+        contAlertedSymbols = new Set(contGetFilteredResults().map(r => r.symbol));
+        btn.classList.add('active');
+        if (!contIsScanning && contRawResults.length) contStartAutoRefresh();
+    } else {
+        contAlertsEnabled = false;
+        btn.classList.remove('active');
+    }
+    ctSafeSetItem('cont_alerts_enabled', contAlertsEnabled ? '1' : '0');
+}
+function contFireAlert(r) {
+    const dirWord = r.refChange >= 0 ? 'Хайп' : 'Слив';
+    const msg = r.symbol.replace(/USDT$|USD1$/, '') + ': ' + dirWord + ' продолжается, RVOL ' + r.rvol.toFixed(2) + 'x';
+    playAlertSound('natr');
+    if ('Notification' in window && Notification.permission === 'granted') {
+        try { new Notification('🔥 Продолжение тренда', { body: msg }); return; } catch(e) { /* fall through to toast */ }
+    }
+    showToast(msg);
+}
+function contCheckAlerts(results) {
+    if (!contAlertsEnabled) return;
+    const currentSymbols = new Set(results.map(r => r.symbol));
+    results.forEach(r => {
+        if (!contAlertedSymbols.has(r.symbol)) {
+            contAlertedSymbols.add(r.symbol);
+            contFireAlert(r);
+        }
+    });
+    [...contAlertedSymbols].forEach(sym => {
+        if (!currentSymbols.has(sym)) contAlertedSymbols.delete(sym);
+    });
+}
+// Auto-refresh — same countdown-bar pattern as NATR Scanner, but the interval is
+// user-selectable (1 или 5 минут) since this screener is used to sit and wait for alerts.
+function contUpdateTimerDisplay() {
+    const el = document.getElementById('contRefreshTimer');
+    if (!el) return;
+    el.textContent = contRefreshCountdown;
+    el.style.color = contRefreshCountdown <= 5 ? 'var(--red)' : contRefreshCountdown <= 15 ? 'var(--accent)' : '';
+}
+function contStartAutoRefresh() {
+    contRefreshCountdown = contRefreshInterval;
+    contUpdateTimerDisplay();
+    if (contRefreshTimerId) clearInterval(contRefreshTimerId);
+    contRefreshTimerId = setInterval(() => {
+        contRefreshCountdown--;
+        contUpdateTimerDisplay();
+        if (contRefreshCountdown <= 0) {
+            if (!contIsScanning && !contIsBgUpdating && contRawResults.length > 0) contStartBgUpdate();
+            contRefreshCountdown = contRefreshInterval;
+        }
+    }, 1000);
+    const box = document.getElementById('contAutoRefresh');
+    if (box) { box.classList.add('active'); box.style.setProperty('--refresh-dur', contRefreshInterval + 's'); }
+}
+function contStopAutoRefresh() {
+    if (contRefreshTimerId) { clearInterval(contRefreshTimerId); contRefreshTimerId = null; }
+    const box = document.getElementById('contAutoRefresh');
+    if (box) box.classList.remove('active');
+}
+function contChangeRefreshInterval(v) {
+    const n = parseInt(v, 10);
+    contRefreshInterval = CONT_REFRESH_OPTIONS.includes(n) ? n : 300;
+    ctSafeSetItem('cont_refresh_interval', String(contRefreshInterval));
+    // only actually (re)starts the countdown if it was already running (alerts on, or a
+    // scan has completed) — picking an interval alone shouldn't silently start polling
+    if (contRefreshTimerId || contAlertsEnabled) contStartAutoRefresh();
+}
 // Every filter input below calls this — it re-slices the already-fetched contRawResults
 // live, no network request needed. Only the timeframe tabs and "Дней назад" actually
 // change what gets fetched, so those still require pressing Сканировать again.
@@ -2366,13 +2528,13 @@ function contChangeFilters() {
     contRvolOp = document.getElementById('contRvolOp').value === 'lte' ? 'lte' : 'gte';
     contOiOp = document.getElementById('contOiOp').value === 'lte' ? 'lte' : 'gte';
     try {
-        localStorage.setItem('cont_yest_op', contYestOp);
-        localStorage.setItem('cont_rvol_op', contRvolOp);
-        localStorage.setItem('cont_oi_op', contOiOp);
-        localStorage.setItem('cont_yest_threshold', document.getElementById('contYestThreshold').value || '40');
-        localStorage.setItem('cont_rvol_threshold', document.getElementById('contRvolThreshold').value);
-        localStorage.setItem('cont_oi_min', document.getElementById('contOiMin').value);
-        localStorage.setItem('cont_min_pump_days', document.getElementById('contMinPumpDays').value);
+        ctSafeSetItem('cont_yest_op', contYestOp);
+        ctSafeSetItem('cont_rvol_op', contRvolOp);
+        ctSafeSetItem('cont_oi_op', contOiOp);
+        ctSafeSetItem('cont_yest_threshold', document.getElementById('contYestThreshold').value || '40');
+        ctSafeSetItem('cont_rvol_threshold', document.getElementById('contRvolThreshold').value);
+        ctSafeSetItem('cont_oi_min', document.getElementById('contOiMin').value);
+        ctSafeSetItem('cont_min_pump_days', document.getElementById('contMinPumpDays').value);
     } catch(e) { /* non-fatal */ }
     if (contRawResults.length) contReFilterAndRender();
 }
@@ -2381,6 +2543,12 @@ function contSetStatus(text, active, updating) {
     document.getElementById('contStatusText').textContent = text;
     badge.classList.toggle('active', !!active);
     badge.classList.toggle('updating', !!updating);
+}
+function contSetTableUpdating(u) {
+    const wrap = document.getElementById('contTableWrap');
+    if (wrap) wrap.classList.toggle('updating', u);
+    const box = document.getElementById('contAutoRefresh');
+    if (box) box.classList.toggle('updating', u);
 }
 // Shared kline fetch with a timeout guard, used for both the daily (yesterday) candle
 // and the short-interval (RVOL) candles.
@@ -2413,7 +2581,23 @@ function contCalcRVOL(klines, shortN, baseN) {
     if (!baseAvg) return null;
     return shortAvg / baseAvg;
 }
-// Open Interest history is only available from Binance at 5m granularity or coarser
+// Rolling VWAP over the same intraday candle window used for RVOL: Σ(typical price × volume)
+// ÷ Σ(volume), typical price = (high+low+close)/3. Tells you how far price has stretched
+// away from where the recent volume actually traded — a fast, no-extra-request "am I
+// chasing this candle" check, since these candles are already fetched for RVOL anyway.
+function contCalcVwapDeviation(klines, currentPrice) {
+    if (!klines || !klines.length || !currentPrice) return null;
+    let pv = 0, vol = 0;
+    for (let i = 0; i < klines.length; i++) {
+        const h = parseFloat(klines[i][2]), l = parseFloat(klines[i][3]), c = parseFloat(klines[i][4]), v = parseFloat(klines[i][5]) || 0;
+        const typical = (h + l + c) / 3;
+        pv += typical * v; vol += v;
+    }
+    if (!vol) return null;
+    const vwap = pv / vol;
+    if (!vwap) return null;
+    return (currentPrice - vwap) / vwap * 100;
+}
 // (there's no 1m period for this endpoint), so we always pull it at 5m regardless of
 // which price/RVOL timeframe is selected — ~100 points covers about 8 hours.
 async function contFetchOI(symbol) {
@@ -2455,6 +2639,16 @@ async function contFetchAndCalc(symbol, cfg, lookbackDays) {
     if (rvol == null) return null;
     const oiChangePct = oi ? oi.oiChangePct : null;
     const oiValue = oi ? oi.oiValue : null;
+    // VWAP deviation and day-range position both reuse candles we already fetched above —
+    // zero extra API calls, which matters a lot when scanning hundreds of pairs per scan.
+    // VWAP here is a ROLLING vwap over the same short-interval window used for RVOL (last
+    // ~2-8h depending on timeframe), not a full UTC-session VWAP — deliberately, since a
+    // fresh rolling VWAP is a better "am I chasing this move" reference than a full-day
+    // VWAP that goes stale by the afternoon, and it comes for free from data we already have.
+    const vwapDeviationPct = contCalcVwapDeviation(intra, currentPrice);
+    // Day-range position: 0% = sitting at today's low, 100% = sitting at today's high.
+    const todayHigh = parseFloat(todayCandle[2]), todayLow = parseFloat(todayCandle[3]);
+    const dayRangePos = (todayHigh > todayLow) ? (currentPrice - todayLow) / (todayHigh - todayLow) * 100 : null;
     // "Дней назад" = 0 (or left empty) → skip history entirely and analyze TODAY'S own
     // move so far, instead of yesterday's. refChange is what every threshold/direction
     // check below runs against, so this one flag switches the whole screener's frame
@@ -2474,7 +2668,7 @@ async function contFetchAndCalc(symbol, cfg, lookbackDays) {
         }
     }
     const refChange = todayOnly ? todayChange : yestChange;
-    return { symbol, yestChange, todayChange, refChange, todayOnly, rvol, oiChangePct, oiValue, dailyChanges };
+    return { symbol, yestChange, todayChange, refChange, todayOnly, rvol, oiChangePct, oiValue, dailyChanges, currentPrice, vwapDeviationPct, dayRangePos };
 }
 async function contProcessMax(pairs, cfg, lookbackDays, onProgress) {
     const results = []; const total = pairs.length; let processed = 0;
@@ -2493,6 +2687,7 @@ async function contProcessMax(pairs, cfg, lookbackDays, onProgress) {
 }
 async function contStartScan() {
     if (contIsScanning) { if (contAbortCtrl) contAbortCtrl.abort(); return; }
+    if (contIsBgUpdating && contAbortCtrl) { contAbortCtrl.abort(); contIsBgUpdating = false; contSetTableUpdating(false); }
     contIsScanning = true; contAbortCtrl = new AbortController();
     const btn = document.getElementById('contScanBtn');
     btn.classList.add('loading'); btn.disabled = true;
@@ -2508,16 +2703,21 @@ async function contStartScan() {
     const cfg = CONT_MODES[contMode] || CONT_MODES['5m'];
     const lbRaw = document.getElementById('contLookbackDays').value.trim();
     const lookbackDays = lbRaw === '' ? 0 : Math.max(0, parseInt(lbRaw) || 0);
-    try { localStorage.setItem('cont_lookback_days', String(lookbackDays)); } catch(e) { /* non-fatal */ }
+    ctSafeSetItem('cont_lookback_days', String(lookbackDays));
     contSetStatus('Сканирование 0/'+pairs.length+'...', true, true);
-    const raw = await contProcessMax(pairs, cfg, lookbackDays, (p,t) => {
-        if (!contAbortCtrl.signal.aborted) contSetStatus('Сканирование '+p+'/'+t+'...', true, true);
-    });
+    const [raw] = await Promise.all([
+        contProcessMax(pairs, cfg, lookbackDays, (p,t) => {
+            if (!contAbortCtrl.signal.aborted) contSetStatus('Сканирование '+p+'/'+t+'...', true, true);
+        }),
+        natrFetchTicker24h() // populates natrTicker24hMap, shared with NATR Scanner — powers the "Объём 24ч" filter below
+    ]);
     if (contAbortCtrl.signal.aborted) {
         contSetStatus('Остановлено'); btn.classList.remove('loading'); btn.disabled = false;
         contIsScanning = false; contAbortCtrl = null; return;
     }
     contRawResults = raw; // keep everything — filters below re-slice this in memory, no rescan needed
+    contUpdateBtcRef();
+    contCheckAlerts(contGetFilteredResults());
     contReFilterAndRender();
     contSetStatus('Готово, отсканировано: '+raw.length, true);
     const lu = document.getElementById('contLastUpdate');
@@ -2525,6 +2725,45 @@ async function contStartScan() {
     document.getElementById('contUpdateTime').textContent = 'Обновлено: ' + new Date().toLocaleTimeString('ru-RU');
     btn.classList.remove('loading'); btn.disabled = false;
     contIsScanning = false; contAbortCtrl = null;
+    contStartAutoRefresh();
+}
+// BTCUSDT is always part of the scanned USDT-perpetuals universe, so relative-strength-vs-
+// BTC comes for free from the same scan — no separate request needed.
+function contUpdateBtcRef() {
+    const btc = contRawResults.find(r => r.symbol === 'BTCUSDT');
+    contBtcToday = btc ? btc.todayChange : null;
+    contBtcRef = btc ? btc.refChange : null;
+}
+// Background refresh — re-fetches everything with the current mode/lookback but without
+// resetting the table or scan button, so alerts and auto-refresh don't interrupt browsing.
+async function contStartBgUpdate() {
+    if (contIsScanning || contIsBgUpdating) return;
+    contIsBgUpdating = true; contAbortCtrl = new AbortController();
+    contSetTableUpdating(true); contSetStatus('Фоновое обновление...', true, true);
+    const pairs = await natrGetAllPairs();
+    if (!pairs.length || contAbortCtrl.signal.aborted) { contFinishBgUpdate(false); return; }
+    const cfg = CONT_MODES[contMode] || CONT_MODES['5m'];
+    const lbRaw = document.getElementById('contLookbackDays').value.trim();
+    const lookbackDays = lbRaw === '' ? 0 : Math.max(0, parseInt(lbRaw) || 0);
+    const [raw] = await Promise.all([
+        contProcessMax(pairs, cfg, lookbackDays, (p,t) => {
+            if (!contAbortCtrl.signal.aborted) contSetStatus(p+'/'+t, true, true);
+        }),
+        natrFetchTicker24h()
+    ]);
+    if (contAbortCtrl.signal.aborted) { contFinishBgUpdate(false); return; }
+    contRawResults = raw;
+    contUpdateBtcRef();
+    contCheckAlerts(contGetFilteredResults());
+    contReFilterAndRender();
+    const lu = document.getElementById('contLastUpdate');
+    lu.style.display = 'flex';
+    document.getElementById('contUpdateTime').textContent = 'Обновлено: ' + new Date().toLocaleTimeString('ru-RU');
+    contFinishBgUpdate(true);
+}
+function contFinishBgUpdate(ok) {
+    contIsBgUpdating = false; contAbortCtrl = null; contSetTableUpdating(false);
+    contSetStatus(ok ? 'Готово, отсканировано: '+contRawResults.length : (contRawResults.length>0?'Готово, отсканировано: '+contRawResults.length:'Отменено'), ok);
 }
 // Applies every filter control's current value to contRawResults and re-renders —
 // called on scan completion AND on every filter change, so adjusting a threshold
@@ -2573,6 +2812,10 @@ function contGetFilteredResults() {
         list = list.filter(r => Math.sign(r.refChange) === Math.sign(r.todayChange) && r.todayChange !== 0);
     }
     if (contWatchlistOnly) list = list.filter(r => contFavorites.has(r.symbol));
+    if (contVolFilterActive) {
+        if (contVolFrom !== null) list = list.filter(r => { const t = natrTicker24hMap.get(r.symbol); return t && t.volume >= contVolFrom; });
+        if (contVolTo !== null) list = list.filter(r => { const t = natrTicker24hMap.get(r.symbol); return t && t.volume <= contVolTo; });
+    }
     list.sort((a,b) => b.rvol - a.rvol);
     return list;
 }
@@ -2611,35 +2854,40 @@ function contRenderTable(data, pinnedCount) {
         const displaySymbol = escapeHtml(r.symbol.replace(/USDT$|USD1$/, ''));
         const refCls = r.refChange >= 0 ? 'cont-yest-up' : 'cont-yest-down';
         const todayCls = r.todayChange >= 0 ? 'cont-yest-up' : 'cont-yest-down';
-        const sameDir = Math.sign(r.refChange) === Math.sign(r.todayChange) && r.todayChange !== 0;
-        const oiConfirms = r.oiChangePct !== null && Math.sign(r.oiChangePct) === Math.sign(r.refChange) && r.oiChangePct !== 0;
         const oiCell = r.oiChangePct !== null
             ? '<span class="mono '+(r.oiChangePct>=0?'cont-yest-up':'cont-yest-down')+'">'+(r.oiChangePct>=0?'+':'')+r.oiChangePct.toFixed(1)+'%</span>'
             : '<span style="color:var(--muted)">—</span>';
         const isPinned = contPinned.has(r.symbol);
         const isFav = contFavorites.has(r.symbol);
-        let badge;
-        if (r.todayOnly) {
-            if (r.refChange >= 0) badge = oiConfirms ? '<span class="cont-badge cont-hype">🔥✅ Памп сегодня + OI</span>' : '<span class="cont-badge cont-hype">🔥 Памп сегодня</span>';
-            else if (r.refChange < 0) badge = oiConfirms ? '<span class="cont-badge cont-dump">🩸✅ Слив сегодня + OI</span>' : '<span class="cont-badge cont-dump">🩸 Слив сегодня</span>';
-            else badge = '<span class="cont-badge cont-watch">Наблюдение</span>';
-        } else if (sameDir && oiConfirms && r.refChange >= 0) badge = '<span class="cont-badge cont-hype">🔥✅ Хайп + OI подтверждён</span>';
-        else if (sameDir && oiConfirms && r.refChange < 0) badge = '<span class="cont-badge cont-dump">🩸✅ Слив + OI подтверждён</span>';
-        else if (sameDir && r.refChange >= 0) badge = '<span class="cont-badge cont-hype">🔥 Хайп продолжается</span>';
-        else if (sameDir && r.refChange < 0) badge = '<span class="cont-badge cont-dump">🩸 Слив продолжается</span>';
-        else if (!sameDir && r.todayChange !== 0) badge = '<span class="cont-badge cont-reversal">⚠️ Возможен разворот</span>';
-        else badge = '<span class="cont-badge cont-watch">Наблюдение</span>';
+        const vwapCell = r.vwapDeviationPct !== null
+            ? '<span class="mono '+(r.vwapDeviationPct>=0?'cont-yest-up':'cont-yest-down')+'" title="Насколько цена ушла от объёмно-взвешенной средней за последнее RVOL-окно — большой отрыв = вход в догон">'+(r.vwapDeviationPct>=0?'+':'')+r.vwapDeviationPct.toFixed(1)+'%</span>'
+            : '<span style="color:var(--muted)">—</span>';
+        const rangePosCell = r.dayRangePos !== null
+            ? '<span class="mono" title="0% — у дневного минимума, 100% — у дневного максимума">'+r.dayRangePos.toFixed(0)+'%</span>'
+            : '<span style="color:var(--muted)">—</span>';
+        let btcCell = '<span style="color:var(--muted)">—</span>';
+        if (contBtcToday !== null && r.symbol !== 'BTCUSDT') {
+            const rel = r.todayChange - contBtcToday;
+            btcCell = '<span class="mono '+(rel>=0?'cont-yest-up':'cont-yest-down')+'" title="Движение пары сегодня минус движение BTC сегодня ('+(contBtcToday>=0?'+':'')+contBtcToday.toFixed(1)+'%) — плюс значит пара сильнее рынка">'+(rel>=0?'+':'')+rel.toFixed(1)+'%</span>';
+        } else if (r.symbol === 'BTCUSDT') {
+            btcCell = '<span style="color:var(--muted)">BTC</span>';
+        }
+        const caiLink = '<button type="button" class="natr-icon-btn" title="Открыть в CryptoAI" onclick="event.stopPropagation(); natrOpenInCryptoAI(\''+r.symbol+'\')">CryptoAI</button>';
+        const tigerLink = '<button type="button" class="natr-icon-btn natr-tiger-btn" title="Открыть в Tiger.com Terminal (локальный сервер, порт 7819)" onclick="event.stopPropagation(); natrOpenInTiger(\''+r.symbol+'\')">Tiger</button>';
         return '<tr class="'+(isPinnedRow?'natr-pinned-row':'')+'">'+
             natrPinFavCellHtml(r.symbol, isPinned, isFav, 'contTogglePinned', 'contToggleFavorite')+
             '<td class="ticker-cell" tabindex="0" role="button" aria-label="Скопировать тикер '+displaySymbol+'" data-symbol="'+displaySymbol+'">'+
-            '<div class="ticker-name">'+displaySymbol+' <span class="natr-cai-link" tabindex="0" role="button" onclick="event.stopPropagation(); natrOpenInCryptoAI(\''+r.symbol+'\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();event.stopPropagation();natrOpenInCryptoAI(\''+r.symbol+'\');}">CryptoAI →</span></div>'+
+            '<div class="ticker-name">'+displaySymbol+'</div>'+
             '<svg class="copy-icon" style="width:14px;height:14px" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></td>'+
             '<td class="mono '+refCls+'" title="'+(r.todayOnly?'Сегодня (режим «только сегодня»)':'Последний закрытый день')+'">'+(r.refChange>=0?'+':'')+r.refChange.toFixed(1)+'%</td>'+
             '<td class="mono'+(r.pumpDays>=2?' cont-rvol-hot':'')+'">'+r.pumpDays+'/'+r.pumpDaysTotal+'</td>'+
             '<td class="mono cont-rvol-hot">'+r.rvol.toFixed(2)+'x</td>'+
             '<td class="mono '+todayCls+'">'+(r.todayChange>=0?'+':'')+r.todayChange.toFixed(1)+'%</td>'+
             '<td>'+oiCell+'</td>'+
-            '<td>'+badge+'</td></tr>';
+            '<td>'+vwapCell+'</td>'+
+            '<td>'+rangePosCell+'</td>'+
+            '<td>'+btcCell+'</td>'+
+            '<td style="text-align:center;"><div class="natr-actions-cell">'+caiLink+tigerLink+'</div></td></tr>';
     }).join('');
     document.querySelectorAll('#contTableBody .ticker-cell').forEach(cell => {
         const activate = function() {
@@ -3134,7 +3382,7 @@ async function calFetchEvents() {
         // Cache successful data to localStorage (only for live data)
         if (source.indexOf('Офлайн') === -1 && source.indexOf('кэш') === -1) {
             try {
-                localStorage.setItem('cal_ff_cache', JSON.stringify({ ts: Date.now(), data: data }));
+                ctSafeSetItem('cal_ff_cache', JSON.stringify({ ts: Date.now(), data: data }));
             } catch(e) { /* ignore quota errors */ }
         }
 
@@ -3343,7 +3591,7 @@ async function calToggleNotify() {
         btn.classList.remove('active');
         btn.textContent = '\ud83d\udd14 \u041d\u0430\u043f\u043e\u043c\u0438\u043d\u0430\u043d\u0438\u044f \u0432\u044b\u043a\u043b';
     }
-    try { localStorage.setItem('cal_notify_enabled', calNotifyEnabled ? '1' : '0'); } catch(e) { /* non-fatal */ }
+    try { ctSafeSetItem('cal_notify_enabled', calNotifyEnabled ? '1' : '0'); } catch(e) { /* non-fatal */ }
 }
 // Syncs the reminder button's visual state with calNotifyEnabled restored from
 // localStorage — called once from calInit() so a reload doesn't silently lose it.
@@ -3622,7 +3870,7 @@ function caiGenerateLinks(data, coinId) {
 }
 
 function caiSaveHistory() {
-    try { localStorage.setItem('cai_history', JSON.stringify(caiSearchHistory)); } catch(e) { /* non-fatal */ }
+    try { ctSafeSetItem('cai_history', JSON.stringify(caiSearchHistory)); } catch(e) { /* non-fatal */ }
 }
 function caiAddToHistory(base) {
     if (!base) return;
@@ -3820,6 +4068,7 @@ document.addEventListener('DOMContentLoaded', function() {
     natrApplyRestoredUI();
     contApplyRestoredUI();
     natrUpdateTimerDisplay();
+    contUpdateTimerDisplay();
     caiRenderHistoryChips();
     natrStartScan();
 });

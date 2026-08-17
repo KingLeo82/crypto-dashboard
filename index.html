@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CryptoTerminal — NATR Scanner | Часы Трейдера | Календарь | CryptoAI</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230c1117'/%3E%3Cpolyline points='48.5,23 34.25,37.25 26.75,29.75 15.5,41' fill='none' stroke='%23f0b90b' stroke-width='6' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpolyline points='39.5,23 48.5,23 48.5,32' fill='none' stroke='%23f0b90b' stroke-width='6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230c1117'/%3E%3Cpolyline points='48.5,23 34.25,37.25 26.75,29.75 15.5,41' fill='none' stroke='%23f0b90b' stroke-width='6' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpolyline points='39.5,23 48.5,23 48.5,32' fill='none' stroke='%23f0b90b' stroke-width='6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Space+Grotesk:wght@400;600;700&display=swap" rel="stylesheet">
@@ -276,19 +278,22 @@
         .natr-cai-link:focus-visible { outline: 2px solid var(--accent); }
         .natr-icon-btn {
             display: inline-flex; align-items: center; justify-content: center;
-            height: auto; padding: 2px 10px; margin: 0; vertical-align: middle;
-            border-radius: 7px; border: 1px solid var(--border); background: transparent;
+            width: 32px; height: 32px; padding: 0; margin: 0; vertical-align: middle;
+            border-radius: 8px; border: 1px solid var(--border); background: transparent;
             cursor: pointer; font-family: 'Space Grotesk', sans-serif;
-            font-size: 1.25rem; font-weight: 600; line-height: 1.3; white-space: nowrap;
+            font-size: 0.85rem; font-weight: 700; line-height: 1; white-space: nowrap;
             color: var(--fg); transition: all 0.15s; flex-shrink: 0;
         }
-        .natr-actions-cell { display: flex; align-items: center; justify-content: space-between; gap: 8px; white-space: nowrap; }
+        .natr-icon-btn svg { width: 18px; height: 18px; }
+        .natr-icon-btn img { display: block; max-width: 20px; max-height: 20px; object-fit: contain; }
+        .natr-actions-cell { display: inline-flex; align-items: center; justify-content: center; gap: 8px; white-space: nowrap; }
 
         .natr-icon-btn:hover { background: rgba(255,255,255,0.05); border-color: var(--accent); color: var(--accent); transform: translateY(-1px); }
         .natr-icon-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+        .natr-tiger-btn:hover { border-color: #FF8A1E; }
 
         @media (max-width: 720px) {
-            .natr-icon-btn { font-size: 1.05rem; }
+            .natr-icon-btn { font-size: 0.75rem; }
         }
 
         .atype-badge {
@@ -351,7 +356,7 @@
         .natr-table-wrap tbody td { padding: 16px 18px; vertical-align: middle; }
         .natr-table-wrap tbody td:last-child { text-align: right; }
 
-        .ticker-cell { cursor: pointer; user-select: none; -webkit-user-select: none; position: relative; display: flex; align-items: center; }
+        .ticker-cell { cursor: pointer; user-select: none; -webkit-user-select: none; position: relative; }
         .ticker-cell:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; border-radius: 4px; }
         .cal-event-card:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
         .ticker-name { font-weight: 600; font-size: 1.25rem; letter-spacing: -0.01em; transition: all 0.2s; display: inline-block; }
@@ -1041,7 +1046,7 @@
     <div class="natr-table-wrap" id="natrTableWrap">
         <div class="bg-update-overlay"></div>
         <table>
-            <thead><tr><th style="width:78px;text-align:center;" title="Закреп и избранное">📌 ★</th><th>Тикер</th><th style="width:78px;">Тип</th><th style="width:90px;">Цена</th><th style="width:90px;">Объём 24ч</th><th style="width:90px;">Сделки 24ч</th><th style="width:110px;text-align:right;">NATR (%)</th><th style="width:190px;text-align:center;">Действия</th></tr></thead>
+            <thead><tr><th style="width:78px;text-align:center;" title="Закреп и избранное">📌 ★</th><th>Тикер</th><th style="width:78px;">Тип</th><th style="width:90px;">Цена</th><th style="width:90px;">Объём 24ч</th><th style="width:90px;">Сделки 24ч</th><th style="width:110px;text-align:right;">NATR (%)</th><th style="width:90px;text-align:center;">Действия</th></tr></thead>
             <tbody id="natrTableBody"></tbody>
         </table>
         <div id="natrSkeleton" style="display:none;"></div>
@@ -1095,12 +1100,8 @@
             <input type="number" class="natr-alert-input" id="contYestThreshold" value="40" min="1" step="1" style="width:64px;" oninput="contChangeFilters()">
         </div>
         <div class="natr-tool-group">
-            <label class="natr-tool-label" for="contLookbackDays">Дней назад:</label>
-            <input type="number" class="natr-alert-input" id="contLookbackDays" value="5" min="0" max="30" step="1" placeholder="0" style="width:56px;" title="0 или пусто — анализировать только текущий (ещё не закрытый) день, без истории. Требует нового сканирования.">
-        </div>
-        <div class="natr-tool-group">
-            <label class="natr-tool-label" for="contMinPumpDays">Памповых дней (мин.):</label>
-            <input type="number" class="natr-alert-input" id="contMinPumpDays" value="1" min="0" step="1" placeholder="0" style="width:56px;" title="0 или пусто — без минимума (фильтр выключен)" oninput="contChangeFilters()">
+            <label class="natr-tool-label" for="contLookbackDays">Дней проторговки:</label>
+            <input type="number" class="natr-alert-input" id="contLookbackDays" value="5" min="0" max="30" step="1" placeholder="0" style="width:56px;" title="Сколько дней подряд ПЕРЕД пампом цена должна была стоять тихо (движение дня ниже «Дневного порога»). 0 или пусто — не проверять историю, смотреть только на сегодняшнее движение. Требует нового сканирования.">
         </div>
         <div class="natr-tool-group">
             <label class="natr-tool-label" for="contRvolThreshold">RVOL, x:</label>
@@ -1143,7 +1144,7 @@
             <input type="text" inputmode="decimal" class="natr-range-input" id="contVolTo" placeholder="до, напр. 1м" oninput="contChangeVolRange()">
             <button class="natr-tool-btn" id="contVolFilterBtn" onclick="contToggleVolFilter()" title="Включить фильтр (иначе значения просто не проверяются)">Фильтр</button>
         </div>
-        <span class="natr-tool-hint" id="contRescanHint" title="Дней назад и таймфрейм (1м/5м) меняют то, что запрашивается у Binance — после их изменения нажмите «Сканировать» ещё раз">ⓘ Все фильтры кроме «Дней назад» и таймфрейма применяются сразу</span>
+        <span class="natr-tool-hint" id="contRescanHint" title="«Дней проторговки» и таймфрейм (1м/5м) меняют то, что запрашивается у Binance — после их изменения нажмите «Сканировать» ещё раз">ⓘ Все фильтры кроме «Дней проторговки» и таймфрейма применяются сразу</span>
     </div>
     </div>
     <div class="natr-stats" id="contStatsBar" style="display:none;">
@@ -1157,14 +1158,14 @@
                 <th style="width:78px;text-align:center;" title="Закреп и избранное">📌 ★</th>
                 <th>Тикер</th>
                 <th style="width:100px;">Вчера, %</th>
-                <th style="width:90px;">Памп. дней</th>
+                <th style="width:100px;" title="Дней тихой проторговки перед пампом, из запрошенных в «Дней проторговки»">Проторговка</th>
                 <th style="width:80px;">RVOL</th>
                 <th style="width:100px;">Сегодня, %</th>
                 <th style="width:90px;">ΔOI, %</th>
                 <th style="width:100px;">VWAP откл.</th>
                 <th style="width:90px;">В дне, %</th>
                 <th style="width:90px;">vs BTC</th>
-                <th style="width:150px;text-align:center;">Действия</th>
+                <th style="width:90px;text-align:center;">Действия</th>
             </tr></thead>
             <tbody id="contTableBody"></tbody>
         </table>
@@ -1553,6 +1554,10 @@ let natrAlertsEnabled = false;
 let natrAlertedSymbols = new Set(); // tracks who we've already notified about, so re-entering the filter re-alerts
 // Shared thumbtack icon markup for the "закреп" (pin) column, used by both screener tables.
 const NATR_PIN_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"/></svg>';
+// Tiger.com Terminal's own logo, embedded as the asset the user supplied — used here as a
+// nominative "connect to Tiger.com" button icon (like any "Open in X" integration button),
+// not presented as this app's own mark.
+const NATR_TIGER_SVG = '<img src="data:image/png;base64,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" alt="Tiger.com" style="width:20px;height:auto;">';
 // Shared markup for the combined "закреп + избранное" cell used by both screener tables
 // (NATR Scanner and Продолжение тренда) — same two-buttons-in-one-column pattern as the
 // CryptoAI/Tiger action links. Each caller passes its own toggle function names since the
@@ -1718,31 +1723,12 @@ function natrStartAutoRefresh() {
 function natrInitCategories() {
     natrCategoryMap = Object.assign({}, NATR_EMBEDDED_CATEGORIES);
     natrUpdateCatTabCounts();
-    // Try to update from API in background (may fail due to CORS — that's OK)
-    natrTryUpdateCategories();
-}
-async function natrTryUpdateCategories() {
-    try {
-        const resp = await fetch('https://www.binance.com/bapi/futures/v1/public/future/common/symbol-config-info', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'clienttype': 'web' },
-            body: JSON.stringify({})
-        });
-        if (!resp.ok) return;
-        const json = await resp.json();
-        if (!json.data || !json.data.configInfoList) return;
-        const newEntries = {};
-        json.data.configInfoList.forEach(item => {
-            const cat = (item.underlyingTypeSub || '').split(',')[0].trim() || 'NONE';
-            newEntries[item.symbol] = cat;
-        });
-        // Merge: API data overrides embedded, but keep embedded for symbols not in API
-        natrCategoryMap = Object.assign({}, NATR_EMBEDDED_CATEGORIES, newEntries);
-        natrUpdateCatTabCounts();
-        console.log('Categories updated from Binance API');
-    } catch(e) {
-        console.log('Category API update skipped (CORS or network):', e.message);
-    }
+    // No background API refresh here on purpose: Binance's www.binance.com/bapi/... web
+    // endpoint doesn't send CORS headers for third-party origins, so a browser-side fetch
+    // to it fails 100% of the time from here — it would only ever produce console noise
+    // ("Failed to fetch") with zero chance of success, never an actual category update.
+    // The embedded map above already covers the full pair list; if Binance lists new pairs
+    // later, update NATR_EMBEDDED_CATEGORIES directly instead of trying to fetch it live.
 }
 function natrUpdateCatTabCounts() {
     if (!natrCategoryMap) return;
@@ -2190,8 +2176,8 @@ function natrRenderTable(data, animate, pinnedCount) {
         const volCell = t24h ? natrFmtVolShort(t24h.volume) : '—';
         const tradesCell = t24h ? natrFmtCount(t24h.count) : '—';
         const typeCell = natrAssetTypeBadge(item.symbol);
-        const caiLink = '<button type="button" class="natr-icon-btn" title="Открыть в CryptoAI" onclick="event.stopPropagation(); natrOpenInCryptoAI(\''+item.symbol+'\')">CryptoAI</button>';
-        const tigerLink = '<button type="button" class="natr-icon-btn natr-tiger-btn" title="Открыть в Tiger.com Terminal (локальный сервер, порт 7819)" onclick="event.stopPropagation(); natrOpenInTiger(\''+item.symbol+'\')">Tiger</button>';
+        const caiLink = '<button type="button" class="natr-icon-btn" title="Открыть в CryptoAI" onclick="event.stopPropagation(); natrOpenInCryptoAI(\''+item.symbol+'\')">AI</button>';
+        const tigerLink = '<button type="button" class="natr-icon-btn natr-tiger-btn" title="Открыть в Tiger.com Terminal (локальный сервер, порт 7819)" onclick="event.stopPropagation(); natrOpenInTiger(\''+item.symbol+'\')">'+NATR_TIGER_SVG+'</button>';
         return '<tr class="'+bc+' '+ra+(isPinnedRow?' natr-pinned-row':'')+'">'+
             natrPinFavCellHtml(item.symbol, isPinned, isFav, 'natrTogglePinned', 'natrToggleFavorite')+
             '<td class="ticker-cell" tabindex="0" role="button" aria-label="Скопировать тикер '+displaySymbol+'" data-symbol="'+displaySymbol+'">'+
@@ -2379,8 +2365,6 @@ function contApplyRestoredUI() {
         if (oim) document.getElementById('contOiMin').value = oim;
         const lb = localStorage.getItem('cont_lookback_days');
         if (lb) document.getElementById('contLookbackDays').value = lb;
-        const mpd = localStorage.getItem('cont_min_pump_days');
-        if (mpd) document.getElementById('contMinPumpDays').value = mpd;
     } catch(e) { /* non-fatal */ }
 }
 function contSetDirection(dir) {
@@ -2521,7 +2505,7 @@ function contChangeRefreshInterval(v) {
     if (contRefreshTimerId || contAlertsEnabled) contStartAutoRefresh();
 }
 // Every filter input below calls this — it re-slices the already-fetched contRawResults
-// live, no network request needed. Only the timeframe tabs and "Дней назад" actually
+// live, no network request needed. Only the timeframe tabs and "Дней проторговки" actually
 // change what gets fetched, so those still require pressing Сканировать again.
 function contChangeFilters() {
     contYestOp = document.getElementById('contYestOp').value === 'lte' ? 'lte' : 'gte';
@@ -2534,7 +2518,6 @@ function contChangeFilters() {
         ctSafeSetItem('cont_yest_threshold', document.getElementById('contYestThreshold').value || '40');
         ctSafeSetItem('cont_rvol_threshold', document.getElementById('contRvolThreshold').value);
         ctSafeSetItem('cont_oi_min', document.getElementById('contOiMin').value);
-        ctSafeSetItem('cont_min_pump_days', document.getElementById('contMinPumpDays').value);
     } catch(e) { /* non-fatal */ }
     if (contRawResults.length) contReFilterAndRender();
 }
@@ -2615,11 +2598,11 @@ async function contFetchOI(symbol) {
         return { oiChangePct: (last - first) / first * 100, oiValue: last };
     } catch(e) { return null; }
 }
-// lookbackDays controls how far back we look at daily candles to count "pump days" —
-// this lets the screener recognize a trend that developed with pauses/consolidation
-// in between (проторговки), not just a single isolated day. Pairs with LESS history
+// lookbackDays controls how many days of daily candles we fetch before the pump day, so
+// contGetFilteredResults can check that all of them were "проторговка" (quiet consolidation,
+// each day's move under the threshold) right up until the pump. Pairs with LESS history
 // than lookbackDays (recent listings) are still included — dailyChanges just ends up
-// shorter, using whatever days actually exist instead of being dropped entirely.
+// shorter, which will correctly fail the consolidation-window check further down.
 async function contFetchAndCalc(symbol, cfg, lookbackDays) {
     const [daily, intra, oi] = await Promise.all([
         contFetchKlines(symbol, '1d', Math.max(lookbackDays, 0) + 2),
@@ -2649,20 +2632,19 @@ async function contFetchAndCalc(symbol, cfg, lookbackDays) {
     // Day-range position: 0% = sitting at today's low, 100% = sitting at today's high.
     const todayHigh = parseFloat(todayCandle[2]), todayLow = parseFloat(todayCandle[3]);
     const dayRangePos = (todayHigh > todayLow) ? (currentPrice - todayLow) / (todayHigh - todayLow) * 100 : null;
-    // "Дней назад" = 0 (or left empty) → skip history entirely and analyze TODAY'S own
+    // "Дней проторговки" = 0 (or left empty) → skip history entirely and analyze TODAY'S own
     // move so far, instead of yesterday's. refChange is what every threshold/direction
     // check below runs against, so this one flag switches the whole screener's frame
     // of reference from "yesterday vs today" to "just today, right now".
     const todayOnly = lookbackDays <= 0;
-    let dailyChanges;
-    if (todayOnly) {
-        dailyChanges = [todayChange];
-    } else {
-        // Daily % change for each of the most recently CLOSED days, oldest to newest,
-        // capped to lookbackDays but shrinking gracefully for pairs with shorter history.
-        const availableDays = Math.min(lookbackDays, daily.length - 1);
-        dailyChanges = [];
-        for (let i = daily.length - 1 - availableDays; i <= daily.length - 2; i++) {
+    // Days strictly BEFORE the pump day, oldest to newest — this is the проторговка
+    // window contGetFilteredResults checks for quiet consolidation. Capped to lookbackDays,
+    // shrinking gracefully for pairs with shorter history. Not needed in "today only" mode,
+    // since there's no prior-day window to require quiet — today's move is the whole signal.
+    let dailyChanges = [];
+    if (!todayOnly) {
+        const availableDays = Math.max(0, Math.min(lookbackDays, daily.length - 2));
+        for (let i = daily.length - 2 - availableDays; i <= daily.length - 3; i++) {
             const o = parseFloat(daily[i][1]), c = parseFloat(daily[i][4]);
             if (o) dailyChanges.push((c - o) / o * 100);
         }
@@ -2782,20 +2764,22 @@ function contGetFilteredResults() {
     const oiActive = oiThr > 0;
     const passOi = v => contOiOp === 'lte' ? Math.abs(v) <= oiThr : Math.abs(v) >= oiThr;
 
-    const pumpRaw = document.getElementById('contMinPumpDays').value.trim();
-    const minPumpDays = pumpRaw === '' ? 0 : Math.max(0, parseInt(pumpRaw) || 0);
-    const pumpActive = minPumpDays > 0;
+    const lbRaw = document.getElementById('contLookbackDays').value.trim();
+    const lookbackDays = lbRaw === '' ? 0 : Math.max(0, parseInt(lbRaw) || 0);
 
-    // Count how many days in the lookback window moved past the threshold in the SAME
-    // direction as the reference day — catches a trend that paused/consolidated
-    // (проторговка) instead of requiring one single day. In "today only" mode
-    // (Дней назад = 0) this is always 1/1 or 0/1 since there's just today to check.
-    // Computed for EVERY raw result up front (not just ones passing the filters below) so
-    // that a pinned (📌) row still has valid pumpDays/pumpDaysTotal even if it currently
-    // fails one of the other filters — pins bypass filters, same as in NATR Scanner.
+    // Проторговка (consolidation): walk backward from the day right before the pump,
+    // counting consecutive quiet days (|move| under the SAME threshold that qualifies the
+    // pump itself). A big move anywhere in that stretch breaks the streak. Recomputed here
+    // (not baked in at scan time) so changing "Дневной порог" re-evaluates it instantly —
+    // only lookbackDays itself needs a rescan, since that's what controls how much history
+    // was actually fetched. Computed for EVERY raw result up front so a pinned (📌) row
+    // still has a valid count even if it currently fails one of the other filters below.
     contRawResults.forEach(r => {
-        r.pumpDays = r.dailyChanges.filter(dc => Math.sign(dc) === Math.sign(r.refChange) && passThr(dc)).length;
-        r.pumpDaysTotal = r.dailyChanges.length;
+        let cd = 0;
+        for (let i = r.dailyChanges.length - 1; i >= 0; i--) {
+            if (Math.abs(r.dailyChanges[i]) < yestThr) cd++; else break;
+        }
+        r.consolidationDays = cd;
     });
     let list = contRawResults.filter(r => {
         if (!passThr(r.refChange)) return false;
@@ -2803,7 +2787,11 @@ function contGetFilteredResults() {
         // OI filter is opt-in (0/empty = off). When it's on, a row with no OI data
         // can't be confirmed either way, so it's excluded rather than let through blind.
         if (oiActive && (r.oiChangePct === null || !passOi(r.oiChangePct))) return false;
-        if (pumpActive && r.pumpDays < minPumpDays) return false;
+        // Skipped entirely in "today only" mode (lookbackDays=0 at scan time) — there's no
+        // prior-day window fetched to check. Otherwise require the FULL requested window
+        // to have been quiet; a pair with less history than lookbackDays can't satisfy this
+        // and is correctly excluded rather than let through on a partial, unverified window.
+        if (!r.todayOnly && r.consolidationDays < lookbackDays) return false;
         return true;
     });
     if (contDirection === 'up') list = list.filter(r => r.refChange >= 0);
@@ -2872,15 +2860,15 @@ function contRenderTable(data, pinnedCount) {
         } else if (r.symbol === 'BTCUSDT') {
             btcCell = '<span style="color:var(--muted)">BTC</span>';
         }
-        const caiLink = '<button type="button" class="natr-icon-btn" title="Открыть в CryptoAI" onclick="event.stopPropagation(); natrOpenInCryptoAI(\''+r.symbol+'\')">CryptoAI</button>';
-        const tigerLink = '<button type="button" class="natr-icon-btn natr-tiger-btn" title="Открыть в Tiger.com Terminal (локальный сервер, порт 7819)" onclick="event.stopPropagation(); natrOpenInTiger(\''+r.symbol+'\')">Tiger</button>';
+        const caiLink = '<button type="button" class="natr-icon-btn" title="Открыть в CryptoAI" onclick="event.stopPropagation(); natrOpenInCryptoAI(\''+r.symbol+'\')">AI</button>';
+        const tigerLink = '<button type="button" class="natr-icon-btn natr-tiger-btn" title="Открыть в Tiger.com Terminal (локальный сервер, порт 7819)" onclick="event.stopPropagation(); natrOpenInTiger(\''+r.symbol+'\')">'+NATR_TIGER_SVG+'</button>';
         return '<tr class="'+(isPinnedRow?'natr-pinned-row':'')+'">'+
             natrPinFavCellHtml(r.symbol, isPinned, isFav, 'contTogglePinned', 'contToggleFavorite')+
             '<td class="ticker-cell" tabindex="0" role="button" aria-label="Скопировать тикер '+displaySymbol+'" data-symbol="'+displaySymbol+'">'+
             '<div class="ticker-name">'+displaySymbol+'</div>'+
             '<svg class="copy-icon" style="width:14px;height:14px" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></td>'+
             '<td class="mono '+refCls+'" title="'+(r.todayOnly?'Сегодня (режим «только сегодня»)':'Последний закрытый день')+'">'+(r.refChange>=0?'+':'')+r.refChange.toFixed(1)+'%</td>'+
-            '<td class="mono'+(r.pumpDays>=2?' cont-rvol-hot':'')+'">'+r.pumpDays+'/'+r.pumpDaysTotal+'</td>'+
+            '<td class="mono'+(!r.todayOnly && r.consolidationDays>=r.dailyChanges.length && r.dailyChanges.length>0?' cont-rvol-hot':'')+'" title="'+(r.todayOnly?'Режим «только сегодня» — проторговка не проверяется':'Дней тихой торговли подряд перед пампом')+'">'+(r.todayOnly?'—':r.consolidationDays+'/'+r.dailyChanges.length)+'</td>'+
             '<td class="mono cont-rvol-hot">'+r.rvol.toFixed(2)+'x</td>'+
             '<td class="mono '+todayCls+'">'+(r.todayChange>=0?'+':'')+r.todayChange.toFixed(1)+'%</td>'+
             '<td>'+oiCell+'</td>'+

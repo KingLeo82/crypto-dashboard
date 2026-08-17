@@ -1100,8 +1100,12 @@
             <input type="number" class="natr-alert-input" id="contYestThreshold" value="40" min="1" step="1" style="width:64px;" oninput="contChangeFilters()">
         </div>
         <div class="natr-tool-group">
+            <label class="natr-tool-label" for="contQuietThreshold">Порог тишины, %:</label>
+            <input type="number" class="natr-alert-input" id="contQuietThreshold" value="10" min="0" step="1" style="width:56px;" title="Насколько тихим должен быть день, чтобы считаться проторговкой (независимо от «Дневного порога» — раньше они были одним и тем же числом, из-за чего проторговкой засчитывался почти любой день)" oninput="contChangeFilters()">
+        </div>
+        <div class="natr-tool-group">
             <label class="natr-tool-label" for="contLookbackDays">Дней проторговки:</label>
-            <input type="number" class="natr-alert-input" id="contLookbackDays" value="5" min="0" max="30" step="1" placeholder="0" style="width:56px;" title="Сколько дней подряд ПЕРЕД пампом цена должна была стоять тихо (движение дня ниже «Дневного порога»). 0 или пусто — не проверять историю, смотреть только на сегодняшнее движение. Требует нового сканирования.">
+            <input type="number" class="natr-alert-input" id="contLookbackDays" value="5" min="0" max="30" step="1" placeholder="0" style="width:56px;" title="Сколько дней подряд ПЕРЕД пампом цена должна была стоять тихо (движение дня ниже «Порога тишины»). 0 или пусто — не проверять историю, смотреть только на сегодняшнее движение. Требует нового сканирования.">
         </div>
         <div class="natr-tool-group">
             <label class="natr-tool-label" for="contRvolThreshold">RVOL, x:</label>
@@ -1117,7 +1121,7 @@
                 <option value="gte">&gt;</option>
                 <option value="lte">&lt;</option>
             </select>
-            <input type="number" class="natr-alert-input" id="contOiMin" min="0" step="1" placeholder="0" style="width:64px;" title="0 или пусто — фильтр выключен" oninput="contChangeFilters()">
+            <input type="number" class="natr-alert-input" id="contOiMin" min="0" step="1" placeholder="0" style="width:64px;" title="0 или пусто — фильтр выключен. Когда включён, требует ещё и совпадения знака ΔOI с направлением пампа (растёт вместе с ценой = новые позиции = реальное подтверждение; движется в другую сторону = закрытие позиций = отсекается)" oninput="contChangeFilters()">
         </div>
         <div class="natr-tool-group">
             <label class="natr-tool-label">Показывать:</label>
@@ -1125,15 +1129,15 @@
             <button class="natr-tool-btn" id="contDirUpBtn" onclick="contSetDirection('up')">🔥 Рост</button>
             <button class="natr-tool-btn" id="contDirDownBtn" onclick="contSetDirection('down')">🩸 Падение</button>
         </div>
-        <button class="natr-tool-btn active" id="contDirBtn" onclick="contToggleDirFilter()" title="Показывать только пары, где сегодняшнее движение совпадает по направлению со вчерашним">Только совпадение направления</button>
+        <div class="natr-tool-group">
+            <button class="natr-tool-btn active" id="contDirBtn" onclick="contToggleDirFilter()" title="Показывать только пары, где сегодняшнее движение совпадает по направлению со вчерашним И не меньше «Мин. продолжения»">Только совпадение направления</button>
+            <label class="natr-tool-label" for="contMinContinuation">Мин. продолжения, %:</label>
+            <input type="number" class="natr-alert-input" id="contMinContinuation" value="3" min="0" step="0.5" style="width:56px;" title="Сегодняшнее движение должно быть не только в ту же сторону, что и вчерашний памп, но и не меньше этого значения — иначе +0.01% тоже засчитывался бы как «продолжение»" oninput="contChangeFilters()">
+        </div>
         <button class="natr-tool-btn" id="contWatchlistBtn" onclick="contToggleWatchlistOnly()" title="Показывать только избранное (своё для Продолжения тренда)">★ Избранное</button>
         <div class="natr-tool-group">
             <button class="natr-tool-btn" id="contAlertBtn" onclick="contToggleAlerts()" title="Уведомлять (звук + пуш) о новых тикерах, проходящих текущие фильтры">🔔</button>
-            <label class="natr-tool-label" for="contRefreshSelect">Автообновление:</label>
-            <select class="sec-select" id="contRefreshSelect" onchange="contChangeRefreshInterval(this.value)" style="width:88px;">
-                <option value="60">Раз в 1 мин</option>
-                <option value="300" selected>Раз в 5 мин</option>
-            </select>
+            <span class="natr-tool-label">Автообновление: раз в 5 мин</span>
         </div>
     </div>
     <div class="natr-tools" id="contToolsRow2">
@@ -1158,10 +1162,9 @@
                 <th style="width:78px;text-align:center;" title="Закреп и избранное">📌 ★</th>
                 <th>Тикер</th>
                 <th style="width:100px;">Вчера, %</th>
-                <th style="width:100px;" title="Дней тихой проторговки перед пампом, из запрошенных в «Дней проторговки»">Проторговка</th>
                 <th style="width:80px;">RVOL</th>
                 <th style="width:100px;">Сегодня, %</th>
-                <th style="width:90px;">ΔOI, %</th>
+                <th style="width:112px;" title="Знак ΔOI относительно направления пампа: «нов.» = новые позиции (подтверждение), «закр.» = закрытие позиций (слабее)">ΔOI, %</th>
                 <th style="width:100px;">VWAP откл.</th>
                 <th style="width:90px;">В дне, %</th>
                 <th style="width:90px;">vs BTC</th>
@@ -2282,8 +2285,12 @@ async function natrStartScan() {
 // relative volume (RVOL) on short candles moving in the SAME direction — a signal
 // that yesterday's move may be continuing rather than having exhausted itself.
 const CONT_MODES = {
-    '5m': { interval: '5m', shortN: 3, baseN: 96, limit: 100 },   // short = last 15m, baseline = preceding ~8h
-    '1m': { interval: '1m', shortN: 5, baseN: 115, limit: 120 },  // short = last 5m, baseline = preceding ~2h
+    // oiLimit/oiPeriod are chosen so the ΔOI window matches the RVOL window
+    // ((baseN+shortN)*interval) as closely as Binance's OI endpoint allows — it has no
+    // granularity finer than 5m, so the '1m' mode's ~2h RVOL window is approximated with
+    // 24 five-minute OI points instead of true 1-minute ones.
+    '5m': { interval: '5m', shortN: 3, baseN: 96, limit: 100, oiPeriod: '5m', oiLimit: 99 },   // short = last 15m, baseline = preceding ~8h, ΔOI ~8.25h to match
+    '1m': { interval: '1m', shortN: 5, baseN: 115, limit: 120, oiPeriod: '5m', oiLimit: 24 },  // short = last 5m, baseline = preceding ~2h, ΔOI ~2h to match
 };
 let contMode = '5m';
 let contDirFilterOnly = true;
@@ -2302,9 +2309,8 @@ let contBtcRef = null;
 let contAlertsEnabled = false;
 let contAlertedSymbols = new Set(); // tracks who we've already notified about, mirrors natrAlertedSymbols
 let contIsBgUpdating = false;
-const CONT_REFRESH_OPTIONS = [60, 300]; // seconds: 1 мин / 5 мин
-let contRefreshInterval = 300;
-let contRefreshCountdown = contRefreshInterval;
+const CONT_REFRESH_INTERVAL = 300; // seconds — fixed, always 5 min
+let contRefreshCountdown = CONT_REFRESH_INTERVAL;
 let contRefreshTimerId = null;
 let contIsScanning = false;
 let contAbortCtrl = null;
@@ -2331,9 +2337,6 @@ try {
     if (!isNaN(cVolTo)) contVolTo = cVolTo;
     contVolFilterActive = localStorage.getItem('cont_vol_filter_active') === '1';
     contAlertsEnabled = localStorage.getItem('cont_alerts_enabled') === '1';
-    const savedRefresh = parseInt(localStorage.getItem('cont_refresh_interval'), 10);
-    if (CONT_REFRESH_OPTIONS.includes(savedRefresh)) contRefreshInterval = savedRefresh;
-    contRefreshCountdown = contRefreshInterval;
 } catch(e) { /* storage unavailable — defaults are fine */ }
 function contApplyRestoredUI() {
     document.querySelectorAll('#section-cont .natr-tab').forEach(t => t.classList.toggle('active', t.dataset.mode === contMode));
@@ -2354,11 +2357,13 @@ function contApplyRestoredUI() {
     if (volBtn) volBtn.classList.toggle('active', contVolFilterActive);
     const alertBtn = document.getElementById('contAlertBtn');
     if (alertBtn && contAlertsEnabled) alertBtn.classList.add('active');
-    const refreshSel = document.getElementById('contRefreshSelect');
-    if (refreshSel) refreshSel.value = String(contRefreshInterval);
     try {
         const y = localStorage.getItem('cont_yest_threshold');
         if (y) document.getElementById('contYestThreshold').value = y;
+        const q = localStorage.getItem('cont_quiet_threshold');
+        if (q) document.getElementById('contQuietThreshold').value = q;
+        const mc = localStorage.getItem('cont_min_continuation');
+        if (mc) document.getElementById('contMinContinuation').value = mc;
         const rv = localStorage.getItem('cont_rvol_threshold');
         if (rv) document.getElementById('contRvolThreshold').value = rv;
         const oim = localStorage.getItem('cont_oi_min');
@@ -2477,7 +2482,7 @@ function contUpdateTimerDisplay() {
     el.style.color = contRefreshCountdown <= 5 ? 'var(--red)' : contRefreshCountdown <= 15 ? 'var(--accent)' : '';
 }
 function contStartAutoRefresh() {
-    contRefreshCountdown = contRefreshInterval;
+    contRefreshCountdown = CONT_REFRESH_INTERVAL;
     contUpdateTimerDisplay();
     if (contRefreshTimerId) clearInterval(contRefreshTimerId);
     contRefreshTimerId = setInterval(() => {
@@ -2485,24 +2490,16 @@ function contStartAutoRefresh() {
         contUpdateTimerDisplay();
         if (contRefreshCountdown <= 0) {
             if (!contIsScanning && !contIsBgUpdating && contRawResults.length > 0) contStartBgUpdate();
-            contRefreshCountdown = contRefreshInterval;
+            contRefreshCountdown = CONT_REFRESH_INTERVAL;
         }
     }, 1000);
     const box = document.getElementById('contAutoRefresh');
-    if (box) { box.classList.add('active'); box.style.setProperty('--refresh-dur', contRefreshInterval + 's'); }
+    if (box) { box.classList.add('active'); box.style.setProperty('--refresh-dur', CONT_REFRESH_INTERVAL + 's'); }
 }
 function contStopAutoRefresh() {
     if (contRefreshTimerId) { clearInterval(contRefreshTimerId); contRefreshTimerId = null; }
     const box = document.getElementById('contAutoRefresh');
     if (box) box.classList.remove('active');
-}
-function contChangeRefreshInterval(v) {
-    const n = parseInt(v, 10);
-    contRefreshInterval = CONT_REFRESH_OPTIONS.includes(n) ? n : 300;
-    ctSafeSetItem('cont_refresh_interval', String(contRefreshInterval));
-    // only actually (re)starts the countdown if it was already running (alerts on, or a
-    // scan has completed) — picking an interval alone shouldn't silently start polling
-    if (contRefreshTimerId || contAlertsEnabled) contStartAutoRefresh();
 }
 // Every filter input below calls this — it re-slices the already-fetched contRawResults
 // live, no network request needed. Only the timeframe tabs and "Дней проторговки" actually
@@ -2516,6 +2513,8 @@ function contChangeFilters() {
         ctSafeSetItem('cont_rvol_op', contRvolOp);
         ctSafeSetItem('cont_oi_op', contOiOp);
         ctSafeSetItem('cont_yest_threshold', document.getElementById('contYestThreshold').value || '40');
+        ctSafeSetItem('cont_quiet_threshold', document.getElementById('contQuietThreshold').value || '10');
+        ctSafeSetItem('cont_min_continuation', document.getElementById('contMinContinuation').value || '3');
         ctSafeSetItem('cont_rvol_threshold', document.getElementById('contRvolThreshold').value);
         ctSafeSetItem('cont_oi_min', document.getElementById('contOiMin').value);
     } catch(e) { /* non-fatal */ }
@@ -2581,13 +2580,14 @@ function contCalcVwapDeviation(klines, currentPrice) {
     if (!vwap) return null;
     return (currentPrice - vwap) / vwap * 100;
 }
-// (there's no 1m period for this endpoint), so we always pull it at 5m regardless of
-// which price/RVOL timeframe is selected — ~100 points covers about 8 hours.
-async function contFetchOI(symbol) {
+// Binance's Open Interest history has no granularity finer than 5m (unlike price klines,
+// which go down to 1m), so period/limit are passed in per-mode to match the RVOL window
+// as closely as that constraint allows — see CONT_MODES' oiPeriod/oiLimit.
+async function contFetchOI(symbol, period, limit) {
     try {
         const ctrl = new AbortController();
         const tid = setTimeout(() => ctrl.abort(), NATR_SCAN_CFG.timeout);
-        const resp = await fetch(NATR_API + '/futures/data/openInterestHist?symbol=' + symbol + '&period=5m&limit=100', {signal: ctrl.signal});
+        const resp = await fetch(NATR_API + '/futures/data/openInterestHist?symbol=' + symbol + '&period=' + period + '&limit=' + limit, {signal: ctrl.signal});
         clearTimeout(tid);
         if (!resp.ok) return null;
         const d = await resp.json();
@@ -2600,14 +2600,14 @@ async function contFetchOI(symbol) {
 }
 // lookbackDays controls how many days of daily candles we fetch before the pump day, so
 // contGetFilteredResults can check that all of them were "проторговка" (quiet consolidation,
-// each day's move under the threshold) right up until the pump. Pairs with LESS history
-// than lookbackDays (recent listings) are still included — dailyChanges just ends up
+// each day's high-low range under the threshold) right up until the pump. Pairs with LESS
+// history than lookbackDays (recent listings) are still included — dailyRanges just ends up
 // shorter, which will correctly fail the consolidation-window check further down.
 async function contFetchAndCalc(symbol, cfg, lookbackDays) {
     const [daily, intra, oi] = await Promise.all([
         contFetchKlines(symbol, '1d', Math.max(lookbackDays, 0) + 2),
         contFetchKlines(symbol, cfg.interval, cfg.limit),
-        contFetchOI(symbol)
+        contFetchOI(symbol, cfg.oiPeriod, cfg.oiLimit)
     ]);
     if (!daily || daily.length < 2 || !intra) return null;
     const yestCandle = daily[daily.length - 2];   // last FULLY closed UTC day
@@ -2641,16 +2641,18 @@ async function contFetchAndCalc(symbol, cfg, lookbackDays) {
     // window contGetFilteredResults checks for quiet consolidation. Capped to lookbackDays,
     // shrinking gracefully for pairs with shorter history. Not needed in "today only" mode,
     // since there's no prior-day window to require quiet — today's move is the whole signal.
-    let dailyChanges = [];
+    // Uses the day's FULL high-low RANGE, not close-open — a day that spikes +50% intraday
+    // and closes flat is not "quiet", even though its close-open change would say 0%.
+    let dailyRanges = [];
     if (!todayOnly) {
         const availableDays = Math.max(0, Math.min(lookbackDays, daily.length - 2));
         for (let i = daily.length - 2 - availableDays; i <= daily.length - 3; i++) {
-            const o = parseFloat(daily[i][1]), c = parseFloat(daily[i][4]);
-            if (o) dailyChanges.push((c - o) / o * 100);
+            const o = parseFloat(daily[i][1]), h = parseFloat(daily[i][2]), l = parseFloat(daily[i][3]);
+            if (o) dailyRanges.push((h - l) / o * 100);
         }
     }
     const refChange = todayOnly ? todayChange : yestChange;
-    return { symbol, yestChange, todayChange, refChange, todayOnly, rvol, oiChangePct, oiValue, dailyChanges, currentPrice, vwapDeviationPct, dayRangePos };
+    return { symbol, yestChange, todayChange, refChange, todayOnly, rvol, oiChangePct, oiValue, dailyRanges, currentPrice, vwapDeviationPct, dayRangePos };
 }
 async function contProcessMax(pairs, cfg, lookbackDays, onProgress) {
     const results = []; const total = pairs.length; let processed = 0;
@@ -2762,22 +2764,38 @@ function contGetFilteredResults() {
     const oiRaw = document.getElementById('contOiMin').value.trim();
     const oiThr = oiRaw === '' ? 0 : (parseFloat(oiRaw) || 0);
     const oiActive = oiThr > 0;
-    const passOi = v => contOiOp === 'lte' ? Math.abs(v) <= oiThr : Math.abs(v) >= oiThr;
+    // ΔOI confirmation now requires the SIGN to match the pump's direction too, not just
+    // the magnitude — OI growing in the SAME direction as price means new positions are
+    // opening (real fuel for continuation); OI moving the other way means positions are
+    // being closed (short squeeze / long liquidation), which is a much weaker, often
+    // exhaustion-flavoured signal that magnitude alone used to let straight through.
+    const passOi = (v, refSign) => {
+        if (Math.sign(v) !== refSign) return false;
+        return contOiOp === 'lte' ? Math.abs(v) <= oiThr : Math.abs(v) >= oiThr;
+    };
 
     const lbRaw = document.getElementById('contLookbackDays').value.trim();
     const lookbackDays = lbRaw === '' ? 0 : Math.max(0, parseInt(lbRaw) || 0);
+    const quietRaw = document.getElementById('contQuietThreshold').value.trim();
+    const quietThr = quietRaw === '' ? 10 : (Math.abs(parseFloat(quietRaw)) || 0);
 
     // Проторговка (consolidation): walk backward from the day right before the pump,
-    // counting consecutive quiet days (|move| under the SAME threshold that qualifies the
-    // pump itself). A big move anywhere in that stretch breaks the streak. Recomputed here
-    // (not baked in at scan time) so changing "Дневной порог" re-evaluates it instantly —
-    // only lookbackDays itself needs a rescan, since that's what controls how much history
-    // was actually fetched. Computed for EVERY raw result up front so a pinned (📌) row
-    // still has a valid count even if it currently fails one of the other filters below.
+    // counting consecutive quiet days — quiet meaning the day's full HIGH-LOW RANGE (not
+    // just close-open) stayed under "Порог тишины". Using the range instead of the net
+    // change catches a day that spiked hard intraday and closed flat, which close-open
+    // would otherwise wrongly call "quiet". Threshold is a SEPARATE, usually much smaller
+    // number than the pump threshold above — these used to be the same value, which meant
+    // almost any day under the pump threshold (e.g. up to 39% when the pump threshold was
+    // 40%) counted as "quiet", barely filtering anything. A big move anywhere in the
+    // stretch breaks the streak. Recomputed here (not baked in at scan time) so changing
+    // either threshold re-evaluates it instantly — only lookbackDays itself needs a
+    // rescan, since that's what controls how much history was fetched. Computed for EVERY
+    // raw result up front so a pinned (📌) row still has a valid count even if it
+    // currently fails one of the other filters below.
     contRawResults.forEach(r => {
         let cd = 0;
-        for (let i = r.dailyChanges.length - 1; i >= 0; i--) {
-            if (Math.abs(r.dailyChanges[i]) < yestThr) cd++; else break;
+        for (let i = r.dailyRanges.length - 1; i >= 0; i--) {
+            if (r.dailyRanges[i] < quietThr) cd++; else break;
         }
         r.consolidationDays = cd;
     });
@@ -2786,7 +2804,7 @@ function contGetFilteredResults() {
         if (rvolActive && !passRvol(r.rvol)) return false;
         // OI filter is opt-in (0/empty = off). When it's on, a row with no OI data
         // can't be confirmed either way, so it's excluded rather than let through blind.
-        if (oiActive && (r.oiChangePct === null || !passOi(r.oiChangePct))) return false;
+        if (oiActive && (r.oiChangePct === null || !passOi(r.oiChangePct, Math.sign(r.refChange)))) return false;
         // Skipped entirely in "today only" mode (lookbackDays=0 at scan time) — there's no
         // prior-day window fetched to check. Otherwise require the FULL requested window
         // to have been quiet; a pair with less history than lookbackDays can't satisfy this
@@ -2797,7 +2815,11 @@ function contGetFilteredResults() {
     if (contDirection === 'up') list = list.filter(r => r.refChange >= 0);
     else if (contDirection === 'down') list = list.filter(r => r.refChange < 0);
     if (contDirFilterOnly) {
-        list = list.filter(r => Math.sign(r.refChange) === Math.sign(r.todayChange) && r.todayChange !== 0);
+        const minContRaw = document.getElementById('contMinContinuation').value.trim();
+        const minCont = minContRaw === '' ? 0 : Math.abs(parseFloat(minContRaw) || 0);
+        // Same-sign alone lets +0.01% count as "continuation" of a 40% pump — require the
+        // move to actually be worth calling a continuation, not just technically not zero.
+        list = list.filter(r => Math.sign(r.refChange) === Math.sign(r.todayChange) && Math.abs(r.todayChange) >= minCont);
     }
     if (contWatchlistOnly) list = list.filter(r => contFavorites.has(r.symbol));
     if (contVolFilterActive) {
@@ -2842,9 +2864,22 @@ function contRenderTable(data, pinnedCount) {
         const displaySymbol = escapeHtml(r.symbol.replace(/USDT$|USD1$/, ''));
         const refCls = r.refChange >= 0 ? 'cont-yest-up' : 'cont-yest-down';
         const todayCls = r.todayChange >= 0 ? 'cont-yest-up' : 'cont-yest-down';
-        const oiCell = r.oiChangePct !== null
-            ? '<span class="mono '+(r.oiChangePct>=0?'cont-yest-up':'cont-yest-down')+'">'+(r.oiChangePct>=0?'+':'')+r.oiChangePct.toFixed(1)+'%</span>'
-            : '<span style="color:var(--muted)">—</span>';
+        // Label whether OI is moving WITH the pump (new positions opening — real fuel for
+        // continuation) or AGAINST it (positions closing — short squeeze / long
+        // liquidation, a weaker, exhaustion-flavoured signal) — same sign logic the filter
+        // above now enforces when active, but shown here regardless of whether it's on.
+        let oiCell;
+        if (r.oiChangePct === null) {
+            oiCell = '<span style="color:var(--muted)">—</span>';
+        } else {
+            const oiSameDir = Math.sign(r.oiChangePct) === Math.sign(r.refChange) && r.oiChangePct !== 0;
+            const oiCls = r.oiChangePct >= 0 ? 'cont-yest-up' : 'cont-yest-down';
+            const oiLabel = oiSameDir ? 'нов.' : 'закр.';
+            const oiTitle = oiSameDir
+                ? 'Открытие новых позиций в сторону движения — реальное топливо для продолжения'
+                : 'Закрытие позиций (шорт-сквиз / фиксация) — обычно более слабый, «истощающий» сигнал';
+            oiCell = '<span class="mono '+oiCls+'" title="'+oiTitle+'">'+(r.oiChangePct>=0?'+':'')+r.oiChangePct.toFixed(1)+'% <span style="opacity:.6;font-size:0.85em;">'+oiLabel+'</span></span>';
+        }
         const isPinned = contPinned.has(r.symbol);
         const isFav = contFavorites.has(r.symbol);
         const vwapCell = r.vwapDeviationPct !== null
@@ -2868,7 +2903,6 @@ function contRenderTable(data, pinnedCount) {
             '<div class="ticker-name">'+displaySymbol+'</div>'+
             '<svg class="copy-icon" style="width:14px;height:14px" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></td>'+
             '<td class="mono '+refCls+'" title="'+(r.todayOnly?'Сегодня (режим «только сегодня»)':'Последний закрытый день')+'">'+(r.refChange>=0?'+':'')+r.refChange.toFixed(1)+'%</td>'+
-            '<td class="mono'+(!r.todayOnly && r.consolidationDays>=r.dailyChanges.length && r.dailyChanges.length>0?' cont-rvol-hot':'')+'" title="'+(r.todayOnly?'Режим «только сегодня» — проторговка не проверяется':'Дней тихой торговли подряд перед пампом')+'">'+(r.todayOnly?'—':r.consolidationDays+'/'+r.dailyChanges.length)+'</td>'+
             '<td class="mono cont-rvol-hot">'+r.rvol.toFixed(2)+'x</td>'+
             '<td class="mono '+todayCls+'">'+(r.todayChange>=0?'+':'')+r.todayChange.toFixed(1)+'%</td>'+
             '<td>'+oiCell+'</td>'+

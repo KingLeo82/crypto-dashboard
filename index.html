@@ -247,8 +247,9 @@
 
         /* Закреп (pin-to-top) и избранное (favorite) live together in one column, same
            pattern as the CryptoAI/Tiger action buttons: two small controls side by side.
-           Two separate concepts though — pin only affects sort order/visibility bypass
-           within a single table, favorite only affects the "★ Избранное" filter — and
+           Two separate concepts, but both now bypass every other filter when active —
+           pin always keeps a row visible at the top, and "★ Избранное" shows the full
+           favorites list regardless of category/threshold/etc. filters currently set —
            each screener keeps its own independent set of both. */
         .natr-pinfav-cell { display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
         .natr-pin-cell, .natr-fav-cell {
@@ -941,6 +942,20 @@
         <button class="nav-tab" data-section="cal" onclick="switchSection('cal')">Календарь</button>
         <button class="nav-tab" data-section="cai" onclick="switchSection('cai')">CryptoAI</button>
     </div>
+    <div style="position:relative;">
+        <button class="natr-icon-btn" style="width:auto;padding:0 10px;gap:6px;" onclick="natrToggleTigerSettings()" title="Настройки подключения Tiger.com Terminal — на какой бирже открывать тикер"><span style="font-size:0.8rem;">Настройки</span></button>
+        <div id="natrTigerSettings" style="display:none;position:absolute;right:0;top:calc(100% + 8px);z-index:50;background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:14px;min-width:240px;flex-direction:column;gap:10px;box-shadow:0 8px 24px rgba(0,0,0,0.4);">
+            <div style="font-size:12px;color:var(--muted);font-weight:600;">Кнопка «Tiger» в «Действиях» откроет тикер именно на этой бирже в вашем терминале — независимо от того, что данные скринера идут с Binance.</div>
+            <div>
+                <label class="natr-tool-label" for="natrTigerExchangeSelect" style="display:block;margin-bottom:4px;">Биржа в Tiger:</label>
+                <select class="sec-select" id="natrTigerExchangeSelect" onchange="natrChangeTigerExchange(this.value)" style="width:100%;"></select>
+            </div>
+            <div>
+                <label class="natr-tool-label" for="natrTigerLinkGroupSelect" style="display:block;margin-bottom:4px;">Группа линковки:</label>
+                <select class="sec-select" id="natrTigerLinkGroupSelect" onchange="natrChangeTigerLinkGroup(this.value)" style="width:100%;"></select>
+            </div>
+        </div>
+    </div>
 </nav>
 
 <!-- ========== SECTION 1: NATR SCANNER ========== -->
@@ -1083,12 +1098,8 @@
         </div>
     </div>
     <p style="color:var(--muted);font-size:13px;margin:-14px 0 18px;max-width:640px;">
-        Логика: если вчера пара сильно выросла или упала — сегодня ищем повышенный объём (RVOL) на коротких свечах с движением цены в ту же сторону. Это может говорить о продолжении вчерашнего хайпа или слива.
+        Логика: вчерашняя дневная свеча сравнивается с предыдущими N днями — насколько её тело (|закрытие−открытие|) и объём больше среднего за это окно. Плюс проверка, что перед пампом была тихая проторговка.
     </p>
-    <div class="natr-tabs">
-        <button class="natr-tab active" data-mode="5m" onclick="contSwitchMode('5m')" title="RVOL и цена по 5-минуткам">5м</button>
-        <button class="natr-tab" data-mode="1m" onclick="contSwitchMode('1m')" title="RVOL и цена по 1-минуткам">1м</button>
-    </div>
     <div class="natr-tools-card">
     <div class="natr-tools" id="contTools">
         <div class="natr-tool-group">
@@ -1104,16 +1115,24 @@
             <input type="number" class="natr-alert-input" id="contQuietThreshold" value="10" min="0" step="1" style="width:56px;" title="Насколько тихим должен быть день, чтобы считаться проторговкой (независимо от «Дневного порога» — раньше они были одним и тем же числом, из-за чего проторговкой засчитывался почти любой день)" oninput="contChangeFilters()">
         </div>
         <div class="natr-tool-group">
-            <label class="natr-tool-label" for="contLookbackDays">Дней проторговки:</label>
-            <input type="number" class="natr-alert-input" id="contLookbackDays" value="5" min="0" max="30" step="1" placeholder="0" style="width:56px;" title="Сколько дней подряд ПЕРЕД пампом цена должна была стоять тихо (движение дня ниже «Порога тишины»). 0 или пусто — не проверять историю, смотреть только на сегодняшнее движение. Требует нового сканирования.">
+            <label class="natr-tool-label" for="contLookbackDays">Окно N, дней:</label>
+            <input type="number" class="natr-alert-input" id="contLookbackDays" value="5" min="0" max="30" step="1" placeholder="0" style="width:56px;" title="Общее окно сравнения: (1) сколько дней подряд ПЕРЕД пампом должны быть тихими (проторговка), и (2) база для сравнения тела свечи и объёма — «R коэфф.» и «RVOL» считаются как вчера / среднее за эти N дней. 0 или пусто — не проверять историю, смотреть только на сегодняшнее движение. Требует нового сканирования.">
         </div>
         <div class="natr-tool-group">
-            <label class="natr-tool-label" for="contRvolThreshold">RVOL, x:</label>
+            <button class="natr-tool-btn active" id="contBreakoutBtn" onclick="contToggleBreakout()" title="Памп должен закрыться ЗА пределами диапазона проторговки (не просто большим % внутри него) — иначе не считается пробоем базы">Требовать пробой базы</button>
+            <input type="number" class="natr-alert-input" id="contBreakoutMargin" value="0" min="0" step="0.5" style="width:52px;" title="Запас сверх границы диапазона, %. 0 — достаточно просто закрыться за пределами базы" oninput="contChangeFilters()">
+        </div>
+        <div class="natr-tool-group">
+            <label class="natr-tool-label" for="contBodyRatioThreshold">R коэфф. (мин.):</label>
+            <input type="number" class="natr-alert-input" id="contBodyRatioThreshold" value="2" min="0" step="0.1" placeholder="0" style="width:64px;" title="Во сколько раз тело вчерашней свечи (|закрытие-открытие|) больше среднего тела свечи за N предыдущих дней. 0 или пусто — фильтр выключен" oninput="contChangeFilters()">
+        </div>
+        <div class="natr-tool-group">
+            <label class="natr-tool-label" for="contRvolThreshold">RVOL (дневной), x:</label>
             <select class="sec-select" id="contRvolOp" onchange="contChangeFilters()" style="width:56px;">
                 <option value="gte">&gt;</option>
                 <option value="lte">&lt;</option>
             </select>
-            <input type="number" class="natr-alert-input" id="contRvolThreshold" value="2" min="0" step="0.1" placeholder="0" style="width:64px;" title="0 или пусто — фильтр выключен" oninput="contChangeFilters()">
+            <input type="number" class="natr-alert-input" id="contRvolThreshold" value="2" min="0" step="0.1" placeholder="0" style="width:64px;" title="Объём вчерашней дневной свечи ÷ средний объём за N предыдущих дней. 0 или пусто — фильтр выключен" oninput="contChangeFilters()">
         </div>
         <div class="natr-tool-group">
             <label class="natr-tool-label" for="contOiMin">ΔOI, %:</label>
@@ -1121,7 +1140,7 @@
                 <option value="gte">&gt;</option>
                 <option value="lte">&lt;</option>
             </select>
-            <input type="number" class="natr-alert-input" id="contOiMin" min="0" step="1" placeholder="0" style="width:64px;" title="0 или пусто — фильтр выключен. Когда включён, требует ещё и совпадения знака ΔOI с направлением пампа (растёт вместе с ценой = новые позиции = реальное подтверждение; движется в другую сторону = закрытие позиций = отсекается)" oninput="contChangeFilters()">
+            <input type="number" class="natr-alert-input" id="contOiMin" min="0" step="1" placeholder="0" style="width:64px;" title="0 или пусто — фильтр выключен. Когда включён, требует ещё и совпадения знака ΔOI с направлением пампа (растёт вместе с ценой = новые позиции = реальное подтверждение; движется в другую сторону = закрытие позиций = отсекается). Окно совпадает с N дней выше." oninput="contChangeFilters()">
         </div>
         <div class="natr-tool-group">
             <label class="natr-tool-label">Показывать:</label>
@@ -1129,11 +1148,7 @@
             <button class="natr-tool-btn" id="contDirUpBtn" onclick="contSetDirection('up')">🔥 Рост</button>
             <button class="natr-tool-btn" id="contDirDownBtn" onclick="contSetDirection('down')">🩸 Падение</button>
         </div>
-        <div class="natr-tool-group">
-            <button class="natr-tool-btn active" id="contDirBtn" onclick="contToggleDirFilter()" title="Показывать только пары, где сегодняшнее движение совпадает по направлению со вчерашним И не меньше «Мин. продолжения»">Только совпадение направления</button>
-            <label class="natr-tool-label" for="contMinContinuation">Мин. продолжения, %:</label>
-            <input type="number" class="natr-alert-input" id="contMinContinuation" value="3" min="0" step="0.5" style="width:56px;" title="Сегодняшнее движение должно быть не только в ту же сторону, что и вчерашний памп, но и не меньше этого значения — иначе +0.01% тоже засчитывался бы как «продолжение»" oninput="contChangeFilters()">
-        </div>
+        <button class="natr-tool-btn active" id="contDirBtn" onclick="contToggleDirFilter()" title="Показывать только пары, где сегодняшнее движение совпадает по направлению со вчерашним пампом">Только совпадение направления</button>
         <button class="natr-tool-btn" id="contWatchlistBtn" onclick="contToggleWatchlistOnly()" title="Показывать только избранное (своё для Продолжения тренда)">★ Избранное</button>
         <div class="natr-tool-group">
             <button class="natr-tool-btn" id="contAlertBtn" onclick="contToggleAlerts()" title="Уведомлять (звук + пуш) о новых тикерах, проходящих текущие фильтры">🔔</button>
@@ -1148,7 +1163,7 @@
             <input type="text" inputmode="decimal" class="natr-range-input" id="contVolTo" placeholder="до, напр. 1м" oninput="contChangeVolRange()">
             <button class="natr-tool-btn" id="contVolFilterBtn" onclick="contToggleVolFilter()" title="Включить фильтр (иначе значения просто не проверяются)">Фильтр</button>
         </div>
-        <span class="natr-tool-hint" id="contRescanHint" title="«Дней проторговки» и таймфрейм (1м/5м) меняют то, что запрашивается у Binance — после их изменения нажмите «Сканировать» ещё раз">ⓘ Все фильтры кроме «Дней проторговки» и таймфрейма применяются сразу</span>
+        <span class="natr-tool-hint" id="contRescanHint" title="Окно N дней меняет то, что запрашивается у Binance — после его изменения нажмите «Сканировать» ещё раз">ⓘ Все фильтры кроме «Окно N, дней» применяются сразу</span>
     </div>
     </div>
     <div class="natr-stats" id="contStatsBar" style="display:none;">
@@ -1162,12 +1177,12 @@
                 <th style="width:78px;text-align:center;" title="Закреп и избранное">📌 ★</th>
                 <th>Тикер</th>
                 <th style="width:100px;">Вчера, %</th>
-                <th style="width:80px;">RVOL</th>
+                <th style="width:100px;" title="Тело вчерашней свечи (|закрытие-открытие|) ÷ среднее тело свечи за N предыдущих дней">R коэфф.</th>
+                <th style="width:80px;" title="Объём вчерашней дневной свечи ÷ средний объём за N предыдущих дней">RVOL</th>
                 <th style="width:100px;">Сегодня, %</th>
                 <th style="width:112px;" title="Знак ΔOI относительно направления пампа: «нов.» = новые позиции (подтверждение), «закр.» = закрытие позиций (слабее)">ΔOI, %</th>
-                <th style="width:100px;">VWAP откл.</th>
                 <th style="width:90px;">В дне, %</th>
-                <th style="width:90px;">vs BTC</th>
+                <th style="width:112px;" title="Низ диапазона проторговки для лонга / верх для шорта — естественный уровень инвалидации сетапа, и % риска от текущей цены">Стоп (база)</th>
                 <th style="width:90px;text-align:center;">Действия</th>
             </tr></thead>
             <tbody id="contTableBody"></tbody>
@@ -1511,6 +1526,62 @@ function ctSafeGetJSON(key, fallback) {
 //  SECTION 1: NATR SCANNER
 // ============================================================
 const NATR_API = 'https://fapi.binance.com';
+// ---- Binance rate-limit / ban protection ----
+// Binance returns 429 ("too many requests", keep going but slow down) or 418 ("IP auto-
+// banned", STOP entirely) when a client exceeds its request-weight budget. Continuing to
+// send requests while banned only extends the ban further, so every single fetch to
+// Binance in this app funnels through natrApiFetch() below, which refuses to even attempt
+// a request while a ban is active and records one the moment Binance signals it — this is
+// what "перестаёт сканировать на 5-10 минут" actually was.
+let natrBannedUntil = 0;   // epoch ms; 0 = not currently banned
+let natrBanStreak = 0;     // consecutive bans without a clean scan in between — used to back off harder on repeat offenses
+try {
+    const savedBan = parseInt(localStorage.getItem('natr_banned_until'), 10);
+    if (!isNaN(savedBan) && savedBan > Date.now()) natrBannedUntil = savedBan;
+    const savedStreak = parseInt(localStorage.getItem('natr_ban_streak'), 10);
+    if (!isNaN(savedStreak)) natrBanStreak = savedStreak;
+} catch(e) { /* non-fatal */ }
+function natrIsBanned() { return Date.now() < natrBannedUntil; }
+function natrBanSecondsLeft() { return Math.max(0, Math.ceil((natrBannedUntil - Date.now()) / 1000)); }
+function natrRegisterBan(resp) {
+    const retryAfterHeader = resp.headers.get('Retry-After');
+    const retryAfterSec = retryAfterHeader ? parseInt(retryAfterHeader, 10) : null;
+    natrBanStreak++;
+    // Binance doesn't always send Retry-After on 418; fall back to an escalating default
+    // (longer for a repeat offense in the same session) rather than guessing too short and
+    // immediately re-triggering the ban the moment the person clicks "Сканировать" again.
+    const defaultSec = resp.status === 418 ? Math.min(600, 90 * natrBanStreak) : Math.min(300, 30 * natrBanStreak);
+    const cooldownSec = (retryAfterSec && retryAfterSec > 0) ? retryAfterSec : defaultSec;
+    natrBannedUntil = Date.now() + cooldownSec * 1000;
+    try {
+        ctSafeSetItem('natr_banned_until', String(natrBannedUntil));
+        ctSafeSetItem('natr_ban_streak', String(natrBanStreak));
+    } catch(e) { /* non-fatal */ }
+    if (natrAbortCtrl) natrAbortCtrl.abort();
+    if (contAbortCtrl) contAbortCtrl.abort();
+    const until = new Date(natrBannedUntil).toLocaleTimeString('ru-RU');
+    showToast('⛔ Binance ограничил доступ (' + resp.status + ') — пауза до ' + until);
+}
+// Called after any successful (non-banning) response, to notice the streak has ended.
+function natrClearBanStreak() {
+    if (natrBanStreak !== 0 && !natrIsBanned()) { natrBanStreak = 0; try { ctSafeSetItem('natr_ban_streak', '0'); } catch(e) {} }
+}
+function natrBanStatusText() { return '⛔ Binance ограничил — ждём ' + natrBanSecondsLeft() + 'с'; }
+// Single choke point for every Binance request in the app (klines, OI, ticker, exchangeInfo).
+// Returns null immediately without any network call while banned — this is the actual fix,
+// not just slower batching: zero requests reach Binance until the cooldown has passed.
+async function natrApiFetch(url, opts) {
+    if (natrIsBanned()) return null;
+    let resp;
+    try { resp = await fetch(url, opts); }
+    catch(e) { return null; } // network error / aborted — not a ban, just propagate failure
+    if (resp.status === 418 || resp.status === 429) {
+        natrRegisterBan(resp);
+        return null;
+    }
+    natrClearBanStreak();
+    return resp;
+}
 // Every selectable timeframe lives here — interval is the Binance kline interval,
 // period is how many candles the ATR/NATR average is taken over.
 const NATR_MODES = {
@@ -1525,7 +1596,12 @@ let natrMode = '5m_14';
 let natrAllResults = [];
 let natrIsScanning = false;
 let natrIsBgUpdating = false;
-const NATR_SCAN_CFG = { batchSize: 60, maxRetries: 1, retryDelay: 80, batchDelay: 150, cacheResults: true, abortOnNewScan: true, timeout: 3000 };
+// batchSize/batchDelay were far too aggressive (60 concurrent requests, 150ms between
+// batches) — enough to trip Binance's IP-level rate limiter (HTTP 418/429), which is
+// exactly what "перестаёт сканировать на 5-10 минут" is: a temporary IP ban. Lowered
+// concurrency substantially and slowed the pacing down; see natrApiFetch below for the
+// actual ban-detection/backoff logic that stops hammering Binance once limited.
+const NATR_SCAN_CFG = { batchSize: 12, maxRetries: 1, retryDelay: 300, batchDelay: 400, cacheResults: true, abortOnNewScan: true, timeout: 5000 };
 let natrAbortCtrl = null;
 const natrResultsCache = new Map();
 const NATR_CACHE_TTL = 58000;
@@ -1642,6 +1718,10 @@ function natrApplyRestoredUI() {
     if (alertBtn && natrAlertsEnabled && natrCompareValue !== null) {
         alertBtn.classList.add('active');
     }
+    const tigerExchSel = document.getElementById('natrTigerExchangeSelect');
+    if (tigerExchSel) tigerExchSel.value = natrTigerExchange;
+    const tigerGroupSel = document.getElementById('natrTigerLinkGroupSelect');
+    if (tigerGroupSel) tigerGroupSel.value = natrTigerLinkGroup;
 }
 
 // Embedded category map — avoids CORS, works offline
@@ -1785,6 +1865,14 @@ const NATR_TF_TAB_TO_ASSET_TYPE = { TF_CRYPTO: 'crypto', TF_STOCK: 'stock', TF_E
 // for rendering the table AND for deciding what the alert system watches, so alerts
 // never fire for rows the filters are currently hiding.
 function natrGetFilteredResults() {
+    // Favorites-only bypasses every other filter (category tab, объём/сделки, NATR-порог)
+    // — same "show me exactly this list, full stop" semantics pinned rows already have.
+    // Previously favorites were filtered from whatever the category/volume/etc. filters
+    // already narrowed down to, so a favorited symbol could silently disappear just because
+    // it didn't match the currently selected category or NATR threshold.
+    if (natrWatchlistOnly) {
+        return natrAllResults.filter(r => natrFavorites.has(r.symbol));
+    }
     let list;
     if (natrSelectedCategory === 'all') {
         list = [...natrAllResults];
@@ -1797,7 +1885,6 @@ function natrGetFilteredResults() {
             return cat === natrSelectedCategory;
         });
     }
-    if (natrWatchlistOnly) list = list.filter(r => natrFavorites.has(r.symbol));
     if (natrVolFilterActive) {
         if (natrVolFrom !== null) list = list.filter(r => { const t = natrTicker24hMap.get(r.symbol); return t && t.volume >= natrVolFrom; });
         if (natrVolTo !== null) list = list.filter(r => { const t = natrTicker24hMap.get(r.symbol); return t && t.volume <= natrVolTo; });
@@ -1987,9 +2074,51 @@ function natrOpenInCryptoAI(symbol) {
 // the Tiger.com desktop terminal (default ws://localhost:7819) that only accepts a single
 // command, setLinkSymbol, to switch the active ticker inside an already-running terminal.
 // It provides no market data back — it's purely "push this symbol into my open Tiger window".
+// Docs: https://support.tiger.com/razrabotka-dlya-tiger.trade-windows/tiger-api
 let natrTigerWS = null;
 let natrTigerLinkGroup = 'A';
-try { const savedGroup = localStorage.getItem('natr_tiger_link_group'); if (savedGroup) natrTigerLinkGroup = savedGroup; } catch(e) { /* non-fatal */ }
+// This screener's data is always Binance USDT-M futures, but the person's own Tiger
+// connection can be a completely different exchange (Bybit, OKX, ...) — this is the
+// exchange the button actually opens the symbol on. Tiger's API requires each exchange's
+// OWN native ticker code, so natrConvertSymbolForTiger below maps Binance's "BTCUSDT" to
+// that exchange's format where the convention is known; see NATR_TIGER_EXCHANGES.
+let natrTigerExchange = 'BYBIT';
+try {
+    const savedGroup = localStorage.getItem('natr_tiger_link_group'); if (savedGroup) natrTigerLinkGroup = savedGroup;
+    const savedExch = localStorage.getItem('natr_tiger_exchange'); if (savedExch) natrTigerExchange = savedExch;
+} catch(e) { /* non-fatal */ }
+// Full exchange list Tiger's local API accepts for "e" (case-insensitive on their end).
+// convert: how to turn a Binance USDT-M perpetual code like "BTCUSDT" into that exchange's
+// own native ticker for the SAME market (USDT-margined perpetual futures) — null means
+// "same convention as Binance, use as-is" or "no reliable public convention, needs manual
+// check in Tiger" (noted per-exchange below; these are still sent as-is on that assumption).
+const NATR_TIGER_EXCHANGES = [
+    { value: 'Binance-Fut', label: 'Binance Futures', convert: null },
+    { value: 'BYBIT', label: 'Bybit', convert: null },
+    { value: 'Bitget', label: 'Bitget', convert: null },
+    { value: 'OKX', label: 'OKX', convert: base => base + '-USDT-SWAP' },
+    { value: 'Gate.io', label: 'Gate.io', convert: base => base + '_USDT' },
+    { value: 'MEXC', label: 'MEXC', convert: base => base + '_USDT' },
+    { value: 'Hyperliquid', label: 'Hyperliquid', convert: base => base },
+    { value: 'Binance', label: 'Binance Spot', convert: null },
+    { value: 'Binance-Alpha', label: 'Binance Alpha', convert: null },
+    { value: 'BITMEX', label: 'BitMEX', convert: null },
+    { value: 'Bitfinex', label: 'Bitfinex', convert: null },
+    { value: 'Kucoin', label: 'KuCoin', convert: null },
+    // TigerX is NOT a standalone exchange — it's Tiger.com's own unified connector that
+    // only covers Binance and OKX, and the API expects it as "TigerX Binance" / "TigerX
+    // OKX" specifically (confirmed from Tiger's own docs examples), not plain "TigerX".
+    { value: 'TigerX Binance', label: 'TigerX (Binance)', convert: null },
+    { value: 'TigerX OKX', label: 'TigerX (OKX)', convert: base => base + '-USDT-SWAP' },
+    { value: 'AsterDEX', label: 'AsterDEX', convert: null },
+    { value: 'Lighter', label: 'Lighter', convert: null },
+];
+function natrConvertSymbolForTiger(symbol, exchangeValue) {
+    const entry = NATR_TIGER_EXCHANGES.find(x => x.value === exchangeValue);
+    if (!entry || !entry.convert) return symbol; // same convention as Binance — use as-is
+    const base = symbol.replace(/USDT$|USD1$/, '');
+    return entry.convert(base);
+}
 function natrGetTigerSocket() {
     return new Promise((resolve, reject) => {
         if (natrTigerWS && natrTigerWS.readyState === WebSocket.OPEN) { resolve(natrTigerWS); return; }
@@ -2001,32 +2130,78 @@ function natrGetTigerSocket() {
         ws.onclose = () => { if (natrTigerWS === ws) natrTigerWS = null; };
     });
 }
-// Symbols here come from Binance USDT-M futures (fapi.binance.com), so they map to
-// Tiger's "BINANCE-FUT" exchange / "FUTURES" market type.
+// Always requests FUTURES on the target exchange — this app's data (RVOL/OI/NATR) is all
+// derived from Binance USDT-M futures, so the "same instrument" on any other exchange is
+// its own USDT-margined perpetual, not a spot pair.
 function natrOpenInTiger(symbol) {
+    const exchange = natrTigerExchange;
+    const targetSymbol = natrConvertSymbolForTiger(symbol, exchange);
     natrGetTigerSocket().then(ws => {
         const onMsg = (ev) => {
             ws.removeEventListener('message', onMsg);
             let data = null;
             try { data = JSON.parse(ev.data); } catch(e) { /* non-JSON, ignore */ }
             if (data && data.response && data.response.type === 'successfully') {
-                showToast('Открыто в Tiger.com: ' + symbol.replace(/USDT$|USD1$/, ''));
+                showToast('Открыто в Tiger.com (' + exchange + '): ' + targetSymbol);
             } else {
-                showToast((data && data.message) || ('Tiger.com не распознал тикер ' + symbol));
+                showToast((data && data.message) || ('Tiger.com не распознал тикер ' + targetSymbol + ' на ' + exchange));
             }
         };
         ws.addEventListener('message', onMsg);
-        ws.send(JSON.stringify({ type: 'setLinkSymbol', e: 'BINANCE-FUT', m: 'FUTURES', symbol: symbol, linkGroup: natrTigerLinkGroup }));
+        ws.send(JSON.stringify({ type: 'setLinkSymbol', e: exchange, m: 'FUTURES', symbol: targetSymbol, linkGroup: natrTigerLinkGroup }));
     }).catch(() => {
         showToast('Нет связи с Tiger.com Terminal — включите Settings → Local Signal Server (порт 7819)');
     });
 }
+function natrChangeTigerExchange(v) {
+    natrTigerExchange = v;
+    ctSafeSetItem('natr_tiger_exchange', v);
+}
+function natrChangeTigerLinkGroup(v) {
+    natrTigerLinkGroup = v;
+    ctSafeSetItem('natr_tiger_link_group', v);
+}
+function natrToggleTigerSettings() {
+    const el = document.getElementById('natrTigerSettings');
+    if (!el) return;
+    const show = el.style.display === 'none' || !el.style.display;
+    el.style.display = show ? 'flex' : 'none';
+}
+function natrInitTigerSettingsUI() {
+    const exchSel = document.getElementById('natrTigerExchangeSelect');
+    if (exchSel && !exchSel.options.length) {
+        NATR_TIGER_EXCHANGES.forEach(x => {
+            const opt = document.createElement('option');
+            opt.value = x.value; opt.textContent = x.label;
+            exchSel.appendChild(opt);
+        });
+    }
+    const groupSel = document.getElementById('natrTigerLinkGroupSelect');
+    if (groupSel && !groupSel.options.length) {
+        'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').forEach(l => {
+            const opt = document.createElement('option'); opt.value = l; opt.textContent = 'Группа ' + l; groupSel.appendChild(opt);
+        });
+        for (let n = 0; n <= 11; n++) {
+            const opt = document.createElement('option'); opt.value = String(n); opt.textContent = 'Группа ' + n; groupSel.appendChild(opt);
+        }
+    }
+}
+// Closes the Tiger settings popover on any click outside it, so it doesn't stay open
+// while the person interacts with the rest of the page.
+document.addEventListener('click', function(ev) {
+    const panel = document.getElementById('natrTigerSettings');
+    if (!panel || panel.style.display === 'none' || !panel.style.display) return;
+    if (panel.contains(ev.target)) return;
+    if (ev.target.closest && ev.target.closest('button[onclick="natrToggleTigerSettings()"]')) return;
+    panel.style.display = 'none';
+});
 // Bulk-fetches 24h price/volume/trade-count for ALL futures symbols in one request
 // (instead of one request per row) — used for the price/volume column and the
 // liquidity/trades filters.
 async function natrFetchTicker24h() {
     try {
-        const r = await fetch(NATR_API + '/fapi/v1/ticker/24hr');
+        const r = await natrApiFetch(NATR_API + '/fapi/v1/ticker/24hr');
+        if (!r || !r.ok) return;
         const d = await r.json();
         if (!Array.isArray(d)) return;
         const map = new Map();
@@ -2058,7 +2233,8 @@ async function natrGetAllPairs() {
     try {
         // Ensure categories are initialized
         if (!natrCategoryMap) natrInitCategories();
-        const r = await fetch(NATR_API + '/fapi/v1/exchangeInfo');
+        const r = await natrApiFetch(NATR_API + '/fapi/v1/exchangeInfo');
+        if (!r || !r.ok) return [];
         const d = await r.json();
         const pairs = d.symbols.filter(s => (s.contractType === 'PERPETUAL' || s.contractType === 'TRADIFI_PERPETUAL') && (s.quoteAsset === 'USDT' || s.quoteAsset === 'USD1') && s.status === 'TRADING').map(s => s.symbol);
         return pairs;
@@ -2093,17 +2269,18 @@ async function natrGetKlines(symbol, interval, limit) {
     const attempts = 1 + Math.max(0, NATR_SCAN_CFG.maxRetries || 0);
     try {
         for (let attempt = 0; attempt < attempts; attempt++) {
+            if (natrIsBanned()) break; // don't burn retries once a ban is registered mid-batch
             try {
                 const ctrl = new AbortController();
                 const tid = setTimeout(() => ctrl.abort(), NATR_SCAN_CFG.timeout);
-                const resp = await fetch(NATR_API + '/fapi/v1/klines?symbol=' + symbol + '&interval=' + interval + '&limit=' + limit, {signal:ctrl.signal});
+                const resp = await natrApiFetch(NATR_API + '/fapi/v1/klines?symbol=' + symbol + '&interval=' + interval + '&limit=' + limit, {signal:ctrl.signal});
                 clearTimeout(tid);
-                if (!resp.ok) throw new Error('HTTP ' + resp.status);
+                if (!resp || !resp.ok) throw new Error('fetch failed');
                 const data = await resp.json();
                 if (NATR_SCAN_CFG.cacheResults) natrResultsCache.set(ck, {data, ts: Date.now()});
                 resolveP(data); return data;
             } catch(e) {
-                if (attempt < attempts - 1 && NATR_SCAN_CFG.retryDelay > 0) {
+                if (attempt < attempts - 1 && NATR_SCAN_CFG.retryDelay > 0 && !natrIsBanned()) {
                     await new Promise(r => setTimeout(r, NATR_SCAN_CFG.retryDelay));
                 }
             }
@@ -2114,7 +2291,7 @@ async function natrGetKlines(symbol, interval, limit) {
 async function natrProcessMax(pairs, interval, limit, period, onProgress) {
     const results = []; const total = pairs.length; let processed = 0;
     for (let i = 0; i < total; i += NATR_SCAN_CFG.batchSize) {
-        if (natrAbortCtrl?.signal.aborted) break;
+        if (natrAbortCtrl?.signal.aborted || natrIsBanned()) break;
         const batch = pairs.slice(i, Math.min(i + NATR_SCAN_CFG.batchSize, total));
         const batchP = batch.map(async sym => {
             const klines = await natrGetKlines(sym, interval, limit);
@@ -2180,7 +2357,7 @@ function natrRenderTable(data, animate, pinnedCount) {
         const tradesCell = t24h ? natrFmtCount(t24h.count) : '—';
         const typeCell = natrAssetTypeBadge(item.symbol);
         const caiLink = '<button type="button" class="natr-icon-btn" title="Открыть в CryptoAI" onclick="event.stopPropagation(); natrOpenInCryptoAI(\''+item.symbol+'\')">AI</button>';
-        const tigerLink = '<button type="button" class="natr-icon-btn natr-tiger-btn" title="Открыть в Tiger.com Terminal (локальный сервер, порт 7819)" onclick="event.stopPropagation(); natrOpenInTiger(\''+item.symbol+'\')">'+NATR_TIGER_SVG+'</button>';
+        const tigerLink = '<button type="button" class="natr-icon-btn natr-tiger-btn" title="Открыть в Tiger.com Terminal на '+natrTigerExchange+' (локальный сервер, порт 7819)" onclick="event.stopPropagation(); natrOpenInTiger(\''+item.symbol+'\')">'+NATR_TIGER_SVG+'</button>';
         return '<tr class="'+bc+' '+ra+(isPinnedRow?' natr-pinned-row':'')+'">'+
             natrPinFavCellHtml(item.symbol, isPinned, isFav, 'natrTogglePinned', 'natrToggleFavorite')+
             '<td class="ticker-cell" tabindex="0" role="button" aria-label="Скопировать тикер '+displaySymbol+'" data-symbol="'+displaySymbol+'">'+
@@ -2218,7 +2395,7 @@ function natrSwitchMode(m) {
     if (natrAllResults.length) natrReFilterAndRender();
 }
 async function natrStartBgUpdate() {
-    if (natrIsScanning || natrIsBgUpdating) return;
+    if (natrIsScanning || natrIsBgUpdating || natrIsBanned()) return;
     natrIsBgUpdating = true; natrAbortCtrl = new AbortController();
     natrSetTableUpdating(true); natrSetStatus('Фоновое обновление...', true, true);
     const pairs = await natrGetAllPairs();
@@ -2244,6 +2421,11 @@ function natrFinishBgUpdate(ok) {
 }
 async function natrStartScan() {
     if (natrIsScanning) return;
+    if (natrIsBanned()) {
+        natrSetStatus(natrBanStatusText());
+        showToast('Binance временно ограничил доступ — подождите ' + natrBanSecondsLeft() + ' сек, сканирование возобновится автоматически');
+        return;
+    }
     if (natrIsBgUpdating && natrAbortCtrl) { natrAbortCtrl.abort(); natrIsBgUpdating = false; natrSetTableUpdating(false); }
     natrIsScanning = true; natrAbortCtrl = new AbortController();
     document.getElementById('natrScanBtn').classList.add('loading');
@@ -2281,18 +2463,13 @@ async function natrStartScan() {
 // ============================================================
 //  SECTION: СКРИНЕР ПРОДОЛЖЕНИЯ
 // ============================================================
-// Idea: if a pair moved hard yesterday (pump or dump), check today for elevated
-// relative volume (RVOL) on short candles moving in the SAME direction — a signal
-// that yesterday's move may be continuing rather than having exhausted itself.
-const CONT_MODES = {
-    // oiLimit/oiPeriod are chosen so the ΔOI window matches the RVOL window
-    // ((baseN+shortN)*interval) as closely as Binance's OI endpoint allows — it has no
-    // granularity finer than 5m, so the '1m' mode's ~2h RVOL window is approximated with
-    // 24 five-minute OI points instead of true 1-minute ones.
-    '5m': { interval: '5m', shortN: 3, baseN: 96, limit: 100, oiPeriod: '5m', oiLimit: 99 },   // short = last 15m, baseline = preceding ~8h, ΔOI ~8.25h to match
-    '1m': { interval: '1m', shortN: 5, baseN: 115, limit: 120, oiPeriod: '5m', oiLimit: 24 },  // short = last 5m, baseline = preceding ~2h, ΔOI ~2h to match
-};
-let contMode = '5m';
+// Idea: compare yesterday's DAILY candle against the average of the N preceding daily
+// candles — how much bigger its body (|close-open|) and volume were. A big relative body
+// (R коэфф.) plus elevated relative volume (RVOL, now daily-based) after a quiet
+// проторговка stretch is the core signal; everything else confirms or ranks it.
+// Everything here now comes from ONE daily-klines fetch (+ OI) per symbol — no separate
+// intraday timeframe/mode needed anymore, which also roughly halves the request count per
+// scan compared to the old 5m/1m-intraday version (helps stay under Binance's rate limit).
 let contDirFilterOnly = true;
 let contDirection = 'all'; // 'all' | 'up' (yesterday's pumps) | 'down' (yesterday's dumps)
 let contYestOp = 'gte'; // 'gte' = найти движения БОЛЬШЕ порога, 'lte' = МЕНЬШЕ порога
@@ -2304,8 +2481,7 @@ let contWatchlistOnly = false; // "show favorites only" toggle (uses contFavorit
 let contVolFrom = null;
 let contVolTo = null;
 let contVolFilterActive = false;
-let contBtcToday = null; // BTCUSDT's own todayChange from the same scan — "market" reference for relative strength, at zero extra API cost since BTCUSDT is already one of the scanned pairs
-let contBtcRef = null;
+let contBreakoutActive = true;
 let contAlertsEnabled = false;
 let contAlertedSymbols = new Set(); // tracks who we've already notified about, mirrors natrAlertedSymbols
 let contIsBgUpdating = false;
@@ -2316,8 +2492,6 @@ let contIsScanning = false;
 let contAbortCtrl = null;
 let contRawResults = []; // everything the last scan fetched, unfiltered — filters below re-slice this live, no rescan needed
 try {
-    const savedContMode = localStorage.getItem('cont_mode');
-    if (CONT_MODES[savedContMode]) contMode = savedContMode;
     const savedDirOnly = localStorage.getItem('cont_dir_only');
     if (savedDirOnly === '0') contDirFilterOnly = false;
     const savedDirection = localStorage.getItem('cont_direction');
@@ -2336,10 +2510,11 @@ try {
     const cVolTo = parseFloat(localStorage.getItem('cont_vol_to'));
     if (!isNaN(cVolTo)) contVolTo = cVolTo;
     contVolFilterActive = localStorage.getItem('cont_vol_filter_active') === '1';
+    const savedBreakout = localStorage.getItem('cont_breakout_active');
+    if (savedBreakout !== null) contBreakoutActive = savedBreakout === '1';
     contAlertsEnabled = localStorage.getItem('cont_alerts_enabled') === '1';
 } catch(e) { /* storage unavailable — defaults are fine */ }
 function contApplyRestoredUI() {
-    document.querySelectorAll('#section-cont .natr-tab').forEach(t => t.classList.toggle('active', t.dataset.mode === contMode));
     const dirBtn = document.getElementById('contDirBtn');
     if (dirBtn) dirBtn.classList.toggle('active', contDirFilterOnly);
     document.getElementById('contDirAllBtn').classList.toggle('active', contDirection === 'all');
@@ -2355,6 +2530,8 @@ function contApplyRestoredUI() {
     if (volToEl && contVolTo !== null) volToEl.value = contVolTo;
     const volBtn = document.getElementById('contVolFilterBtn');
     if (volBtn) volBtn.classList.toggle('active', contVolFilterActive);
+    const breakoutBtn = document.getElementById('contBreakoutBtn');
+    if (breakoutBtn) breakoutBtn.classList.toggle('active', contBreakoutActive);
     const alertBtn = document.getElementById('contAlertBtn');
     if (alertBtn && contAlertsEnabled) alertBtn.classList.add('active');
     try {
@@ -2362,8 +2539,10 @@ function contApplyRestoredUI() {
         if (y) document.getElementById('contYestThreshold').value = y;
         const q = localStorage.getItem('cont_quiet_threshold');
         if (q) document.getElementById('contQuietThreshold').value = q;
-        const mc = localStorage.getItem('cont_min_continuation');
-        if (mc) document.getElementById('contMinContinuation').value = mc;
+        const br = localStorage.getItem('cont_body_ratio_threshold');
+        if (br) document.getElementById('contBodyRatioThreshold').value = br;
+        const bm = localStorage.getItem('cont_breakout_margin');
+        if (bm) document.getElementById('contBreakoutMargin').value = bm;
         const rv = localStorage.getItem('cont_rvol_threshold');
         if (rv) document.getElementById('contRvolThreshold').value = rv;
         const oim = localStorage.getItem('cont_oi_min');
@@ -2381,16 +2560,17 @@ function contSetDirection(dir) {
     if (contRawResults.length) contReFilterAndRender();
 }
 
-function contSwitchMode(m) {
-    if (!CONT_MODES[m] || contIsScanning) return;
-    contMode = m;
-    document.querySelectorAll('#section-cont .natr-tab').forEach(t => t.classList.toggle('active', t.dataset.mode === m));
-    try { ctSafeSetItem('cont_mode', m); } catch(e) { /* non-fatal */ }
-}
 function contToggleDirFilter() {
     contDirFilterOnly = !contDirFilterOnly;
     document.getElementById('contDirBtn').classList.toggle('active', contDirFilterOnly);
     try { ctSafeSetItem('cont_dir_only', contDirFilterOnly ? '1' : '0'); } catch(e) { /* non-fatal */ }
+    if (contRawResults.length) contReFilterAndRender();
+}
+function contToggleBreakout() {
+    const btn = document.getElementById('contBreakoutBtn');
+    const active = !btn.classList.contains('active');
+    btn.classList.toggle('active', active);
+    ctSafeSetItem('cont_breakout_active', active ? '1' : '0');
     if (contRawResults.length) contReFilterAndRender();
 }
 function contToggleWatchlistOnly() {
@@ -2514,7 +2694,8 @@ function contChangeFilters() {
         ctSafeSetItem('cont_oi_op', contOiOp);
         ctSafeSetItem('cont_yest_threshold', document.getElementById('contYestThreshold').value || '40');
         ctSafeSetItem('cont_quiet_threshold', document.getElementById('contQuietThreshold').value || '10');
-        ctSafeSetItem('cont_min_continuation', document.getElementById('contMinContinuation').value || '3');
+        ctSafeSetItem('cont_body_ratio_threshold', document.getElementById('contBodyRatioThreshold').value || '2');
+        ctSafeSetItem('cont_breakout_margin', document.getElementById('contBreakoutMargin').value || '0');
         ctSafeSetItem('cont_rvol_threshold', document.getElementById('contRvolThreshold').value);
         ctSafeSetItem('cont_oi_min', document.getElementById('contOiMin').value);
     } catch(e) { /* non-fatal */ }
@@ -2538,58 +2719,19 @@ async function contFetchKlines(symbol, interval, limit) {
     try {
         const ctrl = new AbortController();
         const tid = setTimeout(() => ctrl.abort(), NATR_SCAN_CFG.timeout);
-        const resp = await fetch(NATR_API + '/fapi/v1/klines?symbol=' + symbol + '&interval=' + interval + '&limit=' + limit, {signal: ctrl.signal});
+        const resp = await natrApiFetch(NATR_API + '/fapi/v1/klines?symbol=' + symbol + '&interval=' + interval + '&limit=' + limit, {signal: ctrl.signal});
         clearTimeout(tid);
-        if (!resp.ok) return null;
+        if (!resp || !resp.ok) return null;
         return await resp.json();
     } catch(e) { return null; }
 }
-// RVOL = average volume of the most recent `shortN` candles divided by the average
-// volume of the candles right before that. The baseline window shrinks to whatever
-// history is actually available (down to a small minimum) so freshly-listed pairs
-// still get a reading instead of being dropped for lacking a full baseN history.
-function contCalcRVOL(klines, shortN, baseN) {
-    if (!klines || klines.length <= shortN) return null;
-    const len = klines.length;
-    const effectiveBaseN = Math.min(baseN, len - shortN);
-    if (effectiveBaseN < 5) return null; // too little history to call it a baseline at all
-    const avgVol = (start, end) => {
-        let sum = 0;
-        for (let i = start; i < end; i++) sum += parseFloat(klines[i][5]) || 0;
-        return sum / (end - start);
-    };
-    const shortAvg = avgVol(len - shortN, len);
-    const baseAvg = avgVol(len - shortN - effectiveBaseN, len - shortN);
-    if (!baseAvg) return null;
-    return shortAvg / baseAvg;
-}
-// Rolling VWAP over the same intraday candle window used for RVOL: Σ(typical price × volume)
-// ÷ Σ(volume), typical price = (high+low+close)/3. Tells you how far price has stretched
-// away from where the recent volume actually traded — a fast, no-extra-request "am I
-// chasing this candle" check, since these candles are already fetched for RVOL anyway.
-function contCalcVwapDeviation(klines, currentPrice) {
-    if (!klines || !klines.length || !currentPrice) return null;
-    let pv = 0, vol = 0;
-    for (let i = 0; i < klines.length; i++) {
-        const h = parseFloat(klines[i][2]), l = parseFloat(klines[i][3]), c = parseFloat(klines[i][4]), v = parseFloat(klines[i][5]) || 0;
-        const typical = (h + l + c) / 3;
-        pv += typical * v; vol += v;
-    }
-    if (!vol) return null;
-    const vwap = pv / vol;
-    if (!vwap) return null;
-    return (currentPrice - vwap) / vwap * 100;
-}
-// Binance's Open Interest history has no granularity finer than 5m (unlike price klines,
-// which go down to 1m), so period/limit are passed in per-mode to match the RVOL window
-// as closely as that constraint allows — see CONT_MODES' oiPeriod/oiLimit.
 async function contFetchOI(symbol, period, limit) {
     try {
         const ctrl = new AbortController();
         const tid = setTimeout(() => ctrl.abort(), NATR_SCAN_CFG.timeout);
-        const resp = await fetch(NATR_API + '/futures/data/openInterestHist?symbol=' + symbol + '&period=' + period + '&limit=' + limit, {signal: ctrl.signal});
+        const resp = await natrApiFetch(NATR_API + '/futures/data/openInterestHist?symbol=' + symbol + '&period=' + period + '&limit=' + limit, {signal: ctrl.signal});
         clearTimeout(tid);
-        if (!resp.ok) return null;
+        if (!resp || !resp.ok) return null;
         const d = await resp.json();
         if (!Array.isArray(d) || d.length < 2) return null;
         const first = parseFloat(d[0].sumOpenInterestValue);
@@ -2598,72 +2740,80 @@ async function contFetchOI(symbol, period, limit) {
         return { oiChangePct: (last - first) / first * 100, oiValue: last };
     } catch(e) { return null; }
 }
-// lookbackDays controls how many days of daily candles we fetch before the pump day, so
-// contGetFilteredResults can check that all of them were "проторговка" (quiet consolidation,
-// each day's high-low range under the threshold) right up until the pump. Pairs with LESS
-// history than lookbackDays (recent listings) are still included — dailyRanges just ends up
-// shorter, which will correctly fail the consolidation-window check further down.
-async function contFetchAndCalc(symbol, cfg, lookbackDays) {
-    const [daily, intra, oi] = await Promise.all([
-        contFetchKlines(symbol, '1d', Math.max(lookbackDays, 0) + 2),
-        contFetchKlines(symbol, cfg.interval, cfg.limit),
-        contFetchOI(symbol, cfg.oiPeriod, cfg.oiLimit)
+// lookbackDays (N) is now the single window controlling everything: how many days of daily
+// candles we fetch before the pump day, how many of them must be quiet (проторговка), AND
+// the baseline N used for both R коэфф. (body-size ratio) and RVOL (now daily-volume-based).
+// Everything comes from ONE daily-klines fetch + OI — no separate intraday timeframe needed
+// anymore. Pairs with LESS history than lookbackDays (recent listings) are still included —
+// the averages just end up computed over whatever shorter window is actually available.
+async function contFetchAndCalc(symbol, lookbackDays) {
+    const days = Math.max(lookbackDays, 0) + 2;
+    const [daily, oi] = await Promise.all([
+        contFetchKlines(symbol, '1d', days),
+        contFetchOI(symbol, '1d', days) // same N-day window as everything else now
     ]);
-    if (!daily || daily.length < 2 || !intra) return null;
-    const yestCandle = daily[daily.length - 2];   // last FULLY closed UTC day
+    if (!daily || daily.length < 2) return null;
+    const yestCandle = daily[daily.length - 2];   // last FULLY closed UTC day — the "памп" candidate
     const todayCandle = daily[daily.length - 1];  // today's still-forming UTC day
     const yestOpen = parseFloat(yestCandle[1]), yestClose = parseFloat(yestCandle[4]);
+    const yestVolume = parseFloat(yestCandle[5]) || 0;
     const todayOpen = parseFloat(todayCandle[1]);
     if (!yestOpen || !todayOpen) return null;
     const yestChange = (yestClose - yestOpen) / yestOpen * 100;
-    const currentPrice = parseFloat(intra[intra.length - 1][4]);
+    const currentPrice = parseFloat(todayCandle[4]); // still-forming daily candle's live close
     const todayChange = (currentPrice - todayOpen) / todayOpen * 100;
-    const rvol = contCalcRVOL(intra, cfg.shortN, cfg.baseN);
-    if (rvol == null) return null;
     const oiChangePct = oi ? oi.oiChangePct : null;
     const oiValue = oi ? oi.oiValue : null;
-    // VWAP deviation and day-range position both reuse candles we already fetched above —
-    // zero extra API calls, which matters a lot when scanning hundreds of pairs per scan.
-    // VWAP here is a ROLLING vwap over the same short-interval window used for RVOL (last
-    // ~2-8h depending on timeframe), not a full UTC-session VWAP — deliberately, since a
-    // fresh rolling VWAP is a better "am I chasing this move" reference than a full-day
-    // VWAP that goes stale by the afternoon, and it comes for free from data we already have.
-    const vwapDeviationPct = contCalcVwapDeviation(intra, currentPrice);
     // Day-range position: 0% = sitting at today's low, 100% = sitting at today's high.
     const todayHigh = parseFloat(todayCandle[2]), todayLow = parseFloat(todayCandle[3]);
     const dayRangePos = (todayHigh > todayLow) ? (currentPrice - todayLow) / (todayHigh - todayLow) * 100 : null;
-    // "Дней проторговки" = 0 (or left empty) → skip history entirely and analyze TODAY'S own
-    // move so far, instead of yesterday's. refChange is what every threshold/direction
-    // check below runs against, so this one flag switches the whole screener's frame
-    // of reference from "yesterday vs today" to "just today, right now".
+    // "Окно N" = 0 (or left empty) → skip history entirely and analyze TODAY'S own move so
+    // far, instead of yesterday's. refChange is what every threshold/direction check below
+    // runs against, so this one flag switches the whole screener's frame of reference from
+    // "yesterday vs today" to "just today, right now" — and R коэфф./RVOL have no baseline
+    // to compare against in that mode, so they come out null (filters on them just skip).
     const todayOnly = lookbackDays <= 0;
-    // Days strictly BEFORE the pump day, oldest to newest — this is the проторговка
-    // window contGetFilteredResults checks for quiet consolidation. Capped to lookbackDays,
-    // shrinking gracefully for pairs with shorter history. Not needed in "today only" mode,
-    // since there's no prior-day window to require quiet — today's move is the whole signal.
-    // Uses the day's FULL high-low RANGE, not close-open — a day that spikes +50% intraday
-    // and closes flat is not "quiet", even though its close-open change would say 0%.
     let dailyRanges = [];
+    let bodyRatio = null, rvol = null;
     if (!todayOnly) {
         const availableDays = Math.max(0, Math.min(lookbackDays, daily.length - 2));
+        let bodySum = 0, volSum = 0, n = 0;
+        // Days strictly BEFORE the pump day, oldest to newest. Each entry keeps range/high/low
+        // for the проторговка check + consolidation "box" (breakout check, stop level), while
+        // bodySum/volSum build the SAME window's average body-size and average volume — the
+        // baseline that yesterday's candle gets compared against for R коэфф. and RVOL.
         for (let i = daily.length - 2 - availableDays; i <= daily.length - 3; i++) {
-            const o = parseFloat(daily[i][1]), h = parseFloat(daily[i][2]), l = parseFloat(daily[i][3]);
-            if (o) dailyRanges.push((h - l) / o * 100);
+            const o = parseFloat(daily[i][1]), h = parseFloat(daily[i][2]), l = parseFloat(daily[i][3]), c = parseFloat(daily[i][4]), v = parseFloat(daily[i][5]) || 0;
+            if (!o) continue;
+            dailyRanges.push({ range: (h - l) / o * 100, high: h, low: l });
+            bodySum += Math.abs(c - o) / o * 100;
+            volSum += v;
+            n++;
+        }
+        if (n > 0) {
+            const yestBodyPct = Math.abs(yestClose - yestOpen) / yestOpen * 100;
+            const avgBodyPct = bodySum / n;
+            bodyRatio = avgBodyPct > 0 ? yestBodyPct / avgBodyPct : null;
+            const avgVol = volSum / n;
+            rvol = avgVol > 0 ? yestVolume / avgVol : null;
         }
     }
     const refChange = todayOnly ? todayChange : yestChange;
-    return { symbol, yestChange, todayChange, refChange, todayOnly, rvol, oiChangePct, oiValue, dailyRanges, currentPrice, vwapDeviationPct, dayRangePos };
+    return { symbol, yestChange, todayChange, refChange, todayOnly, rvol, bodyRatio, oiChangePct, oiValue, dailyRanges, currentPrice, dayRangePos, pumpClose: yestClose };
 }
-async function contProcessMax(pairs, cfg, lookbackDays, onProgress) {
+// Now just ONE daily-klines request + one OI request per symbol (was 3 with the old
+// intraday-RVOL version), so batches can be sized the same as NATR Scanner's again.
+const CONT_BATCH_SIZE = NATR_SCAN_CFG.batchSize;
+async function contProcessMax(pairs, lookbackDays, onProgress) {
     const results = []; const total = pairs.length; let processed = 0;
-    for (let i = 0; i < total; i += NATR_SCAN_CFG.batchSize) {
-        if (contAbortCtrl?.signal.aborted) break;
-        const batch = pairs.slice(i, Math.min(i + NATR_SCAN_CFG.batchSize, total));
-        const batchResults = await Promise.all(batch.map(sym => contFetchAndCalc(sym, cfg, lookbackDays)));
+    for (let i = 0; i < total; i += CONT_BATCH_SIZE) {
+        if (contAbortCtrl?.signal.aborted || natrIsBanned()) break;
+        const batch = pairs.slice(i, Math.min(i + CONT_BATCH_SIZE, total));
+        const batchResults = await Promise.all(batch.map(sym => contFetchAndCalc(sym, lookbackDays)));
         batchResults.forEach(r => { if (r) results.push(r); });
         processed += batch.length;
         if (onProgress) onProgress(processed, total);
-        if (NATR_SCAN_CFG.batchDelay > 0 && i + NATR_SCAN_CFG.batchSize < total) {
+        if (NATR_SCAN_CFG.batchDelay > 0 && i + CONT_BATCH_SIZE < total) {
             await new Promise(r => setTimeout(r, NATR_SCAN_CFG.batchDelay));
         }
     }
@@ -2671,6 +2821,11 @@ async function contProcessMax(pairs, cfg, lookbackDays, onProgress) {
 }
 async function contStartScan() {
     if (contIsScanning) { if (contAbortCtrl) contAbortCtrl.abort(); return; }
+    if (natrIsBanned()) {
+        contSetStatus(natrBanStatusText());
+        showToast('Binance временно ограничил доступ — подождите ' + natrBanSecondsLeft() + ' сек, сканирование возобновится автоматически');
+        return;
+    }
     if (contIsBgUpdating && contAbortCtrl) { contAbortCtrl.abort(); contIsBgUpdating = false; contSetTableUpdating(false); }
     contIsScanning = true; contAbortCtrl = new AbortController();
     const btn = document.getElementById('contScanBtn');
@@ -2684,13 +2839,12 @@ async function contStartScan() {
         btn.classList.remove('loading'); btn.disabled = false;
         contIsScanning = false; contAbortCtrl = null; return;
     }
-    const cfg = CONT_MODES[contMode] || CONT_MODES['5m'];
     const lbRaw = document.getElementById('contLookbackDays').value.trim();
     const lookbackDays = lbRaw === '' ? 0 : Math.max(0, parseInt(lbRaw) || 0);
     ctSafeSetItem('cont_lookback_days', String(lookbackDays));
     contSetStatus('Сканирование 0/'+pairs.length+'...', true, true);
     const [raw] = await Promise.all([
-        contProcessMax(pairs, cfg, lookbackDays, (p,t) => {
+        contProcessMax(pairs, lookbackDays, (p,t) => {
             if (!contAbortCtrl.signal.aborted) contSetStatus('Сканирование '+p+'/'+t+'...', true, true);
         }),
         natrFetchTicker24h() // populates natrTicker24hMap, shared with NATR Scanner — powers the "Объём 24ч" filter below
@@ -2700,7 +2854,6 @@ async function contStartScan() {
         contIsScanning = false; contAbortCtrl = null; return;
     }
     contRawResults = raw; // keep everything — filters below re-slice this in memory, no rescan needed
-    contUpdateBtcRef();
     contCheckAlerts(contGetFilteredResults());
     contReFilterAndRender();
     contSetStatus('Готово, отсканировано: '+raw.length, true);
@@ -2711,33 +2864,24 @@ async function contStartScan() {
     contIsScanning = false; contAbortCtrl = null;
     contStartAutoRefresh();
 }
-// BTCUSDT is always part of the scanned USDT-perpetuals universe, so relative-strength-vs-
-// BTC comes for free from the same scan — no separate request needed.
-function contUpdateBtcRef() {
-    const btc = contRawResults.find(r => r.symbol === 'BTCUSDT');
-    contBtcToday = btc ? btc.todayChange : null;
-    contBtcRef = btc ? btc.refChange : null;
-}
-// Background refresh — re-fetches everything with the current mode/lookback but without
+// Background refresh — re-fetches everything with the current lookback window but without
 // resetting the table or scan button, so alerts and auto-refresh don't interrupt browsing.
 async function contStartBgUpdate() {
-    if (contIsScanning || contIsBgUpdating) return;
+    if (contIsScanning || contIsBgUpdating || natrIsBanned()) return;
     contIsBgUpdating = true; contAbortCtrl = new AbortController();
     contSetTableUpdating(true); contSetStatus('Фоновое обновление...', true, true);
     const pairs = await natrGetAllPairs();
     if (!pairs.length || contAbortCtrl.signal.aborted) { contFinishBgUpdate(false); return; }
-    const cfg = CONT_MODES[contMode] || CONT_MODES['5m'];
     const lbRaw = document.getElementById('contLookbackDays').value.trim();
     const lookbackDays = lbRaw === '' ? 0 : Math.max(0, parseInt(lbRaw) || 0);
     const [raw] = await Promise.all([
-        contProcessMax(pairs, cfg, lookbackDays, (p,t) => {
+        contProcessMax(pairs, lookbackDays, (p,t) => {
             if (!contAbortCtrl.signal.aborted) contSetStatus(p+'/'+t, true, true);
         }),
         natrFetchTicker24h()
     ]);
     if (contAbortCtrl.signal.aborted) { contFinishBgUpdate(false); return; }
     contRawResults = raw;
-    contUpdateBtcRef();
     contCheckAlerts(contGetFilteredResults());
     contReFilterAndRender();
     const lu = document.getElementById('contLastUpdate');
@@ -2761,6 +2905,13 @@ function contGetFilteredResults() {
     const rvolActive = rvolThr > 0;
     const passRvol = v => contRvolOp === 'lte' ? v <= rvolThr : v >= rvolThr;
 
+    // R коэфф.: yesterday's daily candle BODY (|close-open|) ÷ the average body of the
+    // same N days used for проторговка/RVOL below — "на сколько вчерашняя свеча больше
+    // предыдущих". This is the new core signal; RVOL above is now its daily-volume analogue.
+    const bodyRatioRaw = document.getElementById('contBodyRatioThreshold').value.trim();
+    const bodyRatioThr = bodyRatioRaw === '' ? 0 : (parseFloat(bodyRatioRaw) || 0);
+    const bodyRatioActive = bodyRatioThr > 0;
+
     const oiRaw = document.getElementById('contOiMin').value.trim();
     const oiThr = oiRaw === '' ? 0 : (parseFloat(oiRaw) || 0);
     const oiActive = oiThr > 0;
@@ -2778,6 +2929,9 @@ function contGetFilteredResults() {
     const lookbackDays = lbRaw === '' ? 0 : Math.max(0, parseInt(lbRaw) || 0);
     const quietRaw = document.getElementById('contQuietThreshold').value.trim();
     const quietThr = quietRaw === '' ? 10 : (Math.abs(parseFloat(quietRaw)) || 0);
+    const breakoutActive = document.getElementById('contBreakoutBtn').classList.contains('active');
+    const breakoutMarginRaw = document.getElementById('contBreakoutMargin').value.trim();
+    const breakoutMargin = (breakoutMarginRaw === '' ? 0 : Math.abs(parseFloat(breakoutMarginRaw) || 0)) / 100;
 
     // Проторговка (consolidation): walk backward from the day right before the pump,
     // counting consecutive quiet days — quiet meaning the day's full HIGH-LOW RANGE (not
@@ -2787,21 +2941,37 @@ function contGetFilteredResults() {
     // number than the pump threshold above — these used to be the same value, which meant
     // almost any day under the pump threshold (e.g. up to 39% when the pump threshold was
     // 40%) counted as "quiet", barely filtering anything. A big move anywhere in the
-    // stretch breaks the streak. Recomputed here (not baked in at scan time) so changing
-    // either threshold re-evaluates it instantly — only lookbackDays itself needs a
-    // rescan, since that's what controls how much history was fetched. Computed for EVERY
-    // raw result up front so a pinned (📌) row still has a valid count even if it
-    // currently fails one of the other filters below.
+    // stretch breaks the streak. consolidationHigh/Low track the actual price range spanned
+    // by those quiet days — the "box" the pump needs to break out of, and the natural
+    // stop-loss level shown in the table (base of the box for longs, top for shorts).
+    // Recomputed here (not baked in at scan time) so changing any of these thresholds
+    // re-evaluates instantly — only lookbackDays itself needs a rescan, since that's what
+    // controls how much history was fetched. Computed for EVERY raw result up front so a
+    // pinned (📌) row still has valid values even if it currently fails another filter.
     contRawResults.forEach(r => {
-        let cd = 0;
+        let cd = 0, hi = -Infinity, lo = Infinity;
         for (let i = r.dailyRanges.length - 1; i >= 0; i--) {
-            if (r.dailyRanges[i] < quietThr) cd++; else break;
+            if (r.dailyRanges[i].range < quietThr) {
+                cd++;
+                if (r.dailyRanges[i].high > hi) hi = r.dailyRanges[i].high;
+                if (r.dailyRanges[i].low < lo) lo = r.dailyRanges[i].low;
+            } else break;
         }
         r.consolidationDays = cd;
+        r.consolidationHigh = cd > 0 ? hi : null;
+        r.consolidationLow = cd > 0 ? lo : null;
     });
+    // Favorites-only bypasses every other filter (пороги, RVOL, ΔOI, проторговка, пробой,
+    // направление, объём) — same "show me exactly this list, full stop" semantics pinned
+    // rows already have. Previously a favorited symbol could silently disappear just
+    // because it didn't currently pass, say, the RVOL or breakout filter.
+    if (contWatchlistOnly) {
+        return contRawResults.filter(r => contFavorites.has(r.symbol)).sort((a,b) => (b.bodyRatio||b.rvol||0) - (a.bodyRatio||a.rvol||0));
+    }
     let list = contRawResults.filter(r => {
         if (!passThr(r.refChange)) return false;
-        if (rvolActive && !passRvol(r.rvol)) return false;
+        if (rvolActive && (r.rvol === null || !passRvol(r.rvol))) return false;
+        if (bodyRatioActive && (r.bodyRatio === null || r.bodyRatio < bodyRatioThr)) return false;
         // OI filter is opt-in (0/empty = off). When it's on, a row with no OI data
         // can't be confirmed either way, so it's excluded rather than let through blind.
         if (oiActive && (r.oiChangePct === null || !passOi(r.oiChangePct, Math.sign(r.refChange)))) return false;
@@ -2810,23 +2980,28 @@ function contGetFilteredResults() {
         // to have been quiet; a pair with less history than lookbackDays can't satisfy this
         // and is correctly excluded rather than let through on a partial, unverified window.
         if (!r.todayOnly && r.consolidationDays < lookbackDays) return false;
+        // Breakout confirmation: a big move that stays INSIDE the consolidation box isn't a
+        // breakout, no matter how big a % it is — the pump day's CLOSE must actually clear
+        // the box, by at least the margin. Skipped for today-only mode, same as consolidation.
+        if (breakoutActive && !r.todayOnly) {
+            if (r.refChange >= 0) {
+                if (!(r.pumpClose > r.consolidationHigh * (1 + breakoutMargin))) return false;
+            } else {
+                if (!(r.pumpClose < r.consolidationLow * (1 - breakoutMargin))) return false;
+            }
+        }
         return true;
     });
     if (contDirection === 'up') list = list.filter(r => r.refChange >= 0);
     else if (contDirection === 'down') list = list.filter(r => r.refChange < 0);
     if (contDirFilterOnly) {
-        const minContRaw = document.getElementById('contMinContinuation').value.trim();
-        const minCont = minContRaw === '' ? 0 : Math.abs(parseFloat(minContRaw) || 0);
-        // Same-sign alone lets +0.01% count as "continuation" of a 40% pump — require the
-        // move to actually be worth calling a continuation, not just technically not zero.
-        list = list.filter(r => Math.sign(r.refChange) === Math.sign(r.todayChange) && Math.abs(r.todayChange) >= minCont);
+        list = list.filter(r => Math.sign(r.refChange) === Math.sign(r.todayChange) && r.todayChange !== 0);
     }
-    if (contWatchlistOnly) list = list.filter(r => contFavorites.has(r.symbol));
     if (contVolFilterActive) {
         if (contVolFrom !== null) list = list.filter(r => { const t = natrTicker24hMap.get(r.symbol); return t && t.volume >= contVolFrom; });
         if (contVolTo !== null) list = list.filter(r => { const t = natrTicker24hMap.get(r.symbol); return t && t.volume <= contVolTo; });
     }
-    list.sort((a,b) => b.rvol - a.rvol);
+    list.sort((a,b) => (b.bodyRatio||b.rvol||0) - (a.bodyRatio||a.rvol||0));
     return list;
 }
 // Pinned (📌 закреп) rows always stay visible at the top, same bypass behaviour as in
@@ -2842,7 +3017,7 @@ function contReFilterAndRender() {
     }
     const pinnedRows = contRawResults
         .filter(r => contPinned.has(r.symbol))
-        .sort((a,b) => b.rvol - a.rvol);
+        .sort((a,b) => (b.bodyRatio||b.rvol||0) - (a.bodyRatio||a.rvol||0));
     const pinnedSet = new Set(pinnedRows.map(r => r.symbol));
     const rest = filtered.filter(r => !pinnedSet.has(r.symbol));
     contRenderTable(pinnedRows.concat(rest), pinnedRows.length);
@@ -2882,33 +3057,39 @@ function contRenderTable(data, pinnedCount) {
         }
         const isPinned = contPinned.has(r.symbol);
         const isFav = contFavorites.has(r.symbol);
-        const vwapCell = r.vwapDeviationPct !== null
-            ? '<span class="mono '+(r.vwapDeviationPct>=0?'cont-yest-up':'cont-yest-down')+'" title="Насколько цена ушла от объёмно-взвешенной средней за последнее RVOL-окно — большой отрыв = вход в догон">'+(r.vwapDeviationPct>=0?'+':'')+r.vwapDeviationPct.toFixed(1)+'%</span>'
+        const bodyRatioCell = r.bodyRatio !== null
+            ? '<span class="mono cont-rvol-hot" title="Тело вчерашней свечи ÷ среднее тело за N предыдущих дней">'+r.bodyRatio.toFixed(2)+'x</span>'
+            : '<span style="color:var(--muted)">—</span>';
+        const rvolCell = r.rvol !== null
+            ? '<span class="mono cont-rvol-hot">'+r.rvol.toFixed(2)+'x</span>'
             : '<span style="color:var(--muted)">—</span>';
         const rangePosCell = r.dayRangePos !== null
             ? '<span class="mono" title="0% — у дневного минимума, 100% — у дневного максимума">'+r.dayRangePos.toFixed(0)+'%</span>'
             : '<span style="color:var(--muted)">—</span>';
-        let btcCell = '<span style="color:var(--muted)">—</span>';
-        if (contBtcToday !== null && r.symbol !== 'BTCUSDT') {
-            const rel = r.todayChange - contBtcToday;
-            btcCell = '<span class="mono '+(rel>=0?'cont-yest-up':'cont-yest-down')+'" title="Движение пары сегодня минус движение BTC сегодня ('+(contBtcToday>=0?'+':'')+contBtcToday.toFixed(1)+'%) — плюс значит пара сильнее рынка">'+(rel>=0?'+':'')+rel.toFixed(1)+'%</span>';
-        } else if (r.symbol === 'BTCUSDT') {
-            btcCell = '<span style="color:var(--muted)">BTC</span>';
+        // Suggested invalidation level: the base of the проторговка box the pump broke out
+        // of — low of the box for an up-pump (natural stop below the breakout), high of the
+        // box for a down-pump. Only meaningful when a consolidation window was actually
+        // checked (skipped for "today only" mode, same as the breakout check above).
+        let stopCell = '<span style="color:var(--muted)">—</span>';
+        if (!r.todayOnly && r.consolidationHigh !== null && r.currentPrice) {
+            const stopPrice = r.refChange >= 0 ? r.consolidationLow : r.consolidationHigh;
+            const riskPct = (r.currentPrice - stopPrice) / r.currentPrice * 100 * (r.refChange >= 0 ? 1 : -1);
+            stopCell = '<span class="mono" title="'+(r.refChange>=0?'Низ':'Верх')+' диапазона проторговки перед пампом — естественный уровень инвалидации сетапа">$'+natrFmtPriceShort(stopPrice)+' <span style="opacity:.6;font-size:0.85em;">-'+Math.abs(riskPct).toFixed(1)+'%</span></span>';
         }
         const caiLink = '<button type="button" class="natr-icon-btn" title="Открыть в CryptoAI" onclick="event.stopPropagation(); natrOpenInCryptoAI(\''+r.symbol+'\')">AI</button>';
-        const tigerLink = '<button type="button" class="natr-icon-btn natr-tiger-btn" title="Открыть в Tiger.com Terminal (локальный сервер, порт 7819)" onclick="event.stopPropagation(); natrOpenInTiger(\''+r.symbol+'\')">'+NATR_TIGER_SVG+'</button>';
+        const tigerLink = '<button type="button" class="natr-icon-btn natr-tiger-btn" title="Открыть в Tiger.com Terminal на '+natrTigerExchange+' (локальный сервер, порт 7819)" onclick="event.stopPropagation(); natrOpenInTiger(\''+r.symbol+'\')">'+NATR_TIGER_SVG+'</button>';
         return '<tr class="'+(isPinnedRow?'natr-pinned-row':'')+'">'+
             natrPinFavCellHtml(r.symbol, isPinned, isFav, 'contTogglePinned', 'contToggleFavorite')+
             '<td class="ticker-cell" tabindex="0" role="button" aria-label="Скопировать тикер '+displaySymbol+'" data-symbol="'+displaySymbol+'">'+
             '<div class="ticker-name">'+displaySymbol+'</div>'+
             '<svg class="copy-icon" style="width:14px;height:14px" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></td>'+
             '<td class="mono '+refCls+'" title="'+(r.todayOnly?'Сегодня (режим «только сегодня»)':'Последний закрытый день')+'">'+(r.refChange>=0?'+':'')+r.refChange.toFixed(1)+'%</td>'+
-            '<td class="mono cont-rvol-hot">'+r.rvol.toFixed(2)+'x</td>'+
+            '<td>'+bodyRatioCell+'</td>'+
+            '<td>'+rvolCell+'</td>'+
             '<td class="mono '+todayCls+'">'+(r.todayChange>=0?'+':'')+r.todayChange.toFixed(1)+'%</td>'+
             '<td>'+oiCell+'</td>'+
-            '<td>'+vwapCell+'</td>'+
             '<td>'+rangePosCell+'</td>'+
-            '<td>'+btcCell+'</td>'+
+            '<td>'+stopCell+'</td>'+
             '<td style="text-align:center;"><div class="natr-actions-cell">'+caiLink+tigerLink+'</div></td></tr>';
     }).join('');
     document.querySelectorAll('#contTableBody .ticker-cell').forEach(cell => {
@@ -4081,12 +4262,20 @@ async function caiSearch() {
 // ============================================================
 //  INIT
 // ============================================================
+// Keeps both scanners' status badges showing a live "⛔ ждём Xс" countdown while a Binance
+// ban is active, even though neither scanner is actively running during that time.
+setInterval(() => {
+    if (!natrIsBanned()) return;
+    if (!natrIsScanning) natrSetStatus(natrBanStatusText());
+    if (!contIsScanning) contSetStatus(natrBanStatusText());
+}, 1000);
 document.addEventListener('DOMContentLoaded', function() {
     let saved = null;
     try { saved = localStorage.getItem('ct_active_section'); } catch(e) { /* storage unavailable — fall back to default tab */ }
     if (saved && saved !== 'natr') {
         switchSection(saved);
     }
+    natrInitTigerSettingsUI();
     natrApplyRestoredUI();
     contApplyRestoredUI();
     natrUpdateTimerDisplay();
